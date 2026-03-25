@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- PWA / iOS standalone -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lingo">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fafaf8">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232d5a27'/><text y='.9em' font-size='72' x='12'>📚</text></svg>">
 <title>Lingo — Học Tiếng Anh</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -384,6 +391,36 @@ input::placeholder{color:var(--muted)}
 /* ── WORD FAMILY card ── */
 #families-list .card{transition:border-color .15s;}
 #families-list .card:hover{border-color:var(--rule2);}
+
+/* ── MOBILE WORD BANK ── */
+@media(max-width:600px){
+  .word-row{flex-wrap:wrap;gap:6px;padding:10px 12px;align-items:flex-start;}
+  .word-row-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+  .word-row-actions{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+  .wr-phon-wrap{display:none;}
+  .wr-phon-wrap.show{display:block;}
+  .wr-topic-wrap{display:none;}
+}
+@media(min-width:601px){
+  .word-row-main{display:contents;}
+  .word-row-actions{display:contents;}
+  .wr-phon-wrap{display:contents;}
+  .wr-topic-wrap{display:contents;}
+}
+
+/* ── PWA STANDALONE: hide browser chrome padding ── */
+@media all and (display-mode: standalone){
+  .topbar{ padding-top: max(12px, env(safe-area-inset-top)); }
+  .bottom-nav{ padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+}
+/* iOS Safari standalone via JS class */
+body.standalone .topbar{ padding-top: max(44px, env(safe-area-inset-top)); }
+body.standalone .bottom-nav{ padding-bottom: max(20px, env(safe-area-inset-bottom)); height: auto; }
+body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-bottom) + 80px)); }
+
+/* ── SB STATUS indicator in topbar ── */
+.sb-dot-wrap{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.sb-dot-wrap.connected{background:var(--accent);}
 </style>
 </head>
 <body>
@@ -503,6 +540,7 @@ input::placeholder{color:var(--muted)}
       <button class="nav-btn"        data-tab="families"  onclick="go('families',this)"><span class="nav-icon">◈</span> Word Family</button>
       <button class="nav-btn"        data-tab="topics"    onclick="go('topics',this)"><span class="nav-icon">◉</span> Chủ đề</button>
       <button class="nav-btn"        data-tab="stats"     onclick="go('stats',this)"><span class="nav-icon">▣</span> Thành tích</button>
+      <button class="nav-btn"        data-tab="setup"     onclick="go('setup',this)"><span class="nav-icon">⊡</span> Supabase</button>
       <button class="nav-btn"        data-tab="github"    onclick="go('github',this)"><span class="nav-icon">◬</span> GitHub / Deploy</button>
     </div>
     <div class="sidebar-stats">
@@ -520,6 +558,10 @@ input::placeholder{color:var(--muted)}
         <span class="tp">🔥 <strong id="tb-streak">0</strong></span>
         <span class="tp">⚡ <strong id="tb-xp">0</strong> XP</span>
         <span class="tp" id="tb-today-pill">Hôm nay: <strong id="tb-today">0</strong></span>
+        <button class="tp" onclick="go('setup')" style="background:var(--paper);border:none;cursor:pointer;display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;" title="Supabase">
+          <div class="sb-dot-wrap" id="topbar-sb-dot"></div>
+          <span style="font-size:11px;color:var(--mid);">DB</span>
+        </button>
       </div>
     </div>
 
@@ -779,11 +821,12 @@ input::placeholder{color:var(--muted)}
           <button class="btn btn-primary" style="flex-shrink:0;" onclick="openModal('addModal');populateTopicSelects()">+ Thêm từ</button>
         </div>
         <div class="wb-toolbar" style="margin-top:18px;">
-          <input type="text" placeholder="Tìm từ vựng..." id="wb-s" oninput="renderWB()" style="flex:1;">
-          <select id="wb-top" onchange="renderWB()"><option value="all">Tất cả chủ đề</option></select>
-          <select id="wb-srt" onchange="renderWB()">
+          <input type="text" placeholder="Tìm từ vựng..." id="wb-s" oninput="renderWB()" style="flex:1;min-width:140px;">
+          <select id="wb-top" onchange="renderWB()" style="min-width:110px;"><option value="all">Tất cả chủ đề</option></select>
+          <select id="wb-srt" onchange="renderWB()" style="min-width:100px;">
             <option value="new">Mới nhất</option><option value="az">A → Z</option><option value="hard">Khó nhất</option>
           </select>
+          <button id="ipa-toggle-btn" class="btn btn-ghost btn-sm" onclick="toggleIPA()" style="white-space:nowrap;">Ẩn IPA</button>
         </div>
         <div id="wb-count" style="font-size:13px;color:var(--muted);margin-bottom:10px;"></div>
         <div class="words-list" id="wb-list"></div>
@@ -1007,11 +1050,116 @@ Ví dụ: https://nguyenvan.github.io/lingo-app/</div>
         </div>
       </section>
 
+      <!-- ══ SUPABASE SETUP ══ -->
+      <section class="screen" id="sc-setup">
+        <div class="page-title">Supabase — Đồng bộ dữ liệu</div>
+        <div class="page-sub">Kết nối cloud database · Sync đa thiết bị · Hoàn toàn miễn phí</div>
+
+        <div class="card" style="margin-bottom:16px;background:var(--accent-lt);border-color:var(--accent-md);">
+          <div style="font-weight:600;color:var(--accent);margin-bottom:6px;">💡 Tại sao cần Supabase?</div>
+          <div style="font-size:13px;color:var(--mid);line-height:1.8;">
+            Không có Supabase, data chỉ lưu trong trình duyệt — đổi điện thoại hoặc xóa cache là mất hết. Với Supabase, mọi thứ lưu trên cloud: từ vựng, tiến độ, Word Family, câu ngữ pháp — học trên điện thoại, mở máy tính vẫn còn.
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-header"><div class="step-num">!</div><div class="step-title">Trạng thái kết nối</div></div>
+          <div class="status-line status-wait" id="sb-status"><div class="status-dot"></div>Chưa kết nối · Đang dùng LocalStorage</div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-header"><div class="step-num">1</div><div class="step-title">Lấy URL và Key từ Supabase</div></div>
+          <div class="step-desc">
+            1. Vào <strong>supabase.com</strong> → Sign up miễn phí (dùng GitHub hoặc email)<br>
+            2. Nhấn <strong>New project</strong> → đặt tên → chọn region <strong>Southeast Asia</strong><br>
+            3. Vào <strong>Project Settings → API</strong> → copy <em>Project URL</em> và <em>anon/public key</em>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+            <div class="field">
+              <label>Project URL</label>
+              <input type="text" id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
+            </div>
+            <div class="field">
+              <label>Anon Key (public)</label>
+              <input type="text" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+            </div>
+            <button class="btn btn-primary" onclick="testSB()">Kiểm tra &amp; kết nối</button>
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-header"><div class="step-num">2</div><div class="step-title">Tạo bảng dữ liệu (chỉ làm 1 lần)</div></div>
+          <div class="step-desc">Vào <strong>SQL Editor</strong> trong Supabase Dashboard, paste đoạn SQL sau rồi nhấn <strong>Run</strong>:</div>
+          <div class="code-block" id="sql-block">-- Từ vựng
+CREATE TABLE words (
+  id          BIGSERIAL PRIMARY KEY,
+  word        TEXT NOT NULL,
+  phonetic    TEXT,
+  part_of_speech TEXT,
+  meaning     TEXT NOT NULL,
+  example     TEXT,
+  topic       TEXT DEFAULT 'general',
+  level       INT  DEFAULT 3,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE words ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON words FOR ALL USING (true) WITH CHECK (true);
+
+-- Câu ngữ pháp
+CREATE TABLE sentences (
+  id      BIGSERIAL PRIMARY KEY,
+  viet    TEXT NOT NULL,
+  eng     TEXT NOT NULL,
+  note    TEXT,
+  type    TEXT DEFAULT 'daily',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE sentences ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON sentences FOR ALL USING (true) WITH CHECK (true);
+
+-- Word Families
+CREATE TABLE word_families (
+  id       BIGSERIAL PRIMARY KEY,
+  root     TEXT NOT NULL,
+  word_ids JSONB,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE word_families ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON word_families FOR ALL USING (true) WITH CHECK (true);
+
+-- Chủ đề tùy chỉnh
+CREATE TABLE topics (
+  id    BIGSERIAL PRIMARY KEY,
+  key   TEXT UNIQUE NOT NULL,
+  label TEXT NOT NULL
+);
+ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON topics FOR ALL USING (true) WITH CHECK (true);</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="copySQL()">Sao chép SQL</button>
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-header"><div class="step-num">3</div><div class="step-title">Đồng bộ toàn bộ dữ liệu lên Supabase</div></div>
+          <div class="step-desc">Nhấn nút bên dưới để đẩy tất cả dữ liệu hiện có (từ vựng, câu mẫu, Word Family, chủ đề) lên Supabase:</div>
+          <button class="btn btn-accent" onclick="syncAllToSB()" style="margin-bottom:10px;">Đồng bộ tất cả lên Supabase</button>
+          <div id="sync-result" style="font-size:13px;color:var(--mid);"></div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-header"><div class="step-num">4</div><div class="step-title">Tải dữ liệu từ Supabase về</div></div>
+          <div class="step-desc">Dùng khi bạn đổi thiết bị hoặc muốn load data từ cloud về trình duyệt mới:</div>
+          <button class="btn btn-ghost" onclick="loadAllFromSB()">Tải dữ liệu từ Supabase</button>
+          <div id="load-result" style="margin-top:8px;font-size:13px;color:var(--mid);"></div>
+        </div>
+      </section>
+
     </div><!-- /inner -->
   </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- Bottom nav — 6 items for mobile/tablet -->
+<!-- Bottom nav — 7 items for mobile/tablet -->
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bn-btn active" id="bn-home"      onclick="go('home',null,'bn-home')"><span class="bni">○</span>Home</button>
@@ -1020,6 +1168,7 @@ Ví dụ: https://nguyenvan.github.io/lingo-app/</div>
     <button class="bn-btn"        id="bn-goal"      onclick="go('goal',null,'bn-goal')"><span class="bni">▷</span>Mục tiêu</button>
     <button class="bn-btn"        id="bn-wordbank"  onclick="go('wordbank',null,'bn-wordbank')"><span class="bni">▦</span>Kho từ</button>
     <button class="bn-btn"        id="bn-stats"     onclick="go('stats',null,'bn-stats')"><span class="bni">▣</span>Thành tích</button>
+    <button class="bn-btn"        id="bn-setup"     onclick="go('setup',null,'bn-setup')"><span class="bni">⊡</span>Supabase</button>
   </div>
 </div>
 
@@ -1181,6 +1330,11 @@ function go(tab, sideBtn, bnId) {
   if (tab==='home')      { renderGoalBanner(); renderWordStats(); }
   if (tab==='topics')    renderTopics();
   if (tab==='families')  { populateWFSearch(); renderFamilies(); }
+  if (tab==='setup')     {
+    if(sbUrl){ const su=document.getElementById('sb-url');if(su)su.value=sbUrl; }
+    if(sbKey){ const sk=document.getElementById('sb-key');if(sk)sk.value=sbKey; }
+    updateSBStatus(!!(sbUrl&&sbKey));
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -1780,8 +1934,57 @@ function revealSent(i,btn){
 }
 
 /* ════════════════════════════════════════════
-   TOPICS
+   WORD BANK — mobile-optimized, IPA toggle, edit/delete
 ════════════════════════════════════════════ */
+let showIPA = LS.get('lingo_show_ipa', true);
+
+function toggleIPA() {
+  showIPA = !showIPA;
+  LS.set('lingo_show_ipa', showIPA);
+  renderWB();
+  // update button label
+  const btn = document.getElementById('ipa-toggle-btn');
+  if (btn) btn.textContent = showIPA ? 'Ẩn IPA' : 'Hiện IPA';
+}
+
+function renderWB(){
+  const q=(document.getElementById('wb-s')?.value||'').toLowerCase();
+  const top=document.getElementById('wb-top')?.value||'all';
+  const srt=document.getElementById('wb-srt')?.value||'new';
+  let list=words.filter(w=>(top==='all'||w.topic===top)&&(!q||w.word.toLowerCase().includes(q)||w.meaning.toLowerCase().includes(q)));
+  if(srt==='az') list.sort((a,b)=>a.word.localeCompare(b.word));
+  else if(srt==='hard') list.sort((a,b)=>b.level-a.level);
+  else list=list.slice().reverse();
+
+  const countEl=document.getElementById('wb-count');
+  if(countEl) countEl.textContent=`${list.length} từ${q?' · kết quả tìm kiếm':''}`;
+
+  // Update IPA toggle button
+  const ipaBtn=document.getElementById('ipa-toggle-btn');
+  if(ipaBtn) ipaBtn.textContent=showIPA?'Ẩn IPA':'Hiện IPA';
+
+  const el=document.getElementById('wb-list'); if(!el) return;
+  if(list.length===0){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Không tìm thấy từ nào</div>';return;}
+
+  el.innerHTML=list.map(w=>`
+    <div class="word-row">
+      <div class="word-row-main" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="wr-eng" style="min-width:0;">${w.word}</span>
+          ${w.partOfSpeech?`<span style="font-size:10px;background:var(--blue-lt);color:var(--blue);padding:1px 6px;border-radius:8px;font-weight:600;white-space:nowrap;">${w.partOfSpeech}</span>`:''}
+          <span class="chip ${topicChipClass(w.topic)}" style="font-size:10px;padding:2px 8px;white-space:nowrap;">${topicLabel(w.topic)}</span>
+        </div>
+        ${showIPA && w.phonetic ? `<div style="font-family:var(--mono);font-size:11px;color:var(--muted);">${w.phonetic}</div>` : ''}
+        <div class="wr-viet" style="font-size:13px;color:var(--mid);">${w.meaning}</div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-left:8px;">
+        <button class="wr-btn" title="Nghe"  onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
+        <button class="wr-btn" title="Sửa"   onclick="openEditWord(${w.id})" style="color:var(--blue);">✎</button>
+        <button class="wr-btn" title="Xóa"   onclick="deleteWord(${w.id})">×</button>
+      </div>
+    </div>
+  `).join('');
+}
 function topicLabel(key) {
   const t = topics.find(t=>t.key===key);
   return t ? t.label : key;
@@ -2109,41 +2312,199 @@ function confirmReset(){
 }
 
 /* ════════════════════════════════════════════
-   SUPABASE
+   SUPABASE — Full sync: words, sentences, families, topics
 ════════════════════════════════════════════ */
+function sbHeaders() {
+  return { apikey: sbKey, Authorization: 'Bearer '+sbKey, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+}
+function sbFetchHeaders() {
+  return { apikey: sbKey, Authorization: 'Bearer '+sbKey };
+}
+
 async function testSB(){
-  const url=document.getElementById('sb-url').value.trim();
-  const key=document.getElementById('sb-key').value.trim();
+  const url=document.getElementById('sb-url')?.value.trim()||'';
+  const key=document.getElementById('sb-key')?.value.trim()||'';
   if(!url||!key){toast('Nhập URL và Key!','bad');return;}
   try{
     const r=await fetch(`${url}/rest/v1/words?limit=1`,{headers:{apikey:key,Authorization:'Bearer '+key}});
     if(r.ok){
-      sbUrl=url; sbKey=key; LS.set('sb_url',url); LS.set('sb_key',key);
+      sbUrl=url; sbKey=key;
+      LS.set('sb_url',url); LS.set('sb_key',key);
       toast('✓ Kết nối Supabase thành công!','good');
-      document.getElementById('sb-status').innerHTML='<div class="status-dot"></div>Đã kết nối Supabase · Dữ liệu đồng bộ đa thiết bị';
-      document.getElementById('sb-status').className='status-line status-ok';
+      updateSBStatus(true);
     } else { toast(`Lỗi ${r.status}: kiểm tra lại URL và Key`,'bad'); }
   } catch(e){ toast('Không kết nối được: '+e.message,'bad'); }
 }
-async function syncToSB(){
+
+function updateSBStatus(connected) {
+  const el = document.getElementById('sb-status');
+  if (el) {
+    el.innerHTML = connected
+      ? '<div class="status-dot"></div>Đã kết nối Supabase · Dữ liệu đồng bộ đa thiết bị'
+      : '<div class="status-dot"></div>Chưa kết nối · Đang dùng LocalStorage';
+    el.className = connected ? 'status-line status-ok' : 'status-line status-wait';
+  }
+  // update topbar dot
+  const dot = document.getElementById('topbar-sb-dot');
+  if (dot) dot.className = 'sb-dot-wrap' + (connected ? ' connected' : '');
+}
+
+async function sbUpsert(table, rows) {
+  if (!rows.length) return 0;
+  try {
+    const r = await fetch(`${sbUrl}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(rows)
+    });
+    return r.ok ? rows.length : 0;
+  } catch { return 0; }
+}
+
+async function syncAllToSB(){
   if(!sbUrl||!sbKey){toast('Kết nối Supabase trước!','bad');return;}
   const res=document.getElementById('sync-result');
-  res.textContent='Đang đồng bộ...';
-  let ok=0;
-  for(const w of words){
-    try{
-      await fetch(`${sbUrl}/rest/v1/words`,{method:'POST',headers:{apikey:sbKey,Authorization:'Bearer '+sbKey,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({word:w.word,phonetic:w.phonetic,meaning:w.meaning,example:w.example,topic:w.topic,level:w.level})});
-      ok++;
-    } catch{}
+  if(res) res.textContent='Đang đồng bộ...';
+  const results = [];
+
+  // Words
+  const wordRows = words.map(w=>({
+    id: typeof w.id === 'number' && w.id < 1e13 ? w.id : undefined, // keep numeric ID if not timestamp-style
+    word: w.word, phonetic: w.phonetic||'', part_of_speech: w.partOfSpeech||'',
+    meaning: w.meaning, example: w.example||'', topic: w.topic||'general', level: w.level||3
+  }));
+  // For upsert with custom IDs we need the id column; use POST with onConflict
+  let wOk = 0;
+  for (const w of wordRows) {
+    try {
+      await fetch(`${sbUrl}/rest/v1/words`, {
+        method: 'POST',
+        headers: { ...sbHeaders(), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: JSON.stringify({word:w.word,phonetic:w.phonetic,part_of_speech:w.part_of_speech,meaning:w.meaning,example:w.example,topic:w.topic,level:w.level})
+      });
+      wOk++;
+    } catch {}
   }
-  res.textContent=`✓ Đã đồng bộ ${ok}/${words.length} từ`;
-  toast(`✓ Đồng bộ ${ok} từ thành công`,'good');
+  results.push(`Từ vựng: ${wOk}/${words.length}`);
+
+  // Sentences
+  let sOk = 0;
+  for (const s of sentences) {
+    try {
+      await fetch(`${sbUrl}/rest/v1/sentences`, {
+        method: 'POST',
+        headers: { ...sbHeaders(), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: JSON.stringify({viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'})
+      });
+      sOk++;
+    } catch {}
+  }
+  results.push(`Câu mẫu: ${sOk}/${sentences.length}`);
+
+  // Word Families
+  let fOk = 0;
+  for (const f of families) {
+    try {
+      await fetch(`${sbUrl}/rest/v1/word_families`, {
+        method: 'POST',
+        headers: { ...sbHeaders(), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: JSON.stringify({root:f.root, word_ids:JSON.stringify(f.wordIds||[])})
+      });
+      fOk++;
+    } catch {}
+  }
+  results.push(`Word Family: ${fOk}/${families.length}`);
+
+  // Custom topics only
+  const customTopics = topics.filter(t=>!['general','travel','food','business','tech','daily'].includes(t.key));
+  let tOk = 0;
+  for (const t of customTopics) {
+    try {
+      await fetch(`${sbUrl}/rest/v1/topics`, {
+        method: 'POST',
+        headers: { ...sbHeaders(), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: JSON.stringify({key:t.key,label:t.label})
+      });
+      tOk++;
+    } catch {}
+  }
+  if (customTopics.length) results.push(`Chủ đề tuỳ chỉnh: ${tOk}/${customTopics.length}`);
+
+  const msg = '✓ Đã đồng bộ — ' + results.join(' · ');
+  if(res) res.textContent = msg;
+  toast('✓ Đồng bộ hoàn tất!','good');
 }
+
+async function loadAllFromSB(){
+  if(!sbUrl||!sbKey){toast('Kết nối Supabase trước!','bad');return;}
+  const res=document.getElementById('load-result');
+  if(res) res.textContent='Đang tải...';
+  try {
+    // Load words
+    const wr = await fetch(`${sbUrl}/rest/v1/words?select=*&order=created_at.asc`,{headers:sbFetchHeaders()});
+    if(wr.ok){
+      const wdata = await wr.json();
+      if(Array.isArray(wdata)&&wdata.length>0){
+        words = wdata.map(w=>({
+          id: w.id, word: w.word, phonetic: w.phonetic||'', partOfSpeech: w.part_of_speech||'',
+          meaning: w.meaning, example: w.example||'', topic: w.topic||'general', level: w.level||3
+        }));
+      }
+    }
+    // Load sentences
+    const sr = await fetch(`${sbUrl}/rest/v1/sentences?select=*&order=created_at.asc`,{headers:sbFetchHeaders()});
+    if(sr.ok){
+      const sdata = await sr.json();
+      if(Array.isArray(sdata)&&sdata.length>0){
+        sentences = sdata.map(s=>({id:s.id,viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'}));
+      }
+    }
+    // Load word families
+    const fr = await fetch(`${sbUrl}/rest/v1/word_families?select=*`,{headers:sbFetchHeaders()});
+    if(fr.ok){
+      const fdata = await fr.json();
+      if(Array.isArray(fdata)&&fdata.length>0){
+        families = fdata.map(f=>({id:f.id,root:f.root,wordIds:Array.isArray(f.word_ids)?f.word_ids:(JSON.parse(f.word_ids||'[]'))}));
+      }
+    }
+    // Load custom topics
+    const tr = await fetch(`${sbUrl}/rest/v1/topics?select=*`,{headers:sbFetchHeaders()});
+    if(tr.ok){
+      const tdata = await tr.json();
+      if(Array.isArray(tdata)&&tdata.length>0){
+        const defaults = ['general','travel','food','business','tech','daily'];
+        const custom = tdata.filter(t=>!defaults.includes(t.key)).map(t=>({key:t.key,label:t.label}));
+        const defTopics = topics.filter(t=>defaults.includes(t.key));
+        topics = [...defTopics, ...custom];
+      }
+    }
+    saveState();
+    populateTopicSelects(); populateTopicFilters();
+    if(res) res.textContent=`✓ Đã tải: ${words.length} từ · ${sentences.length} câu · ${families.length} nhóm`;
+    toast('✓ Đã tải dữ liệu từ Supabase!','good');
+    updateSBStatus(true);
+  } catch(e){
+    if(res) res.textContent='Lỗi: '+e.message;
+    toast('Lỗi khi tải: '+e.message,'bad');
+  }
+}
+
+// Legacy compat — called from saveWord
 async function saveWordToSB(w){
   if(!sbUrl||!sbKey) return;
-  try{await fetch(`${sbUrl}/rest/v1/words`,{method:'POST',headers:{apikey:sbKey,Authorization:'Bearer '+sbKey,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({word:w.word,phonetic:w.phonetic,meaning:w.meaning,example:w.example,topic:w.topic,level:w.level})});}catch{}
+  try{
+    await fetch(`${sbUrl}/rest/v1/words`,{
+      method:'POST',
+      headers:{...sbHeaders(),Prefer:'resolution=ignore-duplicates,return=minimal'},
+      body:JSON.stringify({word:w.word,phonetic:w.phonetic||'',part_of_speech:w.partOfSpeech||'',meaning:w.meaning,example:w.example||'',topic:w.topic||'general',level:w.level||3})
+    });
+  } catch{}
 }
-function copySQL(){ navigator.clipboard.writeText(document.getElementById('sql-block').textContent).then(()=>toast('✓ Đã sao chép SQL','good')); }
+
+function copySQL(){
+  navigator.clipboard.writeText(document.getElementById('sql-block').textContent)
+    .then(()=>toast('✓ Đã sao chép SQL','good'));
+}
 
 /* ════════════════════════════════════════════
    STREAK CHECK
@@ -2163,24 +2524,32 @@ function checkStreak(){
    INIT
 ════════════════════════════════════════════ */
 function init(){
+  // Detect iOS standalone (Add to Home Screen)
+  const isStandalone = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+  if (isStandalone) document.body.classList.add('standalone');
+
   checkStreak();
   const t=today();
   const endD=new Date(); endD.setDate(endD.getDate()+29);
   const gs=document.getElementById('g-start'); if(gs&&!gs.value) gs.value=t;
   const ge=document.getElementById('g-end');   if(ge&&!ge.value) ge.value=endD.toISOString().split('T')[0];
+
   // Populate topic selects on startup
   populateTopicSelects();
   populateTopicFilters();
+
   buildHeatmap('hmap',10);
   updateCounters();
   renderGoalBanner();
   renderWordStats();
   startFC();
-  if(sbUrl){
+
+  // Restore Supabase connection state
+  if(sbUrl && sbKey){
     const su=document.getElementById('sb-url'); if(su) su.value=sbUrl;
     const sk=document.getElementById('sb-key'); if(sk) sk.value=sbKey;
-    const ss=document.getElementById('sb-status');
-    if(ss){ss.innerHTML='<div class="status-dot"></div>Đã kết nối Supabase trước đó';ss.className='status-line status-ok';}
+    updateSBStatus(true);
   }
 }
 document.addEventListener('DOMContentLoaded',init);
