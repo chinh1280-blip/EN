@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- PWA / iOS standalone -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -327,24 +327,40 @@ input::placeholder{color:var(--muted)}
 .ddp-words{display:flex;flex-wrap:wrap;gap:5px}
 .ddp-word{padding:3px 10px;background:white;border:1px solid var(--accent-md);border-radius:12px;font-size:12px;color:var(--ink)}
 
-/* ── WORD BANK ── */
-.wb-toolbar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
-.wb-toolbar input{flex:1;min-width:160px}
-.wb-toolbar select{min-width:120px}
-.words-list{display:flex;flex-direction:column;gap:1px}
-.word-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--white);border:1px solid var(--rule);border-radius:var(--r);transition:border-color .15s}
-.word-row:hover{border-color:var(--rule2)}
-.word-row:first-child{border-radius:var(--r) var(--r) 0 0}
-.word-row:last-child{border-radius:0 0 var(--r) var(--r)}
-.word-row+.word-row{border-top:none;border-radius:0}
-.word-row:first-child:last-child{border-radius:var(--r)}
-.wr-eng{font-weight:600;font-size:14px;color:var(--ink);min-width:110px}
-.wr-phon{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:80px}
-.wr-viet{font-size:13px;color:var(--mid);flex:1}
-.wr-topic{margin-left:auto}
-.wr-actions{display:flex;gap:4px;flex-shrink:0}
-.wr-btn{width:28px;height:28px;background:none;border:1px solid var(--rule);border-radius:6px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center}
-.wr-btn:hover{background:var(--paper);border-color:var(--rule2)}
+/* ── WORD BANK CARDS ── */
+.words-list{display:flex;flex-direction:column;gap:6px;}
+.wb-card{
+  background:var(--white);
+  border:1px solid var(--rule);
+  border-radius:var(--r2);
+  padding:12px 14px;
+  box-shadow:var(--shadow);
+  transition:border-color .15s;
+}
+.wb-card:hover{border-color:var(--rule2);}
+.wb-row1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:3px;}
+.wb-word{font-weight:600;font-size:15px;color:var(--ink);}
+.wb-pos{
+  font-size:10px;font-weight:600;
+  background:var(--blue-lt);color:var(--blue);
+  padding:1px 7px;border-radius:8px;
+  white-space:nowrap;flex-shrink:0;
+}
+.wb-ipa{
+  font-family:var(--mono);font-size:12px;color:var(--muted);
+  flex-shrink:0;
+}
+.wb-meaning{font-size:13px;color:var(--mid);margin-bottom:8px;line-height:1.4;}
+.wb-row3{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.wb-topic{font-size:10px;padding:2px 8px;}
+.wb-actions{display:flex;gap:5px;flex-shrink:0;}
+.wb-edit{color:var(--blue);}
+.wb-edit:hover{background:var(--blue-lt);border-color:var(--blue);}
+.wb-del:hover{background:var(--red-lt);border-color:var(--red);}
+
+/* wr-btn shared for all small icon buttons */
+.wr-btn{width:28px;height:28px;background:none;border:1px solid var(--rule);border-radius:6px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.wr-btn:hover{background:var(--paper);border-color:var(--rule2);}
 
 /* ── STATS ── */
 .stats-header{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:22px}
@@ -391,22 +407,6 @@ input::placeholder{color:var(--muted)}
 /* ── WORD FAMILY card ── */
 #families-list .card{transition:border-color .15s;}
 #families-list .card:hover{border-color:var(--rule2);}
-
-/* ── MOBILE WORD BANK ── */
-@media(max-width:600px){
-  .word-row{flex-wrap:wrap;gap:6px;padding:10px 12px;align-items:flex-start;}
-  .word-row-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
-  .word-row-actions{display:flex;gap:5px;align-items:center;flex-shrink:0;}
-  .wr-phon-wrap{display:none;}
-  .wr-phon-wrap.show{display:block;}
-  .wr-topic-wrap{display:none;}
-}
-@media(min-width:601px){
-  .word-row-main{display:contents;}
-  .word-row-actions{display:contents;}
-  .wr-phon-wrap{display:contents;}
-  .wr-topic-wrap{display:contents;}
-}
 
 /* ── PWA STANDALONE: hide browser chrome padding ── */
 @media all and (display-mode: standalone){
@@ -1152,6 +1152,25 @@ CREATE POLICY "public_all" ON topics FOR ALL USING (true) WITH CHECK (true);</di
           <div class="step-desc">Dùng khi bạn đổi thiết bị hoặc muốn load data từ cloud về trình duyệt mới:</div>
           <button class="btn btn-ghost" onclick="loadAllFromSB()">Tải dữ liệu từ Supabase</button>
           <div id="load-result" style="margin-top:8px;font-size:13px;color:var(--mid);"></div>
+        </div>
+
+        <div class="setup-step" style="background:var(--amber-lt);border-color:#f0d8b8;">
+          <div class="step-header">
+            <div class="step-num" style="background:var(--amber);">⚠</div>
+            <div class="step-title">Đồng bộ đa thiết bị — Làm theo đúng thứ tự</div>
+          </div>
+          <div class="step-desc" style="margin-bottom:0;">
+            <strong style="color:var(--ink);">Lần đầu setup (thiết bị A):</strong><br>
+            1. Nhập URL + Key → nhấn "Kiểm tra &amp; kết nối"<br>
+            2. Chạy SQL trong Supabase để tạo bảng<br>
+            3. Nhấn <strong>"Đồng bộ tất cả lên Supabase"</strong><br><br>
+            <strong style="color:var(--ink);">Thiết bị mới (điện thoại / máy tính khác):</strong><br>
+            1. Mở app → vào Supabase → nhập cùng URL + Key → kết nối<br>
+            2. Nhấn <strong>"Tải dữ liệu từ Supabase"</strong> → toàn bộ từ vựng, câu mẫu, Word Family sẽ xuất hiện<br><br>
+            <strong style="color:var(--ink);">Khi thêm từ mới trên điện thoại:</strong><br>
+            → Từ tự động đẩy lên Supabase ngay lập tức (nếu đã kết nối)<br><br>
+            <strong style="color:var(--red);">Mục tiêu học (streak, XP, tiến độ) lưu cục bộ</strong> — chưa đồng bộ Supabase. Để không mất: <em>đừng xóa cache trình duyệt</em>, hoặc dùng cùng một trình duyệt trên cùng thiết bị.
+          </div>
         </div>
       </section>
 
@@ -1942,45 +1961,48 @@ function toggleIPA() {
   showIPA = !showIPA;
   LS.set('lingo_show_ipa', showIPA);
   renderWB();
-  // update button label
-  const btn = document.getElementById('ipa-toggle-btn');
-  if (btn) btn.textContent = showIPA ? 'Ẩn IPA' : 'Hiện IPA';
 }
 
 function renderWB(){
-  const q=(document.getElementById('wb-s')?.value||'').toLowerCase();
-  const top=document.getElementById('wb-top')?.value||'all';
-  const srt=document.getElementById('wb-srt')?.value||'new';
-  let list=words.filter(w=>(top==='all'||w.topic===top)&&(!q||w.word.toLowerCase().includes(q)||w.meaning.toLowerCase().includes(q)));
-  if(srt==='az') list.sort((a,b)=>a.word.localeCompare(b.word));
-  else if(srt==='hard') list.sort((a,b)=>b.level-a.level);
-  else list=list.slice().reverse();
+  const q   = (document.getElementById('wb-s')?.value||'').toLowerCase();
+  const top = document.getElementById('wb-top')?.value||'all';
+  const srt = document.getElementById('wb-srt')?.value||'new';
 
-  const countEl=document.getElementById('wb-count');
-  if(countEl) countEl.textContent=`${list.length} từ${q?' · kết quả tìm kiếm':''}`;
+  let list = words.filter(w =>
+    (top==='all' || w.topic===top) &&
+    (!q || w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q))
+  );
+  if (srt==='az')   list.sort((a,b)=>a.word.localeCompare(b.word));
+  else if (srt==='hard') list.sort((a,b)=>b.level-a.level);
+  else list = list.slice().reverse();
 
-  // Update IPA toggle button
-  const ipaBtn=document.getElementById('ipa-toggle-btn');
-  if(ipaBtn) ipaBtn.textContent=showIPA?'Ẩn IPA':'Hiện IPA';
+  const countEl = document.getElementById('wb-count');
+  if (countEl) countEl.textContent = `${list.length} từ${q?' · kết quả tìm kiếm':''}`;
 
-  const el=document.getElementById('wb-list'); if(!el) return;
-  if(list.length===0){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Không tìm thấy từ nào</div>';return;}
+  const ipaBtn = document.getElementById('ipa-toggle-btn');
+  if (ipaBtn) ipaBtn.textContent = showIPA ? 'Ẩn IPA' : 'Hiện IPA';
 
-  el.innerHTML=list.map(w=>`
-    <div class="word-row">
-      <div class="word-row-main" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span class="wr-eng" style="min-width:0;">${w.word}</span>
-          ${w.partOfSpeech?`<span style="font-size:10px;background:var(--blue-lt);color:var(--blue);padding:1px 6px;border-radius:8px;font-weight:600;white-space:nowrap;">${w.partOfSpeech}</span>`:''}
-          <span class="chip ${topicChipClass(w.topic)}" style="font-size:10px;padding:2px 8px;white-space:nowrap;">${topicLabel(w.topic)}</span>
-        </div>
-        ${showIPA && w.phonetic ? `<div style="font-family:var(--mono);font-size:11px;color:var(--muted);">${w.phonetic}</div>` : ''}
-        <div class="wr-viet" style="font-size:13px;color:var(--mid);">${w.meaning}</div>
+  const el = document.getElementById('wb-list'); if (!el) return;
+  if (list.length===0) {
+    el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Không tìm thấy từ nào</div>';
+    return;
+  }
+
+  el.innerHTML = list.map(w => `
+    <div class="wb-card">
+      <div class="wb-row1">
+        <span class="wb-word">${w.word}</span>
+        ${w.partOfSpeech ? `<span class="wb-pos">${w.partOfSpeech}</span>` : ''}
+        ${showIPA && w.phonetic ? `<span class="wb-ipa">${w.phonetic}</span>` : ''}
       </div>
-      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-left:8px;">
-        <button class="wr-btn" title="Nghe"  onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
-        <button class="wr-btn" title="Sửa"   onclick="openEditWord(${w.id})" style="color:var(--blue);">✎</button>
-        <button class="wr-btn" title="Xóa"   onclick="deleteWord(${w.id})">×</button>
+      <div class="wb-meaning">${w.meaning}</div>
+      <div class="wb-row3">
+        <span class="chip ${topicChipClass(w.topic)} wb-topic">${topicLabel(w.topic)}</span>
+        <div class="wb-actions">
+          <button class="wr-btn" onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
+          <button class="wr-btn wb-edit" onclick="openEditWord(${w.id})">✎</button>
+          <button class="wr-btn wb-del"  onclick="deleteWord(${w.id})">×</button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -2053,38 +2075,6 @@ function renderTopics() {
   `).join('');
 }
 
-/* ════════════════════════════════════════════
-   WORD BANK — updated with partOfSpeech + edit
-════════════════════════════════════════════ */
-function renderWB(){
-  const q=(document.getElementById('wb-s')?.value||'').toLowerCase();
-  const top=document.getElementById('wb-top')?.value||'all';
-  const srt=document.getElementById('wb-srt')?.value||'new';
-  let list=words.filter(w=>(top==='all'||w.topic===top)&&(!q||w.word.toLowerCase().includes(q)||w.meaning.toLowerCase().includes(q)));
-  if(srt==='az') list.sort((a,b)=>a.word.localeCompare(b.word));
-  else if(srt==='hard') list.sort((a,b)=>b.level-a.level);
-  else list=list.slice().reverse();
-  const countEl=document.getElementById('wb-count');
-  if(countEl) countEl.textContent=`${list.length} từ${q?' · kết quả tìm kiếm':''}`;
-  const el=document.getElementById('wb-list'); if(!el) return;
-  if(list.length===0){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Không tìm thấy từ nào</div>';return;}
-  el.innerHTML=list.map(w=>`
-    <div class="word-row">
-      <div style="min-width:110px;">
-        <div class="wr-eng">${w.word}</div>
-        ${w.partOfSpeech?`<span style="font-size:10px;background:var(--blue-lt);color:var(--blue);padding:1px 6px;border-radius:8px;font-weight:600;">${w.partOfSpeech}</span>`:''}
-      </div>
-      <div class="wr-phon">${w.phonetic}</div>
-      <div class="wr-viet">${w.meaning}</div>
-      <span class="chip ${topicChipClass(w.topic)} wr-topic" style="flex-shrink:0;">${topicLabel(w.topic)}</span>
-      <div class="wr-actions">
-        <button class="wr-btn" title="Nghe" onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
-        <button class="wr-btn" title="Sửa"  onclick="openEditWord(${w.id})">✎</button>
-        <button class="wr-btn" title="Xóa"  onclick="deleteWord(${w.id})">×</button>
-      </div>
-    </div>
-  `).join('');
-}
 function saveWord(){
   const w=document.getElementById('aw-w').value.trim();
   const m=document.getElementById('aw-m').value.trim();
