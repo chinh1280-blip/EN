@@ -582,18 +582,15 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 
         <!-- SYNC BANNER -->
         <div id="sync-banner" style="display:none;margin-bottom:20px;">
-          <div style="background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:14px 16px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;">Đồng bộ Supabase</div>
-              <div style="font-size:12px;color:var(--muted);" id="sync-last-time">Chưa đồng bộ lần nào</div>
+          <div style="background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:14px 16px;box-shadow:var(--shadow);">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+              <div style="font-size:13px;font-weight:600;color:var(--ink);">☁ Đồng bộ Supabase</div>
+              <div class="sb-dot-wrap" id="sync-dot" style="width:8px;height:8px;background:var(--accent);border-radius:50%;"></div>
             </div>
-            <div style="display:flex;gap:8px;flex-shrink:0;">
-              <button class="btn btn-primary btn-sm" onclick="homeUpload()" id="btn-upload" style="gap:5px;">
-                ↑ Lưu lên cloud
-              </button>
-              <button class="btn btn-ghost btn-sm" onclick="homeDownload()" id="btn-download" style="gap:5px;">
-                ↓ Tải về thiết bị này
-              </button>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="sync-last-time">Chưa đồng bộ lần nào</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <button class="btn btn-primary btn-sm btn-full" onclick="homeUpload()" id="btn-upload">↑ Lưu lên cloud</button>
+              <button class="btn btn-ghost btn-sm btn-full"   onclick="homeDownload()" id="btn-download">↓ Tải về máy này</button>
             </div>
           </div>
         </div>
@@ -2386,8 +2383,8 @@ function confirmReset(){
    • Hết x2 vì loadAllFromSB() ghi đè words[] hoàn toàn từ SB
 ════════════════════════════════════════════ */
 
-function sbH()  { return { apikey:sbKey, Authorization:'Bearer '+sbKey, 'Content-Type':'application/json' }; }
-function sbGH() { return { apikey:sbKey, Authorization:'Bearer '+sbKey }; }
+function sbH()  { return { apikey:sbKey, Authorization:'Bearer '+sbKey, 'Content-Type':'application/json', Accept:'application/json' }; }
+function sbGH() { return { apikey:sbKey, Authorization:'Bearer '+sbKey, Accept:'application/json' }; }
 
 function updateSBStatus(connected) {
   const el  = document.getElementById('sb-status');
@@ -2443,8 +2440,14 @@ async function sbGet(table, query='') {
   if (!sbUrl||!sbKey) return null;
   try {
     const r = await fetch(`${sbUrl}/rest/v1/${table}?select=*${query}`, { headers:sbGH() });
-    return r.ok ? await r.json() : null;
-  } catch { return null; }
+    if (!r.ok) {
+      const txt = await r.text();
+      console.error('sbGet', table, r.status, txt);
+      return null;
+    }
+    const data = await r.json();
+    return Array.isArray(data) ? data : null;
+  } catch(e) { console.error('sbGet error', table, e); return null; }
 }
 
 // ── Meta (progress, goal, hard words, families) ──
@@ -2459,7 +2462,16 @@ async function sbPushAllMeta() {
       topics: topics.filter(t=>!['general','travel','food','business','tech','daily'].includes(t.key))
     })
   };
-  await sbPost('user_meta', meta, 'resolution=merge-duplicates,return=minimal');
+  // Use upsert: POST with on_conflict parameter
+  if (!sbUrl||!sbKey) return;
+  try {
+    const r = await fetch(`${sbUrl}/rest/v1/user_meta?on_conflict=key`, {
+      method:'POST',
+      headers:{...sbH(), Prefer:'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(meta)
+    });
+    if (!r.ok) console.error('meta upsert', r.status, await r.text());
+  } catch(e) { console.error('meta upsert error', e); }
 }
 
 async function sbPushHardWord(wordId, isHard) {
@@ -2540,7 +2552,8 @@ async function homeDownload() {
   try {
     await loadAllFromSB();
     startFC(); renderGoalBanner(); renderWordStats();
-    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↓ Tải về thiết bị này'; }
+    populateTopicSelects(); populateTopicFilters();
+    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↓ Tải về máy này'; }
   } catch(e) {
     if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↓ Tải về thiết bị này'; }
     toast('Lỗi: '+e.message,'bad');
@@ -2553,7 +2566,10 @@ async function fullUploadToSB() {
   if (!sbUrl||!sbKey) return;
 
   // Xóa toàn bộ words trên SB
-  try { await fetch(`${sbUrl}/rest/v1/words?id=gt.0`, { method:'DELETE', headers:sbGH() }); } catch {}
+  try {
+    const dw = await fetch(`${sbUrl}/rest/v1/words?id=neq.0`, { method:'DELETE', headers:{...sbGH(),'Content-Type':'application/json'} });
+    if (!dw.ok) console.warn('delete words status:', dw.status);
+  } catch(e) { console.warn('delete words err:', e); }
 
   // Insert lại từng từ, cập nhật ID từ SB về local
   const newWords = [];
@@ -2568,7 +2584,10 @@ async function fullUploadToSB() {
   words = newWords;
 
   // Xóa toàn bộ sentences trên SB, insert lại
-  try { await fetch(`${sbUrl}/rest/v1/sentences?id=gt.0`, { method:'DELETE', headers:sbGH() }); } catch {}
+  try {
+    const ds = await fetch(`${sbUrl}/rest/v1/sentences?id=neq.0`, { method:'DELETE', headers:{...sbGH(),'Content-Type':'application/json'} });
+    if (!ds.ok) console.warn('delete sentences status:', ds.status);
+  } catch(e) { console.warn('delete sentences err:', e); }
   const newSents = [];
   for (const s of sentences) {
     const r = await sbPost('sentences',
@@ -2610,7 +2629,8 @@ async function loadAllFromSB(){
 
   // Words — ghi đè hoàn toàn, không merge
   const wData = await sbGet('words', '&order=id.asc');
-  if (Array.isArray(wData)) {
+  console.log('SB words response:', wData);
+  if (Array.isArray(wData) && wData.length > 0) {
     words = wData.map(w=>({
       id:w.id, word:w.word, phonetic:w.phonetic||'',
       partOfSpeech:w.part_of_speech||'',
@@ -2618,6 +2638,9 @@ async function loadAllFromSB(){
       topic:w.topic||'general', level:w.level||3
     }));
     loaded.push(`${words.length} từ`);
+  } else if (Array.isArray(wData) && wData.length === 0) {
+    // SB trả về mảng rỗng — có thể chưa có data hoặc đã xóa hết
+    console.warn('SB words is empty');
   }
 
   // Sentences — ghi đè hoàn toàn
@@ -2668,8 +2691,15 @@ async function loadAllFromSB(){
 
   populateTopicSelects(); populateTopicFilters();
   updateCounters(); updateSBStatus(true);
-  if (res) res.textContent = '✓ ' + (loaded.join(' · ')||'Không có dữ liệu mới');
-  toast('✓ Đồng bộ hoàn tất!','good');
+  const resultMsg = loaded.length > 0
+    ? '✓ Đã tải: ' + loaded.join(' · ')
+    : '⚠ Supabase trả về trống — hãy "Lưu lên cloud" trước từ thiết bị có data.';
+  if (res) res.textContent = resultMsg;
+  if (loaded.length === 0) {
+    toast('⚠ Chưa có data trên Supabase — hãy Upload từ thiết bị nguồn trước','bad');
+  } else {
+    toast('✓ Đồng bộ hoàn tất! ' + loaded.join(' · '),'good');
+  }
   renderWB(); renderWordStats(); renderGoalBanner();
 }
 
