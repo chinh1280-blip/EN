@@ -2372,20 +2372,44 @@ function confirmReset(){
 }
 
 /* ════════════════════════════════════════════
-   SUPABASE — Supabase là nguồn sự thật duy nhất
-   ─────────────────────────────────────────────
-   Nguyên tắc:
-   • Supabase = source of truth, localStorage = cache hiển thị nhanh
-   • MỌI thao tác write (add/edit/delete) → ghi Supabase TRƯỚC,
-     sau đó cập nhật bộ nhớ trong + localStorage
-   • Khi mở app: nếu có SB credentials → pull SB về, THAY THẾ hoàn toàn
-     localStorage (không merge, không cộng thêm)
-   • Hết x2 vì loadAllFromSB() ghi đè words[] hoàn toàn từ SB
+   SUPABASE — Single source of truth
+   Mọi thay đổi → SB trước, local sau.
+   Khi mở app có key → pull SB, ghi đè local.
 ════════════════════════════════════════════ */
 
-function sbH()  { return { apikey:sbKey, Authorization:'Bearer '+sbKey, 'Content-Type':'application/json', Accept:'application/json' }; }
-function sbGH() { return { apikey:sbKey, Authorization:'Bearer '+sbKey, Accept:'application/json' }; }
+// ── Core helper: mọi request SB đều qua đây ──
+// Trả về { ok, status, data, error }
+async function sbReq(method, path, body, prefer) {
+  if (!sbUrl || !sbKey) return { ok:false, status:0, error:'No credentials', data:null };
+  const headers = {
+    'apikey':        sbKey,
+    'Authorization': 'Bearer ' + sbKey,
+    'Content-Type':  'application/json',
+    'Accept':        'application/json',
+  };
+  if (prefer) headers['Prefer'] = prefer;
+  try {
+    const opts = { method, headers };
+    if (body !== undefined && body !== null) opts.body = JSON.stringify(body);
+    const r = await fetch(sbUrl + '/rest/v1/' + path, opts);
+    const txt = await r.text();
+    let data = null;
+    try { data = JSON.parse(txt); } catch {}
+    if (!r.ok) {
+      const errMsg = (data && data.message) ? data.message
+                   : (data && data.error)   ? data.error
+                   : txt.slice(0, 300);
+      console.error('[SB]', method, path, r.status, errMsg);
+      return { ok:false, status:r.status, error:errMsg, data:null };
+    }
+    return { ok:true, status:r.status, data, error:null };
+  } catch(e) {
+    console.error('[SB] fetch error:', method, path, e.message);
+    return { ok:false, status:0, error:e.message, data:null };
+  }
+}
 
+// ── Status UI ──
 function updateSBStatus(connected) {
   const el  = document.getElementById('sb-status');
   const dot = document.getElementById('topbar-sb-dot');
@@ -2395,383 +2419,332 @@ function updateSBStatus(connected) {
       : '<div class="status-dot"></div>Chưa kết nối · Dùng LocalStorage';
     el.className = connected ? 'status-line status-ok' : 'status-line status-wait';
   }
-  if (dot) dot.className = 'sb-dot-wrap'+(connected?' connected':'');
+  if (dot) dot.className = 'sb-dot-wrap' + (connected ? ' connected' : '');
 }
 
-// ── Low-level helpers ──
-async function sbPost(table, body, prefer='return=representation') {
-  if (!sbUrl||!sbKey) return null;
-  try {
-    const r = await fetch(`${sbUrl}/rest/v1/${table}`, {
-      method:'POST',
-      headers:{...sbH(), Prefer:prefer},
-      body:JSON.stringify(body)
-    });
-    if (!r.ok) { console.error('sbPost', table, r.status, await r.text()); return null; }
-    const ct = r.headers.get('content-type')||'';
-    return ct.includes('json') ? await r.json() : null;
-  } catch(e) { console.error('sbPost', e); return null; }
-}
-
-async function sbPatch(table, id, body) {
-  if (!sbUrl||!sbKey) return false;
-  try {
-    const r = await fetch(`${sbUrl}/rest/v1/${table}?id=eq.${id}`, {
-      method:'PATCH',
-      headers:{...sbH(), Prefer:'return=minimal'},
-      body:JSON.stringify(body)
-    });
-    return r.ok;
-  } catch { return false; }
-}
-
-async function sbDelete(table, id) {
-  if (!sbUrl||!sbKey) return false;
-  try {
-    const r = await fetch(`${sbUrl}/rest/v1/${table}?id=eq.${id}`, {
-      method:'DELETE',
-      headers:sbGH()
-    });
-    return r.ok;
-  } catch { return false; }
-}
-
-async function sbGet(table, query='') {
-  if (!sbUrl||!sbKey) return null;
-  try {
-    const r = await fetch(`${sbUrl}/rest/v1/${table}?select=*${query}`, { headers:sbGH() });
-    if (!r.ok) {
-      const txt = await r.text();
-      console.error('sbGet', table, r.status, txt);
-      return null;
-    }
-    const data = await r.json();
-    return Array.isArray(data) ? data : null;
-  } catch(e) { console.error('sbGet error', table, e); return null; }
-}
-
-// ── Meta (progress, goal, hard words, families) ──
+// ── Meta: lưu tiến độ, goal, hard words, families ──
 async function sbPushAllMeta() {
-  if (!sbUrl||!sbKey) return;
+  if (!sbUrl || !sbKey) return false;
   const metaVal = JSON.stringify({
-    learnedLog, learnedEver:[...learnedEver],
-    hardWordIds:[...hardWordIds], goal, xp, streak,
-    totalCorrect, totalAnswered, listenCount, families,
-    topics: topics.filter(t=>!['general','travel','food','business','tech','daily'].includes(t.key))
+    learnedLog,
+    learnedEver:  [...learnedEver],
+    hardWordIds:  [...hardWordIds],
+    goal, xp, streak, totalCorrect, totalAnswered, listenCount,
+    families,
+    topics: topics.filter(t => !['general','travel','food','business','tech','daily'].includes(t.key))
   });
-  // Use direct fetch for upsert on user_meta table
-  try {
-    const r = await fetch(sbUrl+'/rest/v1/user_meta?on_conflict=key', {
-      method: 'POST',
-      headers: {
-        apikey: sbKey, Authorization:'Bearer '+sbKey,
-        'Content-Type':'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ key:'lingo_meta', value:metaVal })
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      console.error('meta upsert failed:', r.status, t);
-    }
-  } catch(e) { console.error('meta upsert error:', e); }
+  const r = await sbReq(
+    'POST', 'user_meta?on_conflict=key',
+    { key: 'lingo_meta', value: metaVal },
+    'resolution=merge-duplicates,return=minimal'
+  );
+  if (!r.ok) console.error('[SB] meta push failed:', r.status, r.error);
+  return r.ok;
 }
 
-async function sbPushHardWord(wordId, isHard) {
-  // Hard word state is included in meta; just push meta
-  sbPushAllMeta();
-}
-
-function pushMetaToSB() {
-  if (sbUrl&&sbKey) sbPushAllMeta();
-}
-
-// ── Connect ──
-async function testSB(){
-  const url = document.getElementById('sb-url')?.value.trim()||'';
-  const key = document.getElementById('sb-key')?.value.trim()||'';
-  if (!url||!key) { toast('Nhập URL và Key!','bad'); return; }
-  try {
-    const r = await fetch(`${url}/rest/v1/words?limit=1`, {
-      headers:{apikey:key, Authorization:'Bearer '+key}
-    });
-    if (r.ok) {
-      sbUrl=url; sbKey=key;
-      LS.set('sb_url',url); LS.set('sb_key',key);
-      updateSBStatus(true);
-      toast('✓ Kết nối! Đang tải dữ liệu từ Supabase...','good');
-      await loadAllFromSB();
-      const banner = document.getElementById('sync-banner');
-      if (banner) banner.style.display = 'block';
-      updateSyncTimeDisplay();
-    } else {
-      toast(`Lỗi ${r.status}: kiểm tra lại URL và Key`,'bad');
-    }
-  } catch(e) {
-    toast('Không kết nối được: '+e.message,'bad');
-  }
-}
+async function sbPushHardWord() { sbPushAllMeta(); }
+function  pushMetaToSB()        { if (sbUrl && sbKey) sbPushAllMeta(); }
 
 // ── Timestamp helpers ──
 function fmtSyncTime(ts) {
   if (!ts) return 'Chưa đồng bộ lần nào';
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60)   return 'vừa xong';
+  if (diff < 3600) return Math.floor(diff / 60) + ' phút trước';
+  if (diff < 86400)return Math.floor(diff / 3600) + ' giờ trước';
   const d = new Date(ts);
-  const diff = Math.floor((Date.now() - d) / 1000);
-  if (diff < 60) return 'vừa xong';
-  if (diff < 3600) return Math.floor(diff/60) + ' phút trước';
-  if (diff < 86400) return Math.floor(diff/3600) + ' giờ trước';
-  return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'});
 }
 function updateSyncTimeDisplay() {
   const el = document.getElementById('sync-last-time');
   if (!el) return;
   const ts = LS.get('lingo_last_sync', null);
-  el.textContent = ts ? ('Đồng bộ lần cuối: ' + fmtSyncTime(ts)) : 'Chưa đồng bộ lần nào';
+  el.textContent = ts ? 'Đồng bộ lần cuối: ' + fmtSyncTime(ts) : 'Chưa đồng bộ lần nào';
 }
 function markSynced() {
   LS.set('lingo_last_sync', Date.now());
   updateSyncTimeDisplay();
 }
 
-// ── Home screen: Lưu lên cloud ──
+// ── Kết nối: test rồi pull ngay ──
+async function testSB() {
+  const url = (document.getElementById('sb-url')?.value || '').trim();
+  const key = (document.getElementById('sb-key')?.value || '').trim();
+  if (!url || !key) { toast('Nhập URL và Key!', 'bad'); return; }
+  // Test bằng cách thử GET 1 row
+  const test = await fetch(url + '/rest/v1/words?limit=1', {
+    headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' }
+  }).catch(e => ({ ok: false, statusText: e.message }));
+  if (!test.ok && test.status !== 406) {  // 406 = no rows = OK
+    toast('Không kết nối được: ' + (test.statusText || test.status), 'bad');
+    return;
+  }
+  sbUrl = url; sbKey = key;
+  LS.set('sb_url', url); LS.set('sb_key', key);
+  updateSBStatus(true);
+  toast('✓ Kết nối OK! Đang tải dữ liệu...', 'good');
+  await loadAllFromSB();
+  const banner = document.getElementById('sync-banner');
+  if (banner) banner.style.display = 'block';
+  updateSyncTimeDisplay();
+}
+
+// ══════════════════════════════════════════════
+// ↑ LƯU LÊN CLOUD — Xóa SB sạch, insert lại
+// ══════════════════════════════════════════════
 async function homeUpload() {
-  if (!sbUrl||!sbKey) { toast('Chưa kết nối Supabase! Vào tab Supabase để nhập key.','bad'); return; }
+  if (!sbUrl || !sbKey) { toast('Chưa kết nối Supabase!', 'bad'); return; }
   const btn = document.getElementById('btn-upload');
-  if (btn) { btn.classList.add('btn-syncing'); btn.textContent = '↑ Đang lưu...'; }
+  if (btn) { btn.textContent = '↑ Đang lưu...'; btn.disabled = true; }
   try {
     await fullUploadToSB();
-    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↑ Lưu lên cloud'; }
-  } catch(e) {
-    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↑ Lưu lên cloud'; }
-    toast('Lỗi: '+e.message,'bad');
+  } finally {
+    if (btn) { btn.textContent = '↑ Lưu lên cloud'; btn.disabled = false; }
   }
 }
 
-// ── Home screen: Tải về ──
+async function fullUploadToSB() {
+  if (!sbUrl || !sbKey) return;
+  const statusEl = document.getElementById('sync-result');
+
+  // ── Step 1: DELETE tất cả words ──
+  // Filter phải match rows → dùng "created_at=not.is.null" (luôn đúng với TIMESTAMPTZ)
+  const delW = await sbReq('DELETE', 'words?created_at=not.is.null', null, null);
+  // Nếu bảng rỗng thì DELETE trả về 200/204 với mảng rỗng → vẫn OK
+  if (!delW.ok && delW.status !== 200 && delW.status !== 204) {
+    console.warn('[SB] DELETE words status:', delW.status, delW.error);
+    // Không return — vẫn tiếp tục INSERT
+  }
+
+  // ── Step 2: INSERT tất cả words (batch 1 request) ──
+  let uploadedWords = 0;
+  if (words.length > 0) {
+    const rows = words.map(w => ({
+      word:           w.word     || '',
+      phonetic:       w.phonetic || '',
+      part_of_speech: w.partOfSpeech || '',
+      meaning:        w.meaning  || '',
+      example:        w.example  || '',
+      topic:          w.topic    || 'general',
+      level:          w.level    || 3
+    }));
+    const ins = await sbReq('POST', 'words', rows, 'return=representation');
+    if (!ins.ok) {
+      toast('⚠ Lỗi lưu từ vựng: ' + ins.error, 'bad');
+      if (statusEl) statusEl.textContent = '⚠ Lỗi từ vựng (' + ins.status + '): ' + ins.error;
+      console.error('[SB] INSERT words failed:', ins);
+      return; // Dừng nếu words fail
+    }
+    // Cập nhật ID SB → local
+    if (Array.isArray(ins.data) && ins.data.length === words.length) {
+      words = words.map((w, i) => ({ ...w, id: ins.data[i].id || w.id }));
+    }
+    uploadedWords = Array.isArray(ins.data) ? ins.data.length : rows.length;
+    console.log('[SB] Inserted', uploadedWords, 'words');
+  }
+
+  // ── Step 3: DELETE tất cả sentences ──
+  await sbReq('DELETE', 'sentences?created_at=not.is.null', null, null);
+
+  // ── Step 4: INSERT tất cả sentences ──
+  let uploadedSents = 0;
+  if (sentences.length > 0) {
+    const rows = sentences.map(s => ({
+      viet: s.viet || '', eng: s.eng || '',
+      note: s.note || '', type: s.type || 'daily'
+    }));
+    const ins = await sbReq('POST', 'sentences', rows, 'return=representation');
+    if (ins.ok) {
+      if (Array.isArray(ins.data) && ins.data.length === sentences.length) {
+        sentences = sentences.map((s, i) => ({ ...s, id: ins.data[i].id || s.id }));
+      }
+      uploadedSents = Array.isArray(ins.data) ? ins.data.length : rows.length;
+    } else {
+      console.warn('[SB] INSERT sentences:', ins.status, ins.error);
+    }
+  }
+
+  // ── Step 5: Upsert meta ──
+  const metaOk = await sbPushAllMeta();
+  if (!metaOk) console.warn('[SB] Meta push failed');
+
+  saveState();
+  markSynced();
+
+  const msg = '✓ Đã lưu: ' + uploadedWords + ' từ · ' + uploadedSents + ' câu · meta';
+  toast(msg, 'good');
+  if (statusEl) statusEl.textContent = msg;
+  console.log('[SB] Upload complete:', uploadedWords, 'words,', uploadedSents, 'sents');
+}
+
+// ══════════════════════════════════════════════
+// ↓ TẢI VỀ — Pull từ SB, ghi đè local hoàn toàn
+// ══════════════════════════════════════════════
 async function homeDownload() {
-  if (!sbUrl||!sbKey) { toast('Chưa kết nối Supabase! Vào tab Supabase để nhập key.','bad'); return; }
+  if (!sbUrl || !sbKey) { toast('Chưa kết nối Supabase!', 'bad'); return; }
   const btn = document.getElementById('btn-download');
-  if (btn) { btn.classList.add('btn-syncing'); btn.textContent = '↓ Đang tải...'; }
+  if (btn) { btn.textContent = '↓ Đang tải...'; btn.disabled = true; }
   try {
     await loadAllFromSB();
     startFC(); renderGoalBanner(); renderWordStats();
     populateTopicSelects(); populateTopicFilters();
-    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↓ Tải về máy này'; }
-  } catch(e) {
-    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↓ Tải về thiết bị này'; }
-    toast('Lỗi: '+e.message,'bad');
+  } finally {
+    if (btn) { btn.textContent = '↓ Tải về máy này'; btn.disabled = false; }
   }
 }
 
-// ── FULL UPLOAD: xóa SB sạch rồi insert lại từ local ──
-async function fullUploadToSB() {
-  if (!sbUrl||!sbKey) return;
+async function loadAllFromSB() {
+  if (!sbUrl || !sbKey) { toast('Kết nối Supabase trước!', 'bad'); return; }
+  const statusEl = document.getElementById('load-result');
+  if (statusEl) statusEl.textContent = 'Đang tải từ Supabase...';
 
-  const H_GET  = { apikey:sbKey, Authorization:'Bearer '+sbKey, Accept:'application/json' };
-  const H_POST = { apikey:sbKey, Authorization:'Bearer '+sbKey, 'Content-Type':'application/json', Accept:'application/json', Prefer:'return=representation' };
-  const H_DEL  = { apikey:sbKey, Authorization:'Bearer '+sbKey };
+  // ── 1. Words ──
+  const wRes = await sbReq('GET', 'words?order=id.asc');
+  console.log('[SB] words:', wRes.status, wRes.ok ? (Array.isArray(wRes.data) ? wRes.data.length + ' rows' : typeof wRes.data) : wRes.error);
 
-  // 1. Xóa tất cả words trên SB
-  await fetch(sbUrl+'/rest/v1/words?id=gt.0', { method:'DELETE', headers:H_DEL });
-
-  // 2. Insert lại từng từ
-  const newWords = [];
-  for (const w of words) {
-    try {
-      const r = await fetch(sbUrl+'/rest/v1/words', {
-        method:'POST', headers:H_POST,
-        body: JSON.stringify({
-          word:w.word, phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
-          meaning:w.meaning, example:w.example||'', topic:w.topic||'general', level:w.level||3
-        })
-      });
-      const txt = await r.text();
-      let inserted = null;
-      try { inserted = JSON.parse(txt); } catch {}
-      const newId = Array.isArray(inserted)&&inserted[0]?.id ? inserted[0].id : w.id;
-      newWords.push({...w, id:newId});
-    } catch(e) { console.error('insert word error:', w.word, e); newWords.push(w); }
+  if (!wRes.ok) {
+    const msg = 'Lỗi tải từ vựng (' + wRes.status + '): ' + wRes.error;
+    if (statusEl) statusEl.textContent = '⚠ ' + msg;
+    toast('⚠ ' + msg, 'bad');
+    return;
   }
-  words = newWords;
 
-  // 3. Xóa tất cả sentences trên SB
-  await fetch(sbUrl+'/rest/v1/sentences?id=gt.0', { method:'DELETE', headers:H_DEL });
+  const wData = Array.isArray(wRes.data) ? wRes.data : [];
+  words = wData.map(w => ({
+    id:           w.id,
+    word:         w.word         || '',
+    phonetic:     w.phonetic     || '',
+    partOfSpeech: w.part_of_speech || '',
+    meaning:      w.meaning      || '',
+    example:      w.example      || '',
+    topic:        w.topic        || 'general',
+    level:        w.level        || 3
+  }));
 
-  // 4. Insert lại từng câu
-  const newSents = [];
-  for (const s of sentences) {
-    try {
-      const r = await fetch(sbUrl+'/rest/v1/sentences', {
-        method:'POST', headers:H_POST,
-        body: JSON.stringify({ viet:s.viet, eng:s.eng, note:s.note||'', type:s.type||'daily' })
-      });
-      const txt = await r.text();
-      let inserted = null;
-      try { inserted = JSON.parse(txt); } catch {}
-      const newId = Array.isArray(inserted)&&inserted[0]?.id ? inserted[0].id : s.id;
-      newSents.push({...s, id:newId});
-    } catch(e) { console.error('insert sent error:', e); newSents.push(s); }
+  // ── 2. Sentences ──
+  const sRes = await sbReq('GET', 'sentences?order=id.asc');
+  console.log('[SB] sentences:', sRes.status, sRes.ok ? (Array.isArray(sRes.data) ? sRes.data.length + ' rows' : '-') : sRes.error);
+
+  if (sRes.ok && Array.isArray(sRes.data)) {
+    sentences = sRes.data.map(s => ({
+      id: s.id, viet: s.viet || '', eng: s.eng || '',
+      note: s.note || '', type: s.type || 'daily'
+    }));
   }
-  sentences = newSents;
 
-  // 5. Push meta
-  await sbPushAllMeta();
+  // ── 3. Meta ──
+  const mRes = await sbReq('GET', 'user_meta?key=eq.lingo_meta');
+  console.log('[SB] meta:', mRes.status, mRes.ok ? (Array.isArray(mRes.data) ? mRes.data.length + ' rows' : '-') : mRes.error);
 
-  saveState();
+  if (mRes.ok && Array.isArray(mRes.data) && mRes.data.length > 0 && mRes.data[0].value) {
+    try {
+      const m = JSON.parse(mRes.data[0].value);
+      if (m.learnedLog)            learnedLog   = m.learnedLog;
+      if (m.learnedEver)           learnedEver  = new Set(m.learnedEver);
+      if (m.hardWordIds)           hardWordIds  = new Set(m.hardWordIds);
+      if (m.goal      !== undefined) goal       = m.goal;
+      if (m.xp        !== undefined) xp         = m.xp;
+      if (m.streak    !== undefined) streak     = m.streak;
+      if (m.totalCorrect  !== undefined) totalCorrect  = m.totalCorrect;
+      if (m.totalAnswered !== undefined) totalAnswered = m.totalAnswered;
+      if (m.listenCount   !== undefined) listenCount   = m.listenCount;
+      if (Array.isArray(m.families)) families = m.families;
+      if (Array.isArray(m.topics)) {
+        const defs = ['general','travel','food','business','tech','daily'];
+        topics = [
+          ...topics.filter(t => defs.includes(t.key)),
+          ...m.topics.filter(t => !defs.includes(t.key))
+        ];
+      }
+    } catch(e) { console.error('[SB] meta parse error:', e); }
+  }
+
+  // ── Ghi vào localStorage ──
+  LS.set('lingo_words',        words);
+  LS.set('lingo_sents',        sentences);
+  LS.set('lingo_topics',       topics);
+  LS.set('lingo_families',     families);
+  LS.set('lingo_xp',           xp);
+  LS.set('lingo_streak',       streak);
+  LS.set('lingo_correct',      totalCorrect);
+  LS.set('lingo_answered',     totalAnswered);
+  LS.set('lingo_listen_count', listenCount);
+  LS.set('lingo_learned_log',  learnedLog);
+  LS.set('lingo_learned_ever', [...learnedEver]);
+  LS.set('lingo_hard_words',   [...hardWordIds]);
+  LS.set('lingo_goal',         goal);
+
+  populateTopicSelects();
+  populateTopicFilters();
+  updateCounters();
+  updateSBStatus(true);
   markSynced();
-  console.log('Upload done:', words.length, 'words,', sentences.length, 'sentences');
-  toast('✓ Đã lưu '+words.length+' từ lên cloud!','good');
+
+  const nW = words.length, nS = sentences.length;
+  if (nW > 0) {
+    const msg = '✓ Đã tải: ' + nW + ' từ · ' + nS + ' câu';
+    if (statusEl) statusEl.textContent = msg;
+    toast('✓ Đã tải ' + nW + ' từ về thiết bị này!', 'good');
+  } else {
+    const msg = '⚠ Supabase chưa có từ vựng — hãy "↑ Lưu lên cloud" từ thiết bị có data trước';
+    if (statusEl) statusEl.textContent = msg;
+    toast('⚠ Chưa có data trên Supabase', 'bad');
+  }
+
+  renderWB();
+  renderWordStats();
+  renderGoalBanner();
 }
 
-// ── PUSH: đẩy toàn bộ lên SB (từ tab Supabase) ──
-async function syncAllToSB(){
-  if (!sbUrl||!sbKey) { toast('Kết nối Supabase trước!','bad'); return; }
+// ── Từ tab Supabase ──
+async function syncAllToSB() {
+  if (!sbUrl || !sbKey) { toast('Kết nối Supabase trước!', 'bad'); return; }
   const res = document.getElementById('sync-result');
   if (res) res.textContent = 'Đang đồng bộ...';
-  try {
-    await fullUploadToSB();
-    if (res) res.textContent = `✓ Đẩy lên: ${words.length} từ · ${sentences.length} câu · meta ✓`;
-  } catch(e) {
-    if (res) res.textContent = 'Lỗi: '+e.message;
-    toast('Lỗi: '+e.message,'bad');
-  }
+  await fullUploadToSB();
 }
 
-// ── PULL: kéo data từ SB về — THAY THẾ hoàn toàn local ──
-// Dùng fetch trực tiếp thay vì sbGet để tránh mọi vấn đề header
-async function loadAllFromSB(){
-  if (!sbUrl||!sbKey) { toast('Kết nối Supabase trước!','bad'); return; }
-  const res = document.getElementById('load-result');
-  if (res) res.textContent = 'Đang tải...';
-
-  const H = { 'apikey': sbKey, 'Authorization': 'Bearer '+sbKey, 'Accept': 'application/json' };
-
-  try {
-    // ── 1. Words ──
-    const wResp = await fetch(sbUrl+'/rest/v1/words?select=*&order=id.asc', { method:'GET', headers:H });
-    const wText = await wResp.text();
-    let wData = [];
-    try { wData = JSON.parse(wText); } catch(e) { console.error('words parse fail:', wText); }
-    console.log('words from SB:', wData.length, 'rows');
-
-    if (Array.isArray(wData) && wData.length > 0) {
-      words = wData.map(w=>({
-        id: w.id,
-        word: w.word || '',
-        phonetic: w.phonetic || '',
-        partOfSpeech: w.part_of_speech || '',
-        meaning: w.meaning || '',
-        example: w.example || '',
-        topic: w.topic || 'general',
-        level: w.level || 3
-      }));
-    }
-
-    // ── 2. Sentences ──
-    const sResp = await fetch(sbUrl+'/rest/v1/sentences?select=*&order=id.asc', { method:'GET', headers:H });
-    const sText = await sResp.text();
-    let sData = [];
-    try { sData = JSON.parse(sText); } catch(e) { console.error('sentences parse fail:', sText); }
-
-    if (Array.isArray(sData) && sData.length > 0) {
-      sentences = sData.map(s=>({
-        id: s.id, viet: s.viet||'', eng: s.eng||'',
-        note: s.note||'', type: s.type||'daily'
-      }));
-    }
-
-    // ── 3. Meta ──
-    const mResp = await fetch(sbUrl+'/rest/v1/user_meta?select=*&key=eq.lingo_meta', { method:'GET', headers:H });
-    const mText = await mResp.text();
-    let mData = [];
-    try { mData = JSON.parse(mText); } catch(e) { console.error('meta parse fail:', mText); }
-
-    if (Array.isArray(mData) && mData.length > 0 && mData[0].value) {
-      try {
-        const m = JSON.parse(mData[0].value);
-        if (m.learnedLog)  learnedLog  = m.learnedLog;
-        if (m.learnedEver) learnedEver = new Set(m.learnedEver);
-        if (m.hardWordIds) hardWordIds = new Set(m.hardWordIds);
-        if (m.goal !== undefined) goal = m.goal;
-        if (m.xp   !== undefined) xp   = m.xp;
-        if (m.streak !== undefined) streak = m.streak;
-        if (m.totalCorrect  !== undefined) totalCorrect  = m.totalCorrect;
-        if (m.totalAnswered !== undefined) totalAnswered = m.totalAnswered;
-        if (Array.isArray(m.families)) families = m.families;
-        if (Array.isArray(m.topics)) {
-          const defs = ['general','travel','food','business','tech','daily'];
-          topics = [
-            ...topics.filter(t=>defs.includes(t.key)),
-            ...m.topics.filter(t=>!defs.includes(t.key))
-          ];
-        }
-      } catch(e) { console.error('meta value parse:', e); }
-    }
-
-    // ── Ghi vào localStorage ──
-    LS.set('lingo_words',       words);
-    LS.set('lingo_sents',       sentences);
-    LS.set('lingo_topics',      topics);
-    LS.set('lingo_families',    families);
-    LS.set('lingo_xp',          xp);
-    LS.set('lingo_streak',      streak);
-    LS.set('lingo_correct',     totalCorrect);
-    LS.set('lingo_answered',    totalAnswered);
-    LS.set('lingo_learned_log', learnedLog);
-    LS.set('lingo_learned_ever',[...learnedEver]);
-    LS.set('lingo_hard_words',  [...hardWordIds]);
-    LS.set('lingo_goal',        goal);
-
-    populateTopicSelects(); populateTopicFilters();
-    updateCounters(); updateSBStatus(true); markSynced();
-
-    const nW = words.length, nS = sentences.length;
-    const msg = nW > 0
-      ? `✓ Tải về: ${nW} từ · ${nS} câu`
-      : '⚠ Supabase chưa có dữ liệu — hãy "Lưu lên cloud" từ thiết bị có data trước';
-    if (res) res.textContent = msg;
-    if (nW > 0) {
-      toast(`✓ Đã tải ${nW} từ về máy này!`, 'good');
-    } else {
-      toast('⚠ Chưa có data trên Supabase', 'bad');
-    }
-
-    renderWB(); renderWordStats(); renderGoalBanner();
-  } catch(e) {
-    console.error('loadAllFromSB error:', e);
-    if (res) res.textContent = 'Lỗi kết nối: ' + e.message;
-    toast('Lỗi tải dữ liệu: '+e.message, 'bad');
-  }
-}
-
-// ── Ghi từ mới vào SB, lấy ID về cập nhật local ──
+// ── Ghi từ mới lên SB (sau addWord) ──
 async function saveWordToSB(w) {
-  if (!sbUrl||!sbKey) return;
-  const row = {
-    word:w.word, phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
-    meaning:w.meaning, example:w.example||'', topic:w.topic||'general', level:w.level||3
-  };
-  const result = await sbPost('words', row, 'return=representation');
-  if (Array.isArray(result) && result[0]?.id) {
-    const idx = words.findIndex(x=>x.id===w.id);
-    if (idx!==-1) { words[idx].id = result[0].id; saveState(); }
+  if (!sbUrl || !sbKey) return;
+  const ins = await sbReq('POST', 'words',
+    { word:w.word||'', phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
+      meaning:w.meaning||'', example:w.example||'', topic:w.topic||'general', level:w.level||3 },
+    'return=representation'
+  );
+  if (ins.ok && Array.isArray(ins.data) && ins.data[0]?.id) {
+    const idx = words.findIndex(x => x.id === w.id);
+    if (idx !== -1) { words[idx].id = ins.data[0].id; saveState(); }
   }
 }
 
 // ── Cập nhật từ trên SB ──
 async function updateWordOnSB(w) {
-  if (!sbUrl||!sbKey||!w.id) return;
-  await sbPatch('words', w.id, {
-    word:w.word, phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
-    meaning:w.meaning, example:w.example||'', topic:w.topic||'general', level:w.level||3
-  });
+  if (!sbUrl || !sbKey || !w.id) return;
+  await sbReq('PATCH', 'words?id=eq.' + w.id,
+    { word:w.word, phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
+      meaning:w.meaning, example:w.example||'', topic:w.topic||'general', level:w.level||3 },
+    'return=minimal'
+  );
 }
 
 // ── Xóa từ khỏi SB ──
 async function deleteWordFromSB(id) {
-  if (!sbUrl||!sbKey) return;
-  await sbDelete('words', id);
+  if (!sbUrl || !sbKey) return;
+  await sbReq('DELETE', 'words?id=eq.' + id);
 }
+
+// ── sbGet: legacy alias ──
+async function sbGet(table, query) {
+  const q = query ? query.replace(/^[?&]/,'') : '';
+  const r = await sbReq('GET', table + (q ? '?' + q : ''));
+  return r.ok && Array.isArray(r.data) ? r.data : null;
+}
+
+// ── Legacy ──
+async function sbPost(table, body, prefer) { return sbReq('POST', table, body, prefer); }
+async function sbPatch(t, id, body)        { return sbReq('PATCH', t+'?id=eq.'+id, body, 'return=minimal'); }
+async function sbDelete(t, id)             { return sbReq('DELETE', t+'?id=eq.'+id); }
 
 function copySQL(){
   navigator.clipboard.writeText(document.getElementById('sql-block').textContent)
