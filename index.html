@@ -1141,7 +1141,12 @@ Ví dụ: https://nguyenvan.github.io/lingo-app/</div>
               <label>Anon Key (public)</label>
               <input type="text" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
             </div>
-            <button class="btn btn-primary" onclick="testSB()">Kiểm tra &amp; kết nối</button>
+            <button class="btn btn-primary" onclick="testSB()" id="btn-test-sb">Kiểm tra &amp; kết nối</button>
+            <div id="sb-test-result" style="font-size:12px;color:var(--mid);margin-top:4px;"></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.7;">
+              💡 URL có dạng: <code>https://xxxxx.supabase.co</code> (không có dấu / cuối)<br>
+              💡 Key là <strong>anon/public</strong> key (không phải service_role key)
+            </div>
           </div>
         </div>
 
@@ -2519,22 +2524,58 @@ async function testSB() {
   const url = (document.getElementById('sb-url')?.value || '').trim();
   const key = (document.getElementById('sb-key')?.value || '').trim();
   if (!url || !key) { toast('Nhập URL và Key!', 'bad'); return; }
-  // Test bằng cách thử GET 1 row
-  const test = await fetch(url + '/rest/v1/words?limit=1', {
-    headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' }
-  }).catch(e => ({ ok: false, statusText: e.message }));
-  if (!test.ok && test.status !== 406) {  // 406 = no rows = OK
-    toast('Không kết nối được: ' + (test.statusText || test.status), 'bad');
+
+  // Normalize URL — bỏ dấu / cuối nếu có
+  const cleanUrl = url.replace(/\/+$/, '');
+
+  // Kiểm tra kết nối bằng endpoint health check của Supabase REST
+  // Dùng /rest/v1/ (không cần bảng cụ thể) — chỉ verify project tồn tại và key hợp lệ
+  let testResp;
+  try {
+    testResp = await fetch(cleanUrl + '/rest/v1/', {
+      method: 'GET',
+      headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' }
+    });
+  } catch(e) {
+    const trE=document.getElementById('sb-test-result');
+    if(trE) trE.textContent='✗ '+e.message;
+    toast('Không kết nối được — kiểm tra lại URL: ' + e.message, 'bad');
     return;
   }
-  sbUrl = url; sbKey = key;
-  LS.set('sb_url', url); LS.set('sb_key', key);
+
+  // 200 = OK, 400 = đúng server nhưng query lỗi (vẫn kết nối được)
+  // 401 = sai key, 404 = sai URL
+  if (testResp.status === 401) {
+    const trE=document.getElementById('sb-test-result');
+    if(trE) trE.textContent='✗ Sai Key (401)';
+    toast('⚠ Sai Anon Key — kiểm tra lại key trong Supabase → Settings → API', 'bad');
+    return;
+  }
+  if (testResp.status === 404) {
+    const trE=document.getElementById('sb-test-result');
+    if(trE) trE.textContent='✗ Sai URL (404)';
+    toast('⚠ Sai Project URL — kiểm tra lại URL trong Supabase → Settings → API', 'bad');
+    return;
+  }
+  // Bất kỳ response nào từ server (kể cả 400, 406) đều nghĩa là kết nối thành công
+  // Lưu credentials
+  sbUrl = cleanUrl;
+  sbKey = key;
+  LS.set('sb_url', cleanUrl);
+  LS.set('sb_key', key);
   updateSBStatus(true);
-  toast('✓ Kết nối OK! Đang tải dữ liệu...', 'good');
-  await loadAllFromSB();
+
   const banner = document.getElementById('sync-banner');
   if (banner) banner.style.display = 'block';
   updateSyncTimeDisplay();
+
+  // Thử tải data từ SB
+  // Update result div
+  const trEl = document.getElementById('sb-test-result');
+  if (trEl) trEl.textContent = '✓ Kết nối thành công — đang tải dữ liệu...';
+
+  toast('✓ Kết nối thành công! Đang tải dữ liệu...', 'good');
+  await loadAllFromSB();
 }
 
 // ══════════════════════════════════════════════
