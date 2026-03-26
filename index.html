@@ -427,6 +427,15 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 /* ── SYNC BUTTON LOADING STATE ── */
 @keyframes spin-icon{from{display:inline-block;transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .btn-syncing{opacity:.7;pointer-events:none;position:relative;}
+
+/* ── MORE MENU (mobile) ── */
+.more-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:var(--paper);border:none;border-radius:var(--r);
+  padding:10px 6px;font-size:10px;font-weight:500;color:var(--mid);
+  cursor:pointer;transition:all .15s;
+}
+.more-item:hover,.more-item:active{background:var(--accent-lt);color:var(--accent);}
 </style>
 </head>
 <body>
@@ -930,18 +939,40 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         <div class="setup-step">
           <div class="step-header"><div class="step-num">2</div><div class="step-title">Tạo bảng (1 lần)</div></div>
           <div class="step-desc">Vào SQL Editor trong Supabase, paste và chạy:</div>
-          <div class="code-block" id="sql-block">CREATE TABLE words (
-  id         BIGSERIAL PRIMARY KEY,
-  word       TEXT NOT NULL,
-  phonetic   TEXT,
-  meaning    TEXT NOT NULL,
-  example    TEXT,
-  topic      TEXT DEFAULT 'general',
-  level      INT  DEFAULT 3,
-  created_at TIMESTAMPTZ DEFAULT now()
+          <div class="code-block" id="sql-block">-- 1. Từ vựng
+CREATE TABLE IF NOT EXISTS words (
+  id             BIGSERIAL PRIMARY KEY,
+  word           TEXT NOT NULL,
+  phonetic       TEXT DEFAULT '',
+  part_of_speech TEXT DEFAULT '',
+  meaning        TEXT NOT NULL,
+  example        TEXT DEFAULT '',
+  topic          TEXT DEFAULT 'general',
+  level          INT  DEFAULT 3,
+  created_at     TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE words ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "allow_all" ON words FOR ALL USING (true) WITH CHECK (true);</div>
+CREATE POLICY "public_all" ON words FOR ALL USING (true) WITH CHECK (true);
+
+-- 2. Câu ngữ pháp
+CREATE TABLE IF NOT EXISTS sentences (
+  id         BIGSERIAL PRIMARY KEY,
+  viet       TEXT NOT NULL DEFAULT '',
+  eng        TEXT NOT NULL DEFAULT '',
+  note       TEXT DEFAULT '',
+  type       TEXT DEFAULT 'daily',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE sentences ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON sentences FOR ALL USING (true) WITH CHECK (true);
+
+-- 3. Meta (tiến độ, goal, hard words, families)
+CREATE TABLE IF NOT EXISTS user_meta (
+  key   TEXT PRIMARY KEY,
+  value TEXT
+);
+ALTER TABLE user_meta ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);</div>
           <button class="btn btn-ghost btn-sm" onclick="copySQL()">Sao chép SQL</button>
         </div>
         <div class="setup-step">
@@ -1189,22 +1220,26 @@ CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);<
           <div id="load-result" style="margin-top:8px;font-size:13px;color:var(--mid);"></div>
         </div>
 
-        <div class="setup-step" style="background:var(--amber-lt);border-color:#f0d8b8;">
+        <div class="setup-step" style="background:var(--accent-lt);border-color:var(--accent-md);">
           <div class="step-header">
-            <div class="step-num" style="background:var(--amber);">⚠</div>
-            <div class="step-title">Đồng bộ đa thiết bị — Làm theo đúng thứ tự</div>
+            <div class="step-num" style="background:var(--accent);">✓</div>
+            <div class="step-title">Hướng dẫn đồng bộ đa thiết bị</div>
           </div>
-          <div class="step-desc" style="margin-bottom:0;">
-            <strong style="color:var(--ink);">Lần đầu setup (thiết bị A):</strong><br>
-            1. Nhập URL + Key → nhấn "Kiểm tra &amp; kết nối"<br>
-            2. Chạy SQL trong Supabase để tạo bảng<br>
-            3. Nhấn <strong>"Đồng bộ tất cả lên Supabase"</strong><br><br>
-            <strong style="color:var(--ink);">Thiết bị mới (điện thoại / máy tính khác):</strong><br>
-            1. Mở app → vào Supabase → nhập cùng URL + Key → kết nối<br>
-            2. Nhấn <strong>"Tải dữ liệu từ Supabase"</strong> → toàn bộ từ vựng, câu mẫu, Word Family sẽ xuất hiện<br><br>
-            <strong style="color:var(--ink);">Khi thêm từ mới trên điện thoại:</strong><br>
-            → Từ tự động đẩy lên Supabase ngay lập tức (nếu đã kết nối)<br><br>
-            <strong style="color:var(--red);">Mục tiêu học (streak, XP, tiến độ) lưu cục bộ</strong> — chưa đồng bộ Supabase. Để không mất: <em>đừng xóa cache trình duyệt</em>, hoặc dùng cùng một trình duyệt trên cùng thiết bị.
+          <div class="step-desc" style="margin-bottom:0;line-height:2;">
+            <strong style="color:var(--accent);">Bước 1 — Lần đầu (chỉ làm 1 lần):</strong><br>
+            &nbsp;&nbsp;① Nhập URL + Key phía trên → "Kiểm tra &amp; kết nối"<br>
+            &nbsp;&nbsp;② Vào Supabase → SQL Editor → paste SQL ở bước 2 → Run<br>
+            &nbsp;&nbsp;③ Về app → Home → nhấn <strong>"↑ Lưu lên cloud"</strong><br><br>
+            <strong style="color:var(--accent);">Bước 2 — Thiết bị thứ 2:</strong><br>
+            &nbsp;&nbsp;① Mở app → Supabase tab → nhập cùng URL + Key → kết nối<br>
+            &nbsp;&nbsp;② Home → nhấn <strong>"↓ Tải về máy này"</strong><br><br>
+            <strong style="color:var(--accent);">Hàng ngày — dùng 2 thiết bị:</strong><br>
+            &nbsp;&nbsp;• Học xong trên thiết bị nào → nhấn <strong>"↑ Lưu lên cloud"</strong><br>
+            &nbsp;&nbsp;• Mở thiết bị kia → nhấn <strong>"↓ Tải về máy này"</strong><br><br>
+            <strong style="color:var(--red);">⚠ Lưu ý quan trọng:</strong><br>
+            &nbsp;&nbsp;• Phải chạy SQL ở bước 2 trước khi dùng<br>
+            &nbsp;&nbsp;• Nếu thấy thông báo đỏ khi tải về → kiểm tra Console (F12) để xem lỗi chi tiết<br>
+            &nbsp;&nbsp;• Streak/XP đồng bộ được — chỉ cần upload từ thiết bị đang học
           </div>
         </div>
       </section>
@@ -1213,16 +1248,29 @@ CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);<
   </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- Bottom nav — 7 items for mobile/tablet -->
+<!-- More menu (mobile) -->
+<div id="more-menu" style="display:none;position:fixed;bottom:64px;left:0;right:0;z-index:91;background:rgba(255,255,255,.98);backdrop-filter:blur(16px);border-top:1px solid var(--rule);padding:10px 12px 6px;box-shadow:0 -4px 20px rgba(0,0,0,.08);">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+    <button onclick="go('listen');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◉</span><span>Nghe</span></button>
+    <button onclick="go('sentences');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◎</span><span>Ngữ pháp</span></button>
+    <button onclick="go('families');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◈</span><span>Word Family</span></button>
+    <button onclick="go('topics');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◉</span><span>Chủ đề</span></button>
+    <button onclick="go('setup');closeMoreMenu()" class="more-item"><span style="font-size:20px;">⊡</span><span>Supabase</span></button>
+    <button onclick="go('github');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◬</span><span>GitHub</span></button>
+  </div>
+</div>
+<div id="more-overlay" onclick="closeMoreMenu()" style="display:none;position:fixed;inset:0;z-index:90;"></div>
+
+<!-- Bottom nav — 6 core items + More -->
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bn-btn active" id="bn-home"      onclick="go('home',null,'bn-home')"><span class="bni">○</span>Home</button>
     <button class="bn-btn"        id="bn-flashcard" onclick="go('flashcard',null,'bn-flashcard')"><span class="bni">◫</span>Cards</button>
     <button class="bn-btn"        id="bn-quiz"      onclick="go('quiz',null,'bn-quiz')"><span class="bni">◈</span>Quiz</button>
-    <button class="bn-btn"        id="bn-goal"      onclick="go('goal',null,'bn-goal')"><span class="bni">▷</span>Mục tiêu</button>
     <button class="bn-btn"        id="bn-wordbank"  onclick="go('wordbank',null,'bn-wordbank')"><span class="bni">▦</span>Kho từ</button>
     <button class="bn-btn"        id="bn-stats"     onclick="go('stats',null,'bn-stats')"><span class="bni">▣</span>Thành tích</button>
-    <button class="bn-btn"        id="bn-setup"     onclick="go('setup',null,'bn-setup')"><span class="bni">⊡</span>Supabase</button>
+    <button class="bn-btn"        id="bn-goal"      onclick="go('goal',null,'bn-goal')"><span class="bni">▷</span>Mục tiêu</button>
+    <button class="bn-btn"        id="bn-more"      onclick="toggleMoreMenu()"><span class="bni">⋯</span>Thêm</button>
   </div>
 </div>
 
@@ -2808,6 +2856,24 @@ async function init(){
   updateSyncTimeDisplay();
 }
 document.addEventListener('DOMContentLoaded',init);
+
+function toggleMoreMenu() {
+  const menu = document.getElementById('more-menu');
+  const overlay = document.getElementById('more-overlay');
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+  overlay.style.display = isOpen ? 'none' : 'block';
+  const btn = document.getElementById('bn-more');
+  if (btn) btn.classList.toggle('active', !isOpen);
+}
+function closeMoreMenu() {
+  const menu = document.getElementById('more-menu');
+  const overlay = document.getElementById('more-overlay');
+  if (menu) menu.style.display = 'none';
+  if (overlay) overlay.style.display = 'none';
+  const btn = document.getElementById('bn-more');
+  if (btn) btn.classList.remove('active');
+}
 </script>
 </body>
 </html>
