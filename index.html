@@ -2453,25 +2453,28 @@ async function sbGet(table, query='') {
 // ── Meta (progress, goal, hard words, families) ──
 async function sbPushAllMeta() {
   if (!sbUrl||!sbKey) return;
-  const meta = {
-    key: 'lingo_meta',
-    value: JSON.stringify({
-      learnedLog, learnedEver:[...learnedEver],
-      hardWordIds:[...hardWordIds], goal, xp, streak,
-      totalCorrect, totalAnswered, families,
-      topics: topics.filter(t=>!['general','travel','food','business','tech','daily'].includes(t.key))
-    })
-  };
-  // Use upsert: POST with on_conflict parameter
-  if (!sbUrl||!sbKey) return;
+  const metaVal = JSON.stringify({
+    learnedLog, learnedEver:[...learnedEver],
+    hardWordIds:[...hardWordIds], goal, xp, streak,
+    totalCorrect, totalAnswered, listenCount, families,
+    topics: topics.filter(t=>!['general','travel','food','business','tech','daily'].includes(t.key))
+  });
+  // Use direct fetch for upsert on user_meta table
   try {
-    const r = await fetch(`${sbUrl}/rest/v1/user_meta?on_conflict=key`, {
-      method:'POST',
-      headers:{...sbH(), Prefer:'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify(meta)
+    const r = await fetch(sbUrl+'/rest/v1/user_meta?on_conflict=key', {
+      method: 'POST',
+      headers: {
+        apikey: sbKey, Authorization:'Bearer '+sbKey,
+        'Content-Type':'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ key:'lingo_meta', value:metaVal })
     });
-    if (!r.ok) console.error('meta upsert', r.status, await r.text());
-  } catch(e) { console.error('meta upsert error', e); }
+    if (!r.ok) {
+      const t = await r.text();
+      console.error('meta upsert failed:', r.status, t);
+    }
+  } catch(e) { console.error('meta upsert error:', e); }
 }
 
 async function sbPushHardWord(wordId, isHard) {
@@ -2561,49 +2564,63 @@ async function homeDownload() {
 }
 
 // ── FULL UPLOAD: xóa SB sạch rồi insert lại từ local ──
-// Đảm bảo SB = local 100%, không bị trùng, không bị cũ
 async function fullUploadToSB() {
   if (!sbUrl||!sbKey) return;
 
-  // Xóa toàn bộ words trên SB
-  try {
-    const dw = await fetch(`${sbUrl}/rest/v1/words?id=neq.0`, { method:'DELETE', headers:{...sbGH(),'Content-Type':'application/json'} });
-    if (!dw.ok) console.warn('delete words status:', dw.status);
-  } catch(e) { console.warn('delete words err:', e); }
+  const H_GET  = { apikey:sbKey, Authorization:'Bearer '+sbKey, Accept:'application/json' };
+  const H_POST = { apikey:sbKey, Authorization:'Bearer '+sbKey, 'Content-Type':'application/json', Accept:'application/json', Prefer:'return=representation' };
+  const H_DEL  = { apikey:sbKey, Authorization:'Bearer '+sbKey };
 
-  // Insert lại từng từ, cập nhật ID từ SB về local
+  // 1. Xóa tất cả words trên SB
+  await fetch(sbUrl+'/rest/v1/words?id=gt.0', { method:'DELETE', headers:H_DEL });
+
+  // 2. Insert lại từng từ
   const newWords = [];
   for (const w of words) {
-    const r = await sbPost('words',
-      {word:w.word,phonetic:w.phonetic||'',part_of_speech:w.partOfSpeech||'',
-       meaning:w.meaning,example:w.example||'',topic:w.topic||'general',level:w.level||3},
-      'return=representation'
-    );
-    newWords.push(Array.isArray(r)&&r[0]?.id ? {...w,id:r[0].id} : w);
+    try {
+      const r = await fetch(sbUrl+'/rest/v1/words', {
+        method:'POST', headers:H_POST,
+        body: JSON.stringify({
+          word:w.word, phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
+          meaning:w.meaning, example:w.example||'', topic:w.topic||'general', level:w.level||3
+        })
+      });
+      const txt = await r.text();
+      let inserted = null;
+      try { inserted = JSON.parse(txt); } catch {}
+      const newId = Array.isArray(inserted)&&inserted[0]?.id ? inserted[0].id : w.id;
+      newWords.push({...w, id:newId});
+    } catch(e) { console.error('insert word error:', w.word, e); newWords.push(w); }
   }
   words = newWords;
 
-  // Xóa toàn bộ sentences trên SB, insert lại
-  try {
-    const ds = await fetch(`${sbUrl}/rest/v1/sentences?id=neq.0`, { method:'DELETE', headers:{...sbGH(),'Content-Type':'application/json'} });
-    if (!ds.ok) console.warn('delete sentences status:', ds.status);
-  } catch(e) { console.warn('delete sentences err:', e); }
+  // 3. Xóa tất cả sentences trên SB
+  await fetch(sbUrl+'/rest/v1/sentences?id=gt.0', { method:'DELETE', headers:H_DEL });
+
+  // 4. Insert lại từng câu
   const newSents = [];
   for (const s of sentences) {
-    const r = await sbPost('sentences',
-      {viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'},
-      'return=representation'
-    );
-    newSents.push(Array.isArray(r)&&r[0]?.id ? {...s,id:r[0].id} : s);
+    try {
+      const r = await fetch(sbUrl+'/rest/v1/sentences', {
+        method:'POST', headers:H_POST,
+        body: JSON.stringify({ viet:s.viet, eng:s.eng, note:s.note||'', type:s.type||'daily' })
+      });
+      const txt = await r.text();
+      let inserted = null;
+      try { inserted = JSON.parse(txt); } catch {}
+      const newId = Array.isArray(inserted)&&inserted[0]?.id ? inserted[0].id : s.id;
+      newSents.push({...s, id:newId});
+    } catch(e) { console.error('insert sent error:', e); newSents.push(s); }
   }
   sentences = newSents;
 
-  // Push meta (goal, progress, hard words, families, topics)
+  // 5. Push meta
   await sbPushAllMeta();
 
   saveState();
   markSynced();
-  toast('✓ Đã lưu toàn bộ lên cloud!','good');
+  console.log('Upload done:', words.length, 'words,', sentences.length, 'sentences');
+  toast('✓ Đã lưu '+words.length+' từ lên cloud!','good');
 }
 
 // ── PUSH: đẩy toàn bộ lên SB (từ tab Supabase) ──
@@ -2621,86 +2638,110 @@ async function syncAllToSB(){
 }
 
 // ── PULL: kéo data từ SB về — THAY THẾ hoàn toàn local ──
+// Dùng fetch trực tiếp thay vì sbGet để tránh mọi vấn đề header
 async function loadAllFromSB(){
   if (!sbUrl||!sbKey) { toast('Kết nối Supabase trước!','bad'); return; }
   const res = document.getElementById('load-result');
   if (res) res.textContent = 'Đang tải...';
-  let loaded = [];
 
-  // Words — ghi đè hoàn toàn, không merge
-  const wData = await sbGet('words', '&order=id.asc');
-  console.log('SB words response:', wData);
-  if (Array.isArray(wData) && wData.length > 0) {
-    words = wData.map(w=>({
-      id:w.id, word:w.word, phonetic:w.phonetic||'',
-      partOfSpeech:w.part_of_speech||'',
-      meaning:w.meaning, example:w.example||'',
-      topic:w.topic||'general', level:w.level||3
-    }));
-    loaded.push(`${words.length} từ`);
-  } else if (Array.isArray(wData) && wData.length === 0) {
-    // SB trả về mảng rỗng — có thể chưa có data hoặc đã xóa hết
-    console.warn('SB words is empty');
+  const H = { 'apikey': sbKey, 'Authorization': 'Bearer '+sbKey, 'Accept': 'application/json' };
+
+  try {
+    // ── 1. Words ──
+    const wResp = await fetch(sbUrl+'/rest/v1/words?select=*&order=id.asc', { method:'GET', headers:H });
+    const wText = await wResp.text();
+    let wData = [];
+    try { wData = JSON.parse(wText); } catch(e) { console.error('words parse fail:', wText); }
+    console.log('words from SB:', wData.length, 'rows');
+
+    if (Array.isArray(wData) && wData.length > 0) {
+      words = wData.map(w=>({
+        id: w.id,
+        word: w.word || '',
+        phonetic: w.phonetic || '',
+        partOfSpeech: w.part_of_speech || '',
+        meaning: w.meaning || '',
+        example: w.example || '',
+        topic: w.topic || 'general',
+        level: w.level || 3
+      }));
+    }
+
+    // ── 2. Sentences ──
+    const sResp = await fetch(sbUrl+'/rest/v1/sentences?select=*&order=id.asc', { method:'GET', headers:H });
+    const sText = await sResp.text();
+    let sData = [];
+    try { sData = JSON.parse(sText); } catch(e) { console.error('sentences parse fail:', sText); }
+
+    if (Array.isArray(sData) && sData.length > 0) {
+      sentences = sData.map(s=>({
+        id: s.id, viet: s.viet||'', eng: s.eng||'',
+        note: s.note||'', type: s.type||'daily'
+      }));
+    }
+
+    // ── 3. Meta ──
+    const mResp = await fetch(sbUrl+'/rest/v1/user_meta?select=*&key=eq.lingo_meta', { method:'GET', headers:H });
+    const mText = await mResp.text();
+    let mData = [];
+    try { mData = JSON.parse(mText); } catch(e) { console.error('meta parse fail:', mText); }
+
+    if (Array.isArray(mData) && mData.length > 0 && mData[0].value) {
+      try {
+        const m = JSON.parse(mData[0].value);
+        if (m.learnedLog)  learnedLog  = m.learnedLog;
+        if (m.learnedEver) learnedEver = new Set(m.learnedEver);
+        if (m.hardWordIds) hardWordIds = new Set(m.hardWordIds);
+        if (m.goal !== undefined) goal = m.goal;
+        if (m.xp   !== undefined) xp   = m.xp;
+        if (m.streak !== undefined) streak = m.streak;
+        if (m.totalCorrect  !== undefined) totalCorrect  = m.totalCorrect;
+        if (m.totalAnswered !== undefined) totalAnswered = m.totalAnswered;
+        if (Array.isArray(m.families)) families = m.families;
+        if (Array.isArray(m.topics)) {
+          const defs = ['general','travel','food','business','tech','daily'];
+          topics = [
+            ...topics.filter(t=>defs.includes(t.key)),
+            ...m.topics.filter(t=>!defs.includes(t.key))
+          ];
+        }
+      } catch(e) { console.error('meta value parse:', e); }
+    }
+
+    // ── Ghi vào localStorage ──
+    LS.set('lingo_words',       words);
+    LS.set('lingo_sents',       sentences);
+    LS.set('lingo_topics',      topics);
+    LS.set('lingo_families',    families);
+    LS.set('lingo_xp',          xp);
+    LS.set('lingo_streak',      streak);
+    LS.set('lingo_correct',     totalCorrect);
+    LS.set('lingo_answered',    totalAnswered);
+    LS.set('lingo_learned_log', learnedLog);
+    LS.set('lingo_learned_ever',[...learnedEver]);
+    LS.set('lingo_hard_words',  [...hardWordIds]);
+    LS.set('lingo_goal',        goal);
+
+    populateTopicSelects(); populateTopicFilters();
+    updateCounters(); updateSBStatus(true); markSynced();
+
+    const nW = words.length, nS = sentences.length;
+    const msg = nW > 0
+      ? `✓ Tải về: ${nW} từ · ${nS} câu`
+      : '⚠ Supabase chưa có dữ liệu — hãy "Lưu lên cloud" từ thiết bị có data trước';
+    if (res) res.textContent = msg;
+    if (nW > 0) {
+      toast(`✓ Đã tải ${nW} từ về máy này!`, 'good');
+    } else {
+      toast('⚠ Chưa có data trên Supabase', 'bad');
+    }
+
+    renderWB(); renderWordStats(); renderGoalBanner();
+  } catch(e) {
+    console.error('loadAllFromSB error:', e);
+    if (res) res.textContent = 'Lỗi kết nối: ' + e.message;
+    toast('Lỗi tải dữ liệu: '+e.message, 'bad');
   }
-
-  // Sentences — ghi đè hoàn toàn
-  const sData = await sbGet('sentences', '&order=id.asc');
-  if (Array.isArray(sData)) {
-    sentences = sData.map(s=>({id:s.id,viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'}));
-    loaded.push(`${sentences.length} câu`);
-  }
-
-  // Meta — ghi đè hoàn toàn
-  const mData = await sbGet('user_meta', '&key=eq.lingo_meta');
-  if (Array.isArray(mData) && mData.length>0) {
-    try {
-      const m = JSON.parse(mData[0].value);
-      if (m.learnedLog)   learnedLog   = m.learnedLog;
-      if (m.learnedEver)  learnedEver  = new Set(m.learnedEver);
-      if (m.hardWordIds)  hardWordIds  = new Set(m.hardWordIds);
-      if (m.goal !== undefined) goal   = m.goal;
-      if (m.xp  !== undefined) xp     = m.xp;
-      if (m.streak !== undefined) streak = m.streak;
-      if (m.totalCorrect  !== undefined) totalCorrect  = m.totalCorrect;
-      if (m.totalAnswered !== undefined) totalAnswered = m.totalAnswered;
-      if (Array.isArray(m.families)) families = m.families;
-      if (Array.isArray(m.topics)) {
-        const defs = ['general','travel','food','business','tech','daily'];
-        topics = [
-          ...topics.filter(t=>defs.includes(t.key)),
-          ...m.topics.filter(t=>!defs.includes(t.key))
-        ];
-      }
-      loaded.push('tiến độ ✓');
-    } catch(e) { console.error('meta parse', e); }
-  }
-
-  // Ghi đè localStorage (cache) — KHÔNG merge
-  LS.set('lingo_words',       words);
-  LS.set('lingo_sents',       sentences);
-  LS.set('lingo_topics',      topics);
-  LS.set('lingo_families',    families);
-  LS.set('lingo_xp',          xp);
-  LS.set('lingo_streak',      streak);
-  LS.set('lingo_correct',     totalCorrect);
-  LS.set('lingo_answered',    totalAnswered);
-  LS.set('lingo_learned_log', learnedLog);
-  LS.set('lingo_learned_ever',[...learnedEver]);
-  LS.set('lingo_hard_words',  [...hardWordIds]);
-  LS.set('lingo_goal',        goal);
-
-  populateTopicSelects(); populateTopicFilters();
-  updateCounters(); updateSBStatus(true);
-  const resultMsg = loaded.length > 0
-    ? '✓ Đã tải: ' + loaded.join(' · ')
-    : '⚠ Supabase trả về trống — hãy "Lưu lên cloud" trước từ thiết bị có data.';
-  if (res) res.textContent = resultMsg;
-  if (loaded.length === 0) {
-    toast('⚠ Chưa có data trên Supabase — hãy Upload từ thiết bị nguồn trước','bad');
-  } else {
-    toast('✓ Đồng bộ hoàn tất! ' + loaded.join(' · '),'good');
-  }
-  renderWB(); renderWordStats(); renderGoalBanner();
 }
 
 // ── Ghi từ mới vào SB, lấy ID về cập nhật local ──
