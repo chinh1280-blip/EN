@@ -423,6 +423,10 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 /* ── SB STATUS indicator in topbar ── */
 .sb-dot-wrap{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
 .sb-dot-wrap.connected{background:var(--accent);}
+
+/* ── SYNC BUTTON LOADING STATE ── */
+@keyframes spin-icon{from{display:inline-block;transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.btn-syncing{opacity:.7;pointer-events:none;position:relative;}
 </style>
 </head>
 <body>
@@ -574,6 +578,24 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         <div class="greeting-block">
           <h1>Xin chào,<br>hôm nay học gì?</h1>
           <p>Streak <strong id="home-streak">0</strong> ngày · <span id="home-xp">0</span> XP</p>
+        </div>
+
+        <!-- SYNC BANNER -->
+        <div id="sync-banner" style="display:none;margin-bottom:20px;">
+          <div style="background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:14px 16px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;">Đồng bộ Supabase</div>
+              <div style="font-size:12px;color:var(--muted);" id="sync-last-time">Chưa đồng bộ lần nào</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;">
+              <button class="btn btn-primary btn-sm" onclick="homeUpload()" id="btn-upload" style="gap:5px;">
+                ↑ Lưu lên cloud
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="homeDownload()" id="btn-download" style="gap:5px;">
+                ↓ Tải về thiết bị này
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Daily word -->
@@ -1365,7 +1387,13 @@ function go(tab, sideBtn, bnId) {
   if (tab==='wordbank')  { populateTopicFilters(); renderWB(); }
   if (tab==='stats')     renderStats();
   if (tab==='goal')      renderGoal();
-  if (tab==='home')      { renderGoalBanner(); renderWordStats(); }
+  if (tab==='home')      {
+    renderGoalBanner(); renderWordStats();
+    // Show/hide sync banner based on SB connection
+    const banner = document.getElementById('sync-banner');
+    if (banner) banner.style.display = (sbUrl&&sbKey) ? 'block' : 'none';
+    updateSyncTimeDisplay();
+  }
   if (tab==='topics')    renderTopics();
   if (tab==='families')  { populateWFSearch(); renderFamilies(); }
   if (tab==='setup')     {
@@ -2458,6 +2486,9 @@ async function testSB(){
       updateSBStatus(true);
       toast('✓ Kết nối! Đang tải dữ liệu từ Supabase...','good');
       await loadAllFromSB();
+      const banner = document.getElementById('sync-banner');
+      if (banner) banner.style.display = 'block';
+      updateSyncTimeDisplay();
     } else {
       toast(`Lỗi ${r.status}: kiểm tra lại URL và Key`,'bad');
     }
@@ -2466,37 +2497,108 @@ async function testSB(){
   }
 }
 
-// ── PUSH: đẩy toàn bộ local data lên SB (lần đầu setup) ──
+// ── Timestamp helpers ──
+function fmtSyncTime(ts) {
+  if (!ts) return 'Chưa đồng bộ lần nào';
+  const d = new Date(ts);
+  const diff = Math.floor((Date.now() - d) / 1000);
+  if (diff < 60) return 'vừa xong';
+  if (diff < 3600) return Math.floor(diff/60) + ' phút trước';
+  if (diff < 86400) return Math.floor(diff/3600) + ' giờ trước';
+  return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+}
+function updateSyncTimeDisplay() {
+  const el = document.getElementById('sync-last-time');
+  if (!el) return;
+  const ts = LS.get('lingo_last_sync', null);
+  el.textContent = ts ? ('Đồng bộ lần cuối: ' + fmtSyncTime(ts)) : 'Chưa đồng bộ lần nào';
+}
+function markSynced() {
+  LS.set('lingo_last_sync', Date.now());
+  updateSyncTimeDisplay();
+}
+
+// ── Home screen: Lưu lên cloud ──
+async function homeUpload() {
+  if (!sbUrl||!sbKey) { toast('Chưa kết nối Supabase! Vào tab Supabase để nhập key.','bad'); return; }
+  const btn = document.getElementById('btn-upload');
+  if (btn) { btn.classList.add('btn-syncing'); btn.textContent = '↑ Đang lưu...'; }
+  try {
+    await fullUploadToSB();
+    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↑ Lưu lên cloud'; }
+  } catch(e) {
+    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↑ Lưu lên cloud'; }
+    toast('Lỗi: '+e.message,'bad');
+  }
+}
+
+// ── Home screen: Tải về ──
+async function homeDownload() {
+  if (!sbUrl||!sbKey) { toast('Chưa kết nối Supabase! Vào tab Supabase để nhập key.','bad'); return; }
+  const btn = document.getElementById('btn-download');
+  if (btn) { btn.classList.add('btn-syncing'); btn.textContent = '↓ Đang tải...'; }
+  try {
+    await loadAllFromSB();
+    startFC(); renderGoalBanner(); renderWordStats();
+    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↓ Tải về thiết bị này'; }
+  } catch(e) {
+    if (btn) { btn.classList.remove('btn-syncing'); btn.textContent = '↓ Tải về thiết bị này'; }
+    toast('Lỗi: '+e.message,'bad');
+  }
+}
+
+// ── FULL UPLOAD: xóa SB sạch rồi insert lại từ local ──
+// Đảm bảo SB = local 100%, không bị trùng, không bị cũ
+async function fullUploadToSB() {
+  if (!sbUrl||!sbKey) return;
+
+  // Xóa toàn bộ words trên SB
+  try { await fetch(`${sbUrl}/rest/v1/words?id=gt.0`, { method:'DELETE', headers:sbGH() }); } catch {}
+
+  // Insert lại từng từ, cập nhật ID từ SB về local
+  const newWords = [];
+  for (const w of words) {
+    const r = await sbPost('words',
+      {word:w.word,phonetic:w.phonetic||'',part_of_speech:w.partOfSpeech||'',
+       meaning:w.meaning,example:w.example||'',topic:w.topic||'general',level:w.level||3},
+      'return=representation'
+    );
+    newWords.push(Array.isArray(r)&&r[0]?.id ? {...w,id:r[0].id} : w);
+  }
+  words = newWords;
+
+  // Xóa toàn bộ sentences trên SB, insert lại
+  try { await fetch(`${sbUrl}/rest/v1/sentences?id=gt.0`, { method:'DELETE', headers:sbGH() }); } catch {}
+  const newSents = [];
+  for (const s of sentences) {
+    const r = await sbPost('sentences',
+      {viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'},
+      'return=representation'
+    );
+    newSents.push(Array.isArray(r)&&r[0]?.id ? {...s,id:r[0].id} : s);
+  }
+  sentences = newSents;
+
+  // Push meta (goal, progress, hard words, families, topics)
+  await sbPushAllMeta();
+
+  saveState();
+  markSynced();
+  toast('✓ Đã lưu toàn bộ lên cloud!','good');
+}
+
+// ── PUSH: đẩy toàn bộ lên SB (từ tab Supabase) ──
 async function syncAllToSB(){
   if (!sbUrl||!sbKey) { toast('Kết nối Supabase trước!','bad'); return; }
   const res = document.getElementById('sync-result');
   if (res) res.textContent = 'Đang đồng bộ...';
-
-  let wOk=0;
-  for (const w of words) {
-    const r = await sbPost('words',
-      {word:w.word, phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
-       meaning:w.meaning, example:w.example||'', topic:w.topic||'general', level:w.level||3},
-      'resolution=ignore-duplicates,return=representation'
-    );
-    if (Array.isArray(r)&&r[0]?.id) { const idx=words.findIndex(x=>x.id===w.id); if(idx!==-1) words[idx].id=r[0].id; }
-    wOk++;
+  try {
+    await fullUploadToSB();
+    if (res) res.textContent = `✓ Đẩy lên: ${words.length} từ · ${sentences.length} câu · meta ✓`;
+  } catch(e) {
+    if (res) res.textContent = 'Lỗi: '+e.message;
+    toast('Lỗi: '+e.message,'bad');
   }
-
-  let sOk=0;
-  for (const s of sentences) {
-    await sbPost('sentences',
-      {viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'},
-      'resolution=ignore-duplicates,return=minimal'
-    );
-    sOk++;
-  }
-
-  await sbPushAllMeta();
-  saveState(); // save updated IDs
-
-  if (res) res.textContent = `✓ Đẩy lên: ${wOk} từ · ${sOk} câu · meta ✓`;
-  toast('✓ Đồng bộ lên Supabase hoàn tất!','good');
 }
 
 // ── PULL: kéo data từ SB về — THAY THẾ hoàn toàn local ──
@@ -2655,6 +2757,11 @@ async function init(){
   renderGoalBanner();
   renderWordStats();
   startFC();
+
+  // Show sync banner if SB is connected
+  const banner = document.getElementById('sync-banner');
+  if (banner) banner.style.display = (sbUrl&&sbKey) ? 'block' : 'none';
+  updateSyncTimeDisplay();
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>
