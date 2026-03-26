@@ -2521,66 +2521,94 @@ function markSynced() {
 
 // ── Kết nối: test rồi pull ngay ──
 async function testSB() {
-  const url = (document.getElementById('sb-url')?.value || '').trim();
-  const key = (document.getElementById('sb-key')?.value || '').trim();
-  if (!url || !key) { toast('Nhập URL và Key!', 'bad'); return; }
+  const urlRaw = (document.getElementById('sb-url')?.value || '').trim();
+  const key    = (document.getElementById('sb-key')?.value || '').trim();
+  const trEl   = document.getElementById('sb-test-result');
+  const btnEl  = document.getElementById('btn-test-sb');
 
-  // Normalize URL — bỏ dấu / cuối nếu có
-  const cleanUrl = url.replace(/\/+$/, '');
+  if (!urlRaw || !key) { toast('Nhập URL và Key!', 'bad'); return; }
 
-  // Kiểm tra kết nối bằng endpoint health check của Supabase REST
-  // Dùng /rest/v1/ (không cần bảng cụ thể) — chỉ verify project tồn tại và key hợp lệ
-  let testResp;
+  // Chuẩn hóa URL: bỏ dấu / cuối, bỏ /rest/v1 nếu user paste nhầm
+  const cleanUrl = urlRaw.replace(/\/+$/, '').replace(/\/rest\/v1.*$/, '');
+
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Đang kiểm tra...'; }
+  if (trEl)  trEl.textContent = '';
+
+  // ── Ping project bằng /auth/v1/settings — luôn tồn tại, không cần bảng ──
+  let pingStatus = 0;
   try {
-    testResp = await fetch(cleanUrl + '/rest/v1/', {
-      method: 'GET',
+    const pingResp = await fetch(cleanUrl + '/auth/v1/settings', {
+      headers: { apikey: key, Authorization: 'Bearer ' + key }
+    });
+    pingStatus = pingResp.status;
+  } catch(e) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Kiểm tra kết nối'; }
+    if (trEl) trEl.innerHTML = '<div style="color:var(--red);font-size:12px;margin-top:6px;">✗ Không kết nối được: ' + e.message + '<br>→ Kiểm tra lại URL (phải là https://xxxxx.supabase.co)</div>';
+    toast('Không kết nối được: ' + e.message, 'bad');
+    return;
+  }
+
+  if (pingStatus === 401) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Kiểm tra kết nối'; }
+    if (trEl) trEl.innerHTML = '<div style="color:var(--red);font-size:12px;margin-top:6px;">✗ Sai Anon Key (401)<br>→ Vào Supabase → Settings → API → copy lại anon/public key</div>';
+    toast('⚠ Sai Anon Key — kiểm tra lại', 'bad');
+    return;
+  }
+
+  // pingStatus 200 hoặc bất kỳ status nào < 500 = project tồn tại
+  if (pingStatus >= 500) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Kiểm tra kết nối'; }
+    if (trEl) trEl.innerHTML = '<div style="color:var(--red);font-size:12px;margin-top:6px;">✗ Server lỗi (' + pingStatus + ') — thử lại sau</div>';
+    toast('Server lỗi: ' + pingStatus, 'bad');
+    return;
+  }
+
+  // ── Kiểm tra bảng words đã tạo chưa ──
+  let tableOk = false;
+  try {
+    const tResp = await fetch(cleanUrl + '/rest/v1/words?limit=1', {
       headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' }
     });
-  } catch(e) {
-    const trE=document.getElementById('sb-test-result');
-    if(trE) trE.textContent='✗ '+e.message;
-    toast('Không kết nối được — kiểm tra lại URL: ' + e.message, 'bad');
-    return;
-  }
+    const tBody = await tResp.text();
+    // 200 = bảng có, 404 + "schema cache" = bảng chưa tạo
+    tableOk = tResp.status === 200 || (tResp.status !== 404 && !tBody.includes('schema cache'));
+  } catch {}
 
-  // 200 = OK, 400 = đúng server nhưng query lỗi (vẫn kết nối được)
-  // 401 = sai key, 404 = sai URL
-  if (testResp.status === 401) {
-    const trE=document.getElementById('sb-test-result');
-    if(trE) trE.textContent='✗ Sai Key (401)';
-    toast('⚠ Sai Anon Key — kiểm tra lại key trong Supabase → Settings → API', 'bad');
-    return;
-  }
-  if (testResp.status === 404) {
-    const trE=document.getElementById('sb-test-result');
-    if(trE) trE.textContent='✗ Sai URL (404)';
-    toast('⚠ Sai Project URL — kiểm tra lại URL trong Supabase → Settings → API', 'bad');
-    return;
-  }
-  // Bất kỳ response nào từ server (kể cả 400, 406) đều nghĩa là kết nối thành công
-  // Lưu credentials
+  // Lưu credentials — kết nối đã OK
   sbUrl = cleanUrl;
   sbKey = key;
   LS.set('sb_url', cleanUrl);
   LS.set('sb_key', key);
   updateSBStatus(true);
-
+  if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Kiểm tra kết nối'; }
   const banner = document.getElementById('sync-banner');
   if (banner) banner.style.display = 'block';
   updateSyncTimeDisplay();
 
-  // Thử tải data từ SB
-  // Update result div
-  const trEl = document.getElementById('sb-test-result');
-  if (trEl) trEl.textContent = '✓ Kết nối thành công — đang tải dữ liệu...';
+  if (!tableOk) {
+    // Kết nối OK nhưng bảng chưa có → hiển thị hướng dẫn rõ ràng
+    if (trEl) trEl.innerHTML = `
+      <div style="background:var(--amber-lt);border:1px solid #f0d8b8;border-radius:var(--r);padding:12px;margin-top:8px;font-size:12px;">
+        <div style="font-weight:600;color:var(--amber);margin-bottom:8px;">✓ Kết nối OK — nhưng bảng dữ liệu chưa được tạo</div>
+        <div style="color:var(--mid);line-height:1.9;">
+          <strong>Làm theo thứ tự:</strong><br>
+          1. Kéo xuống → nhấn <strong>"Sao chép SQL"</strong><br>
+          2. Mở <strong>supabase.com</strong> → chọn project → <strong>SQL Editor</strong><br>
+          3. Paste SQL → nhấn <strong>RUN</strong> (hoặc Ctrl+Enter)<br>
+          4. Quay lại đây → nhấn <strong>"Kiểm tra kết nối"</strong> lại<br>
+          5. Sau khi pass → về <strong>Home → ↑ Lưu lên cloud</strong>
+        </div>
+      </div>`;
+    toast('✓ Kết nối OK — cần tạo bảng SQL trước (xem hướng dẫn)', 'good');
+    return;
+  }
 
+  // Bảng đã có → pull data
+  if (trEl) trEl.innerHTML = '<div style="color:var(--accent);font-size:12px;margin-top:6px;">✓ Kết nối OK · Bảng đã có · Đang tải dữ liệu...</div>';
   toast('✓ Kết nối thành công! Đang tải dữ liệu...', 'good');
   await loadAllFromSB();
 }
 
-// ══════════════════════════════════════════════
-// ↑ LƯU LÊN CLOUD — Xóa SB sạch, insert lại
-// ══════════════════════════════════════════════
 async function homeUpload() {
   if (!sbUrl || !sbKey) { toast('Chưa kết nối Supabase!', 'bad'); return; }
   const btn = document.getElementById('btn-upload');
