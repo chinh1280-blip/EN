@@ -357,6 +357,8 @@ input::placeholder{color:var(--muted)}
 .wb-edit{color:var(--blue);}
 .wb-edit:hover{background:var(--blue-lt);border-color:var(--blue);}
 .wb-del:hover{background:var(--red-lt);border-color:var(--red);}
+.wb-hard{border-color:#f0d8b8 !important;background:linear-gradient(to right, var(--amber-lt), var(--white)) !important;}
+.wb-hard-star{color:var(--amber);font-size:14px;flex-shrink:0;line-height:1;}
 
 /* wr-btn shared for all small icon buttons */
 .wr-btn{width:28px;height:28px;background:none;border:1px solid var(--rule);border-radius:6px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
@@ -647,7 +649,10 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
           <div class="fc-card-scene" onclick="flipFC()">
             <div class="fc-card-3d" id="fc-card">
               <div class="fc-face fc-front">
-                <div class="chip chip-muted" id="fc-topic-chip" style="margin-bottom:12px;">general</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                  <div class="chip chip-muted" id="fc-topic-chip">general</div>
+                  <span id="fc-hard-star" style="color:var(--amber);font-size:18px;display:none;" title="Từ khó">★</span>
+                </div>
                 <div class="fc-eng"  id="fc-word">Serendipity</div>
                 <div class="fc-phon" id="fc-phon">/ˌser.ənˈdɪp.ɪ.ti/</div>
                 <div class="fc-tap-hint">Nhấn để xem nghĩa · nhấn lại để lật về ↺</div>
@@ -827,6 +832,9 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <option value="new">Mới nhất</option><option value="az">A → Z</option><option value="hard">Khó nhất</option>
           </select>
           <button id="ipa-toggle-btn" class="btn btn-ghost btn-sm" onclick="toggleIPA()" style="white-space:nowrap;">Ẩn IPA</button>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--amber);font-weight:600;cursor:pointer;white-space:nowrap;">
+            <input type="checkbox" id="wb-hard-only" onchange="renderWB()" style="width:14px;height:14px;">★ Từ khó
+          </label>
         </div>
         <div id="wb-count" style="font-size:13px;color:var(--muted);margin-bottom:10px;"></div>
         <div class="words-list" id="wb-list"></div>
@@ -1134,7 +1142,15 @@ CREATE TABLE topics (
   label TEXT NOT NULL
 );
 ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public_all" ON topics FOR ALL USING (true) WITH CHECK (true);</div>
+CREATE POLICY "public_all" ON topics FOR ALL USING (true) WITH CHECK (true);
+
+-- Meta (tiến độ, goal, hard words, families - đồng bộ tự động)
+CREATE TABLE user_meta (
+  key   TEXT PRIMARY KEY,
+  value TEXT
+);
+ALTER TABLE user_meta ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);</div>
           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
             <button class="btn btn-ghost btn-sm" onclick="copySQL()">Sao chép SQL</button>
           </div>
@@ -1273,6 +1289,8 @@ let learnedLog  = LS.get('lingo_learned_log', {});
 // learnedEver: array of word IDs (serialized from Set)
 let learnedEverArr = LS.get('lingo_learned_ever', []);
 let learnedEver    = new Set(learnedEverArr);
+// hardWordIds: words ever rated "Khó" — persisted, shown with ★
+let hardWordIds = new Set(LS.get('lingo_hard_words', []));
 let goal        = LS.get('lingo_goal', null);
 
 let combo=0, comboTimer=null;
@@ -1299,6 +1317,7 @@ function saveState() {
   LS.set('lingo_listen_count',listenCount);
   LS.set('lingo_learned_log', learnedLog);
   LS.set('lingo_learned_ever',[...learnedEver]);
+  LS.set('lingo_hard_words',  [...hardWordIds]);
   LS.set('lingo_goal',        goal);
   updateCounters();
 }
@@ -1496,7 +1515,7 @@ function saveGoal() {
   const end=document.getElementById('g-end').value;
   if(!start||!end){toast('Chọn ngày bắt đầu và kết thúc!','bad');return;}
   if(start>end){toast('Ngày kết thúc phải sau ngày bắt đầu!','bad');return;}
-  goal={daily,start,end}; saveState();
+  goal={daily,start,end}; saveState(); pushMetaToSB();
   toast('✓ Đã lưu mục tiêu','good');
   renderGoal(); renderGoalBanner();
 }
@@ -1674,6 +1693,9 @@ function showFC(){
     if(w.partOfSpeech){posEl.textContent=w.partOfSpeech;posEl.style.display='inline-flex';}
     else posEl.style.display='none';
   }
+  // Show ★ if word is hard
+  const starEl = document.getElementById('fc-hard-star');
+  if (starEl) starEl.style.display = hardWordIds.has(w.id) ? 'inline' : 'none';
   // Reset flip — force a reflow to ensure transition plays correctly
   const card=document.getElementById('fc-card');
   card.style.transition='none';
@@ -1698,6 +1720,12 @@ function rateFC(r){
   if(r==='easy'){
     fcKnown++;
     combo++;
+    // If word was hard, remove from hard list when remembered
+    if(hardWordIds.has(w.id)){
+      hardWordIds.delete(w.id);
+      fcHardWords = fcHardWords.filter(x=>x.id!==w.id);
+      sbPushHardWord(w.id, false);
+    }
     const isNew = markLearned(w.id);
     const e=addXP(10, combo>=3?2:1);
     if(isNew){
@@ -1707,12 +1735,16 @@ function rateFC(r){
       toast(combo>=3?`🔥 Combo ×${combo}! +${e} XP (ôn lại)`:`+10 XP (ôn lại)`,'good');
     }
     triggerCombo();
-    saveState();
+    saveState(); pushMetaToSB();
   } else if(r==='hard'){
-    combo=Math.max(0,combo-1); addXP(5); saveState();
-    // Track hard words
+    combo=Math.max(0,combo-1); addXP(5);
+    // Mark as hard — persistent across sessions
+    hardWordIds.add(w.id);
     if(!fcHardWords.find(x=>x.id===w.id)) fcHardWords.push(w);
+    saveState();
     renderHardWords();
+    // push hard flag to Supabase immediately
+    sbPushHardWord(w.id, true);
   } else {
     fcUnknown++; combo=0;
     fcQueue.push(fcQueue[fcIdx]);
@@ -1922,11 +1954,12 @@ function addSentence(){
   if(!viet||!eng){toast('Nhập câu tiếng Việt và tiếng Anh!','bad');return;}
   const ns={id:Date.now(),viet,eng,note:document.getElementById('sn-note').value.trim()||'',type:document.getElementById('sn-type').value};
   sentences.unshift(ns); saveState();
+  if(sbUrl&&sbKey) sbPost('sentences',{viet:ns.viet,eng:ns.eng,note:ns.note||'',type:ns.type||'daily'},'resolution=ignore-duplicates,return=minimal');
   ['sn-viet','sn-eng','sn-note'].forEach(id=>document.getElementById(id).value='');
   toast('✓ Đã thêm câu mẫu','good'); addXP(3); renderSentences();
 }
 function deleteSentence(id){
-  sentences=sentences.filter(s=>s.id!==id); saveState(); renderSentences(); toast('Đã xóa','');
+  sentences=sentences.filter(s=>s.id!==id); saveState(); pushMetaToSB(); renderSentences(); toast('Đã xóa','');
 }
 function renderSentences(){
   const list=sentType==='all'?sentences:sentences.filter(s=>s.type===sentType);
@@ -2088,7 +2121,7 @@ function saveWord(){
     topic:document.getElementById('aw-t').value,
     level:parseInt(document.getElementById('aw-l').value)
   };
-  words.unshift(nw); saveState(); saveWordToSB(nw);
+  words.unshift(nw); saveState(); saveWordToSB(nw); pushMetaToSB();
   closeModal('addModal');
   toast('✓ Đã thêm "'+w+'"','good'); addXP(5);
   ['aw-w','aw-p','aw-m','aw-e'].forEach(id=>document.getElementById(id).value='');
@@ -2125,7 +2158,7 @@ function updateWord() {
     topic:document.getElementById('ew-t').value,
     level:parseInt(document.getElementById('ew-l').value),
   };
-  saveState(); closeModal('editModal');
+  saveState(); pushMetaToSB(); closeModal('editModal');
   toast('✓ Đã cập nhật "'+wrd+'"','good');
   renderWB();
 }
@@ -2136,7 +2169,7 @@ function deleteWord(id){
   Object.keys(learnedLog).forEach(d=>{ learnedLog[d]=learnedLog[d].filter(x=>x!==id); });
   // Also remove from families
   families=families.map(f=>({...f,wordIds:f.wordIds.filter(x=>x!==id)})).filter(f=>f.wordIds.length>0);
-  saveState(); renderWB(); renderWordStats();
+  saveState(); pushMetaToSB(); renderWB(); renderWordStats();
   toast('Đã xóa','');
 }
 
@@ -2186,7 +2219,7 @@ function saveWordFamily() {
   } else {
     families.push({ id: Date.now(), root, wordIds: [...wfSelected] });
   }
-  saveState();
+  saveState(); pushMetaToSB();
   document.getElementById('wf-root').value='';
   wfSelected=[];
   renderWFSearch();
@@ -2197,7 +2230,7 @@ function saveWordFamily() {
 function deleteFamily(id) {
   if(!confirm('Xóa nhóm Word Family này?')) return;
   families = families.filter(f=>f.id!==id);
-  saveState(); renderFamilies();
+  saveState(); pushMetaToSB(); renderFamilies();
   toast('Đã xóa nhóm','');
 }
 function renderFamilies() {
@@ -2298,197 +2331,219 @@ function confirmReset(){
   closeModal('resetModal');
   toast('✓ Đã bắt đầu lại. Kho từ vựng được giữ nguyên.','good');
   updateCounters(); renderStats(); renderGoalBanner(); renderWordStats();
+  pushMetaToSB();
   go('stats');
 }
 
 /* ════════════════════════════════════════════
-   SUPABASE — Full sync: words, sentences, families, topics
+   SUPABASE — Real-time 2-way sync
+   Mọi thay đổi đều push lên SB ngay lập tức.
+   Khi kết nối lần đầu → tự pull data về.
 ════════════════════════════════════════════ */
-function sbHeaders() {
-  return { apikey: sbKey, Authorization: 'Bearer '+sbKey, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
-}
-function sbFetchHeaders() {
-  return { apikey: sbKey, Authorization: 'Bearer '+sbKey };
-}
-
-async function testSB(){
-  const url=document.getElementById('sb-url')?.value.trim()||'';
-  const key=document.getElementById('sb-key')?.value.trim()||'';
-  if(!url||!key){toast('Nhập URL và Key!','bad');return;}
-  try{
-    const r=await fetch(`${url}/rest/v1/words?limit=1`,{headers:{apikey:key,Authorization:'Bearer '+key}});
-    if(r.ok){
-      sbUrl=url; sbKey=key;
-      LS.set('sb_url',url); LS.set('sb_key',key);
-      toast('✓ Kết nối Supabase thành công!','good');
-      updateSBStatus(true);
-    } else { toast(`Lỗi ${r.status}: kiểm tra lại URL và Key`,'bad'); }
-  } catch(e){ toast('Không kết nối được: '+e.message,'bad'); }
-}
+function sbH()  { return { apikey:sbKey, Authorization:'Bearer '+sbKey, 'Content-Type':'application/json' }; }
+function sbGH() { return { apikey:sbKey, Authorization:'Bearer '+sbKey }; }
 
 function updateSBStatus(connected) {
-  const el = document.getElementById('sb-status');
+  const el  = document.getElementById('sb-status');
+  const dot = document.getElementById('topbar-sb-dot');
   if (el) {
     el.innerHTML = connected
-      ? '<div class="status-dot"></div>Đã kết nối Supabase · Dữ liệu đồng bộ đa thiết bị'
-      : '<div class="status-dot"></div>Chưa kết nối · Đang dùng LocalStorage';
+      ? '<div class="status-dot"></div>Đã kết nối · Tự động đồng bộ đa thiết bị'
+      : '<div class="status-dot"></div>Chưa kết nối · Dùng LocalStorage';
     el.className = connected ? 'status-line status-ok' : 'status-line status-wait';
   }
-  // update topbar dot
-  const dot = document.getElementById('topbar-sb-dot');
-  if (dot) dot.className = 'sb-dot-wrap' + (connected ? ' connected' : '');
+  if (dot) dot.className = 'sb-dot-wrap'+(connected?' connected':'');
 }
 
-async function sbUpsert(table, rows) {
-  if (!rows.length) return 0;
+async function sbPost(table, body, prefer='resolution=ignore-duplicates,return=representation') {
+  if (!sbUrl||!sbKey) return null;
   try {
     const r = await fetch(`${sbUrl}/rest/v1/${table}`, {
-      method: 'POST',
-      headers: { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify(rows)
+      method:'POST', headers:{...sbH(), Prefer:prefer},
+      body: JSON.stringify(body)
     });
-    return r.ok ? rows.length : 0;
-  } catch { return 0; }
+    if (!r.ok) return null;
+    const ct = r.headers.get('content-type')||'';
+    return ct.includes('json') ? await r.json() : null;
+  } catch { return null; }
 }
 
+async function sbPatch(table, id, body) {
+  if (!sbUrl||!sbKey) return;
+  try {
+    await fetch(`${sbUrl}/rest/v1/${table}?id=eq.${id}`, {
+      method:'PATCH', headers:{...sbH(), Prefer:'return=minimal'},
+      body: JSON.stringify(body)
+    });
+  } catch {}
+}
+
+async function sbDelete(table, id) {
+  if (!sbUrl||!sbKey) return;
+  try {
+    await fetch(`${sbUrl}/rest/v1/${table}?id=eq.${id}`, {
+      method:'DELETE', headers:sbGH()
+    });
+  } catch {}
+}
+
+async function sbGet(table, query='') {
+  if (!sbUrl||!sbKey) return null;
+  try {
+    const r = await fetch(`${sbUrl}/rest/v1/${table}?select=*${query}`, { headers:sbGH() });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
+}
+
+/* ── Word hard status: stored as a JSON row in a meta table ── */
+async function sbPushHardWord(wordId, isHard) {
+  if (!sbUrl||!sbKey) return;
+  // We store hard word IDs as a single JSON row in a "user_meta" table
+  // key='hard_words', value=JSON array
+  const ids = [...hardWordIds];
+  await sbPost('user_meta', {key:'hard_words', value:JSON.stringify(ids)},
+    'resolution=merge-duplicates,return=minimal');
+}
+
+async function sbPushAllMeta() {
+  if (!sbUrl||!sbKey) return;
+  const meta = {
+    key: 'lingo_meta',
+    value: JSON.stringify({
+      learnedLog,
+      learnedEver: [...learnedEver],
+      hardWordIds:  [...hardWordIds],
+      goal, xp, streak, totalCorrect, totalAnswered,
+      families,
+      topics: topics.filter(t=>!['general','travel','food','business','tech','daily'].includes(t.key))
+    })
+  };
+  await sbPost('user_meta', meta, 'resolution=merge-duplicates,return=minimal');
+}
+
+/* ── Connect & auto-pull ── */
+async function testSB(){
+  const url = document.getElementById('sb-url')?.value.trim()||'';
+  const key = document.getElementById('sb-key')?.value.trim()||'';
+  if (!url||!key) { toast('Nhập URL và Key!','bad'); return; }
+  try {
+    const r = await fetch(`${url}/rest/v1/words?limit=1`, { headers:{apikey:key,Authorization:'Bearer '+key} });
+    if (r.ok) {
+      sbUrl=url; sbKey=key;
+      LS.set('sb_url',url); LS.set('sb_key',key);
+      updateSBStatus(true);
+      toast('✓ Kết nối thành công! Đang tải dữ liệu...','good');
+      await loadAllFromSB();
+    } else { toast(`Lỗi ${r.status}: kiểm tra lại URL và Key`,'bad'); }
+  } catch(e) { toast('Không kết nối được: '+e.message,'bad'); }
+}
+
+/* ── PUSH all local data up ── */
 async function syncAllToSB(){
-  if(!sbUrl||!sbKey){toast('Kết nối Supabase trước!','bad');return;}
-  const res=document.getElementById('sync-result');
-  if(res) res.textContent='Đang đồng bộ...';
+  if (!sbUrl||!sbKey) { toast('Kết nối Supabase trước!','bad'); return; }
+  const res = document.getElementById('sync-result');
+  if (res) res.textContent = 'Đang đồng bộ...';
   const results = [];
 
-  // Words
-  const wordRows = words.map(w=>({
-    id: typeof w.id === 'number' && w.id < 1e13 ? w.id : undefined, // keep numeric ID if not timestamp-style
-    word: w.word, phonetic: w.phonetic||'', part_of_speech: w.partOfSpeech||'',
-    meaning: w.meaning, example: w.example||'', topic: w.topic||'general', level: w.level||3
-  }));
-  // For upsert with custom IDs we need the id column; use POST with onConflict
-  let wOk = 0;
-  for (const w of wordRows) {
-    try {
-      await fetch(`${sbUrl}/rest/v1/words`, {
-        method: 'POST',
-        headers: { ...sbHeaders(), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({word:w.word,phonetic:w.phonetic,part_of_speech:w.part_of_speech,meaning:w.meaning,example:w.example,topic:w.topic,level:w.level})
-      });
-      wOk++;
-    } catch {}
+  // words — upsert by id
+  let wOk=0;
+  for (const w of words) {
+    const row = {word:w.word,phonetic:w.phonetic||'',part_of_speech:w.partOfSpeech||'',
+      meaning:w.meaning,example:w.example||'',topic:w.topic||'general',level:w.level||3};
+    const r = await sbPost('words', row, 'resolution=ignore-duplicates,return=minimal');
+    wOk++;
   }
-  results.push(`Từ vựng: ${wOk}/${words.length}`);
+  results.push(`Từ: ${wOk}/${words.length}`);
 
-  // Sentences
-  let sOk = 0;
+  // sentences
+  let sOk=0;
   for (const s of sentences) {
-    try {
-      await fetch(`${sbUrl}/rest/v1/sentences`, {
-        method: 'POST',
-        headers: { ...sbHeaders(), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'})
-      });
-      sOk++;
-    } catch {}
+    await sbPost('sentences',{viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'},
+      'resolution=ignore-duplicates,return=minimal');
+    sOk++;
   }
-  results.push(`Câu mẫu: ${sOk}/${sentences.length}`);
+  results.push(`Câu: ${sOk}/${sentences.length}`);
 
-  // Word Families
-  let fOk = 0;
-  for (const f of families) {
-    try {
-      await fetch(`${sbUrl}/rest/v1/word_families`, {
-        method: 'POST',
-        headers: { ...sbHeaders(), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({root:f.root, word_ids:JSON.stringify(f.wordIds||[])})
-      });
-      fOk++;
-    } catch {}
-  }
-  results.push(`Word Family: ${fOk}/${families.length}`);
+  // meta (includes families, topics, learned, hard, goal...)
+  await sbPushAllMeta();
+  results.push('Meta ✓');
 
-  // Custom topics only
-  const customTopics = topics.filter(t=>!['general','travel','food','business','tech','daily'].includes(t.key));
-  let tOk = 0;
-  for (const t of customTopics) {
-    try {
-      await fetch(`${sbUrl}/rest/v1/topics`, {
-        method: 'POST',
-        headers: { ...sbHeaders(), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({key:t.key,label:t.label})
-      });
-      tOk++;
-    } catch {}
-  }
-  if (customTopics.length) results.push(`Chủ đề tuỳ chỉnh: ${tOk}/${customTopics.length}`);
-
-  const msg = '✓ Đã đồng bộ — ' + results.join(' · ');
-  if(res) res.textContent = msg;
+  if (res) res.textContent = '✓ ' + results.join(' · ');
   toast('✓ Đồng bộ hoàn tất!','good');
 }
 
+/* ── PULL all data from Supabase ── */
 async function loadAllFromSB(){
-  if(!sbUrl||!sbKey){toast('Kết nối Supabase trước!','bad');return;}
-  const res=document.getElementById('load-result');
-  if(res) res.textContent='Đang tải...';
-  try {
-    // Load words
-    const wr = await fetch(`${sbUrl}/rest/v1/words?select=*&order=created_at.asc`,{headers:sbFetchHeaders()});
-    if(wr.ok){
-      const wdata = await wr.json();
-      if(Array.isArray(wdata)&&wdata.length>0){
-        words = wdata.map(w=>({
-          id: w.id, word: w.word, phonetic: w.phonetic||'', partOfSpeech: w.part_of_speech||'',
-          meaning: w.meaning, example: w.example||'', topic: w.topic||'general', level: w.level||3
-        }));
+  if (!sbUrl||!sbKey) { toast('Kết nối Supabase trước!','bad'); return; }
+  const res = document.getElementById('load-result');
+  if (res) res.textContent = 'Đang tải...';
+  let loaded = [];
+
+  // words
+  const wData = await sbGet('words', '&order=created_at.asc');
+  if (Array.isArray(wData) && wData.length>0) {
+    words = wData.map(w=>({
+      id:w.id, word:w.word, phonetic:w.phonetic||'', partOfSpeech:w.part_of_speech||'',
+      meaning:w.meaning, example:w.example||'', topic:w.topic||'general', level:w.level||3
+    }));
+    loaded.push(`${words.length} từ`);
+  }
+
+  // sentences
+  const sData = await sbGet('sentences', '&order=created_at.asc');
+  if (Array.isArray(sData) && sData.length>0) {
+    sentences = sData.map(s=>({id:s.id,viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'}));
+    loaded.push(`${sentences.length} câu`);
+  }
+
+  // meta (families, topics, learned, hard, goal)
+  const mData = await sbGet('user_meta', `&key=eq.lingo_meta`);
+  if (Array.isArray(mData) && mData.length>0) {
+    try {
+      const m = JSON.parse(mData[0].value);
+      if (m.learnedLog)   learnedLog  = m.learnedLog;
+      if (m.learnedEver)  learnedEver = new Set(m.learnedEver);
+      if (m.hardWordIds)  hardWordIds  = new Set(m.hardWordIds);
+      if (m.goal !== undefined) goal   = m.goal;
+      if (m.xp !== undefined)  xp     = m.xp;
+      if (m.streak !== undefined) streak = m.streak;
+      if (m.totalCorrect  !== undefined) totalCorrect  = m.totalCorrect;
+      if (m.totalAnswered !== undefined) totalAnswered = m.totalAnswered;
+      if (Array.isArray(m.families)) families = m.families;
+      if (Array.isArray(m.topics)) {
+        const defs = ['general','travel','food','business','tech','daily'];
+        const base = topics.filter(t=>defs.includes(t.key));
+        topics = [...base, ...m.topics.filter(t=>!defs.includes(t.key))];
       }
-    }
-    // Load sentences
-    const sr = await fetch(`${sbUrl}/rest/v1/sentences?select=*&order=created_at.asc`,{headers:sbFetchHeaders()});
-    if(sr.ok){
-      const sdata = await sr.json();
-      if(Array.isArray(sdata)&&sdata.length>0){
-        sentences = sdata.map(s=>({id:s.id,viet:s.viet,eng:s.eng,note:s.note||'',type:s.type||'daily'}));
-      }
-    }
-    // Load word families
-    const fr = await fetch(`${sbUrl}/rest/v1/word_families?select=*`,{headers:sbFetchHeaders()});
-    if(fr.ok){
-      const fdata = await fr.json();
-      if(Array.isArray(fdata)&&fdata.length>0){
-        families = fdata.map(f=>({id:f.id,root:f.root,wordIds:Array.isArray(f.word_ids)?f.word_ids:(JSON.parse(f.word_ids||'[]'))}));
-      }
-    }
-    // Load custom topics
-    const tr = await fetch(`${sbUrl}/rest/v1/topics?select=*`,{headers:sbFetchHeaders()});
-    if(tr.ok){
-      const tdata = await tr.json();
-      if(Array.isArray(tdata)&&tdata.length>0){
-        const defaults = ['general','travel','food','business','tech','daily'];
-        const custom = tdata.filter(t=>!defaults.includes(t.key)).map(t=>({key:t.key,label:t.label}));
-        const defTopics = topics.filter(t=>defaults.includes(t.key));
-        topics = [...defTopics, ...custom];
-      }
-    }
-    saveState();
-    populateTopicSelects(); populateTopicFilters();
-    if(res) res.textContent=`✓ Đã tải: ${words.length} từ · ${sentences.length} câu · ${families.length} nhóm`;
-    toast('✓ Đã tải dữ liệu từ Supabase!','good');
-    updateSBStatus(true);
-  } catch(e){
-    if(res) res.textContent='Lỗi: '+e.message;
-    toast('Lỗi khi tải: '+e.message,'bad');
+      loaded.push('tiến độ ✓');
+    } catch {}
+  }
+
+  saveState();
+  populateTopicSelects(); populateTopicFilters();
+  updateSBStatus(true);
+  if (res) res.textContent = '✓ Đã tải: ' + (loaded.join(' · ')||'không có dữ liệu mới');
+  toast('✓ Đồng bộ hoàn tất!','good');
+  // Re-render current screen
+  renderWB(); renderWordStats(); renderGoalBanner();
+}
+
+/* ── Auto-save single word to SB (called after addWord/updateWord) ── */
+async function saveWordToSB(w) {
+  if (!sbUrl||!sbKey) return;
+  const row = {word:w.word,phonetic:w.phonetic||'',part_of_speech:w.partOfSpeech||'',
+    meaning:w.meaning,example:w.example||'',topic:w.topic||'general',level:w.level||3};
+  const result = await sbPost('words', row, 'resolution=ignore-duplicates,return=representation');
+  // If returned, update local id to match Supabase id
+  if (Array.isArray(result) && result[0]?.id) {
+    const idx = words.findIndex(x=>x.id===w.id);
+    if (idx!==-1) { words[idx].id = result[0].id; saveState(); }
   }
 }
 
-// Legacy compat — called from saveWord
-async function saveWordToSB(w){
-  if(!sbUrl||!sbKey) return;
-  try{
-    await fetch(`${sbUrl}/rest/v1/words`,{
-      method:'POST',
-      headers:{...sbHeaders(),Prefer:'resolution=ignore-duplicates,return=minimal'},
-      body:JSON.stringify({word:w.word,phonetic:w.phonetic||'',part_of_speech:w.partOfSpeech||'',meaning:w.meaning,example:w.example||'',topic:w.topic||'general',level:w.level||3})
-    });
-  } catch{}
+/* ── Auto-push meta after any state change that needs sync ── */
+function pushMetaToSB() {
+  if (sbUrl&&sbKey) sbPushAllMeta();
 }
 
 function copySQL(){
@@ -2513,7 +2568,7 @@ function checkStreak(){
 /* ════════════════════════════════════════════
    INIT
 ════════════════════════════════════════════ */
-function init(){
+async function init(){
   // Detect iOS standalone (Add to Home Screen)
   const isStandalone = window.navigator.standalone === true ||
     window.matchMedia('(display-mode: standalone)').matches;
@@ -2525,21 +2580,27 @@ function init(){
   const gs=document.getElementById('g-start'); if(gs&&!gs.value) gs.value=t;
   const ge=document.getElementById('g-end');   if(ge&&!ge.value) ge.value=endD.toISOString().split('T')[0];
 
-  // Populate topic selects on startup
   populateTopicSelects();
   populateTopicFilters();
-
   buildHeatmap('hmap',10);
   updateCounters();
   renderGoalBanner();
   renderWordStats();
   startFC();
 
-  // Restore Supabase connection state
-  if(sbUrl && sbKey){
+  // If Supabase credentials saved → auto-sync on startup
+  if (sbUrl && sbKey) {
     const su=document.getElementById('sb-url'); if(su) su.value=sbUrl;
     const sk=document.getElementById('sb-key'); if(sk) sk.value=sbKey;
     updateSBStatus(true);
+    // Auto-pull latest data in background
+    try {
+      await loadAllFromSB();
+      // After pull, re-init FC with fresh data
+      startFC();
+    } catch(e) {
+      console.warn('Auto-sync failed:', e);
+    }
   }
 }
 document.addEventListener('DOMContentLoaded',init);
