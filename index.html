@@ -797,20 +797,36 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
       <!-- ══ SENTENCES ══ -->
       <section class="screen" id="sc-sentences">
         <div class="page-title">Ngữ pháp &amp; Giao tiếp</div>
-        <div class="page-sub">Câu mẫu · cấu trúc · tình huống hàng ngày</div>
-        <div class="add-sent-form">
-          <h4>+ Thêm câu mẫu mới</h4>
+        <div class="page-sub">Câu mẫu · cấu trúc · ghi chú nhiều dòng · tô màu văn bản</div>
+        <div class="add-sent-form" id="sent-add-form">
+          <h4 id="sent-form-title">+ Thêm câu mẫu mới</h4>
+          <input type="hidden" id="sn-edit-id">
           <div class="sent-form-grid">
             <div class="field"><label>Câu tiếng Việt *</label><input type="text" id="sn-viet" placeholder="Bạn có thể nói chậm hơn không?"></div>
             <div class="field"><label>Câu tiếng Anh *</label><input type="text" id="sn-eng"  placeholder="Could you speak more slowly?"></div>
-            <div class="field sent-form-full"><label>Ghi chú ngữ pháp</label><input type="text" id="sn-note" placeholder='Could you...? lịch sự hơn Can you...?'></div>
+            <div class="field sent-form-full">
+              <label>Ghi chú ngữ pháp (nhiều dòng, hỗ trợ **in đậm** và ==màu==)</label>
+              <!-- Rich text toolbar -->
+              <div class="note-toolbar">
+                <button type="button" class="note-tool" onclick="wrapNoteText('**','**')" title="In đậm"><strong>B</strong></button>
+                <button type="button" class="note-tool" onclick="wrapNoteText('*','*')"   title="In nghiêng"><em>I</em></button>
+                <button type="button" class="note-tool note-tool-yellow" onclick="wrapNoteText('==','==')"  title="Highlight vàng">A</button>
+                <button type="button" class="note-tool note-tool-green"  onclick="wrapNoteText('~~green~~','~~end~~')"  title="Màu xanh">A</button>
+                <button type="button" class="note-tool note-tool-red"    onclick="wrapNoteText('~~red~~','~~end~~')"  title="Màu đỏ">A</button>
+                <button type="button" class="note-tool note-tool-blue"   onclick="wrapNoteText('~~blue~~','~~end~~')"  title="Màu xanh dương">A</button>
+              </div>
+              <textarea id="sn-note" rows="3" placeholder="Could you...? lịch sự hơn Can you...?&#10;Cú pháp: **in đậm** *in nghiêng* ==highlight== ~~red~~màu~~end~~"></textarea>
+            </div>
             <div class="field"><label>Chủ đề</label>
               <select id="sn-type">
                 <option value="daily">Hàng ngày</option><option value="travel">Du lịch</option>
                 <option value="business">Công việc</option><option value="grammar">Ngữ pháp</option>
               </select>
             </div>
-            <div class="field" style="justify-content:flex-end;"><button class="btn btn-primary" onclick="addSentence()" style="margin-top:auto;">Thêm câu</button></div>
+            <div class="field" style="justify-content:flex-end;display:flex;gap:6px;align-items:flex-end;">
+              <button class="btn btn-ghost" id="sn-cancel-edit" onclick="cancelEditSent()" style="display:none;">Hủy</button>
+              <button class="btn btn-primary" id="sn-submit-btn" onclick="addSentence()">Thêm câu</button>
+            </div>
           </div>
         </div>
         <div class="sentence-type-row">
@@ -854,7 +870,23 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
       <section class="screen" id="sc-wordbank">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;gap:12px;flex-wrap:wrap;">
           <div><div class="page-title">Kho từ vựng</div><div class="page-sub" style="margin-bottom:0;">Toàn bộ từ của bạn</div></div>
-          <button class="btn btn-primary" style="flex-shrink:0;" onclick="openModal('addModal');populateTopicSelects()">+ Thêm từ</button>
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">↑ Import file</button>
+            <input type="file" id="import-file" accept=".csv,.tsv,.txt" style="display:none" onchange="importWordsFile(this)">
+            <button class="btn btn-primary" onclick="openModal('addModal');populateTopicSelects()">+ Thêm từ</button>
+          </div>
+        </div>
+        <!-- Import guide -->
+        <div id="import-guide" style="display:none;background:var(--accent-lt);border:1px solid var(--accent-md);border-radius:var(--r2);padding:14px;margin-top:10px;font-size:12px;color:var(--mid);line-height:1.9;">
+          <div style="font-weight:600;color:var(--accent);margin-bottom:6px;">📄 Hướng dẫn import file</div>
+          <div>
+            Định dạng mỗi dòng: <code style="background:var(--paper);padding:1px 6px;border-radius:4px;">word | meaning | phonetic | example | topic | level</code><br>
+            Chỉ cần 2 cột đầu bắt buộc (word và meaning), các cột sau tùy chọn.<br>
+            Có thể dùng <strong>dấu phẩy (,)</strong> hoặc <strong>tab</strong> hoặc <strong>| </strong> để phân cách.<br>
+            Từ đã có trong kho sẽ <strong>không bị ghi đè</strong> — chỉ thêm từ mới.<br>
+            <a href="#" onclick="downloadImportTemplate();return false;" style="color:var(--accent);">⬇ Tải file mẫu .csv</a>
+          </div>
+          <div id="import-result" style="margin-top:8px;font-weight:600;"></div>
         </div>
         <div class="wb-toolbar" style="margin-top:18px;">
           <input type="text" placeholder="Tìm từ vựng..." id="wb-s" oninput="renderWB()" style="flex:1;min-width:140px;">
@@ -1004,12 +1036,16 @@ CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);<
       <!-- ══ WORD FAMILIES ══ -->
       <section class="screen" id="sc-families">
         <div class="page-title">Word Family</div>
-        <div class="page-sub">Nhóm các từ có cùng gốc · Nhấn vào nhóm để xem tất cả biến thể</div>
+        <div class="page-sub">Nhóm các từ có cùng gốc · Nhấn "Thêm từ" để bổ sung vào nhóm đã có</div>
         <div class="card" style="margin-bottom:16px;">
-          <div class="section-title" style="margin-bottom:14px;">Tạo nhóm Word Family mới</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div class="section-title" style="margin:0;" id="wf-form-title">Tạo nhóm mới</div>
+            <button class="btn btn-ghost btn-sm" id="wf-cancel-btn" onclick="cancelEditFamily()" style="display:none;">✕ Hủy</button>
+          </div>
           <div class="field" style="margin-bottom:10px;">
             <label>Tên gốc từ (root) *</label>
             <input type="text" id="wf-root" placeholder="VD: innovate, happy, decide...">
+            <input type="hidden" id="wf-edit-id">
           </div>
           <div class="field" style="margin-bottom:10px;">
             <label>Chọn từ trong kho (gõ để tìm)</label>
@@ -1020,7 +1056,7 @@ CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);<
             <label>Từ đã chọn</label>
             <div id="wf-selected" style="display:flex;flex-wrap:wrap;gap:5px;min-height:34px;padding:6px;background:var(--paper);border-radius:var(--r);border:1px solid var(--rule2);"></div>
           </div>
-          <button class="btn btn-primary" onclick="saveWordFamily()">Lưu nhóm</button>
+          <button class="btn btn-primary" onclick="saveWordFamily()" id="wf-save-btn">Lưu nhóm</button>
         </div>
         <div id="families-list"></div>
       </section>
@@ -2066,49 +2102,112 @@ function setSentType(t,btn){
   document.querySelectorAll('.sentence-type-row .f-chip').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on'); renderSentences();
 }
+// Parse note markup: **bold** *italic* ==highlight== ~~red~~text~~end~~
+function parseNoteMarkup(text) {
+  if (!text) return '';
+  let t = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  t = t.replace(/\*([^*]+?)\*/g,'<em>$1</em>');
+  t = t.replace(/==(.+?)==/g,'<span class="hl">$1</span>');
+  t = t.replace(/~~green~~([\s\S]+?)~~end~~/g,'<span class="cl-green">$1</span>');
+  t = t.replace(/~~red~~([\s\S]+?)~~end~~/g,'<span class="cl-red">$1</span>');
+  t = t.replace(/~~blue~~([\s\S]+?)~~end~~/g,'<span class="cl-blue">$1</span>');
+  t = t.replace(/\n/g,'<br>');
+  return t;
+}
+function wrapNoteText(before, after) {
+  const ta = document.getElementById('sn-note');
+  if (!ta) return;
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const selected = ta.value.slice(start, end) || 'text';
+  ta.value = ta.value.slice(0,start) + before + selected + after + ta.value.slice(end);
+  ta.focus();
+  ta.setSelectionRange(start+before.length, start+before.length+selected.length);
+}
 function addSentence(){
+  const editId = (document.getElementById('sn-edit-id')?.value||'');
+  if (editId) { updateSentence(); return; }
   const viet=document.getElementById('sn-viet').value.trim();
   const eng=document.getElementById('sn-eng').value.trim();
   if(!viet||!eng){toast('Nhập câu tiếng Việt và tiếng Anh!','bad');return;}
   const ns={id:Date.now(),viet,eng,note:document.getElementById('sn-note').value.trim()||'',type:document.getElementById('sn-type').value};
   sentences.unshift(ns); saveState();
-  // Đẩy câu lên SB và cập nhật ID
   if(sbUrl&&sbKey){
-    sbPost('sentences',{viet:ns.viet,eng:ns.eng,note:ns.note||'',type:ns.type||'daily'},'return=representation')
-      .then(r=>{ if(Array.isArray(r)&&r[0]?.id){ const idx=sentences.findIndex(x=>x.id===ns.id); if(idx!==-1){sentences[idx].id=r[0].id; saveState();} } });
+    sbReq('POST','sentences',{viet:ns.viet,eng:ns.eng,note:ns.note||'',type:ns.type||'daily'},'return=representation')
+      .then(r=>{ if(r.ok&&Array.isArray(r.data)&&r.data[0]?.id){ const idx=sentences.findIndex(x=>x.id===ns.id); if(idx!==-1){sentences[idx].id=r.data[0].id; saveState();} } });
   }
-  ['sn-viet','sn-eng','sn-note'].forEach(id=>document.getElementById(id).value='');
+  ['sn-viet','sn-eng','sn-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   toast('✓ Đã thêm câu mẫu','good'); addXP(3); renderSentences();
 }
+function openEditSent(id) {
+  const s = sentences.find(x=>x.id===id); if(!s) return;
+  document.getElementById('sn-edit-id').value = id;
+  document.getElementById('sn-viet').value    = s.viet;
+  document.getElementById('sn-eng').value     = s.eng;
+  document.getElementById('sn-note').value    = s.note||'';
+  document.getElementById('sn-type').value    = s.type||'daily';
+  const t=document.getElementById('sent-form-title'); if(t) t.textContent='✎ Chỉnh sửa câu mẫu';
+  const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='Lưu thay đổi';
+  const c=document.getElementById('sn-cancel-edit');  if(c) c.style.display='inline-flex';
+  document.getElementById('sent-add-form')?.scrollIntoView({behavior:'smooth'});
+}
+function cancelEditSent() {
+  document.getElementById('sn-edit-id').value='';
+  ['sn-viet','sn-eng','sn-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const t=document.getElementById('sent-form-title'); if(t) t.textContent='+ Thêm câu mẫu mới';
+  const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='Thêm câu';
+  const c=document.getElementById('sn-cancel-edit');  if(c) c.style.display='none';
+}
+function updateSentence() {
+  const id   = parseInt(document.getElementById('sn-edit-id').value);
+  const viet = document.getElementById('sn-viet').value.trim();
+  const eng  = document.getElementById('sn-eng').value.trim();
+  if(!viet||!eng){toast('Nhập câu tiếng Việt và tiếng Anh!','bad');return;}
+  const idx  = sentences.findIndex(s=>s.id===id);
+  if(idx===-1){toast('Không tìm thấy câu!','bad');return;}
+  const note = document.getElementById('sn-note').value.trim();
+  const type = document.getElementById('sn-type').value;
+  sentences[idx] = {...sentences[idx], viet, eng, note, type};
+  saveState();
+  if(sbUrl&&sbKey) sbReq('PATCH','sentences?id=eq.'+id,{viet,eng,note,type},'return=minimal');
+  cancelEditSent();
+  toast('✓ Đã cập nhật câu mẫu','good');
+  renderSentences();
+}
 function deleteSentence(id){
-  // Xóa câu từ SB
-  if(sbUrl&&sbKey) sbDelete('sentences', id);
-  sentences=sentences.filter(s=>s.id!==id); saveState(); pushMetaToSB(); renderSentences(); toast('Đã xóa','');
+  if(!confirm('Xóa câu mẫu này?')) return;
+  if(sbUrl&&sbKey) sbReq('DELETE','sentences?id=eq.'+id);
+  sentences=sentences.filter(s=>s.id!==id); saveState(); renderSentences(); toast('Đã xóa','');
 }
 function renderSentences(){
   const list=sentType==='all'?sentences:sentences.filter(s=>s.type===sentType);
   const el=document.getElementById('sent-list'); if(!el) return;
   if(list.length===0){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Thêm câu mẫu phía trên!</div>';return;}
-  el.innerHTML=list.map((s,i)=>`
+  el.innerHTML=list.map((s,i)=>{
+    const noteHtml = s.note ? '<div class="sent-note-rendered">💡 '+parseNoteMarkup(s.note)+'</div>' : '';
+    const engSafe = s.eng.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `
     <div class="sent-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <div class="sent-viet">${s.viet}</div>
-        <button class="wr-btn" onclick="deleteSentence(${s.id})" style="flex-shrink:0;margin-top:2px;">×</button>
+        <div style="display:flex;gap:4px;flex-shrink:0;margin-top:2px;">
+          <button class="wr-btn" title="Sửa" onclick="openEditSent(${s.id})" style="color:var(--blue);">✎</button>
+          <button class="wr-btn" title="Xóa" onclick="deleteSentence(${s.id})">×</button>
+        </div>
       </div>
       <button class="sent-reveal-btn" id="srb-${i}" onclick="revealSent(${i},this)">Nhấn để xem câu tiếng Anh</button>
       <div id="sent-eng-${i}" style="display:none;">
         <div class="sent-eng">${s.eng}</div>
-        ${s.note?`<div class="sent-note">💡 ${s.note}</div>`:''}
-        <button class="wr-btn" style="margin-top:8px;width:auto;padding:5px 10px;font-size:12px;" onclick="speak('${s.eng.replace(/'/g,"\\'")}')">🔊 Nghe</button>
+        ${noteHtml}
+        <button class="wr-btn" style="margin-top:8px;width:auto;padding:5px 10px;font-size:12px;" onclick="speak('${engSafe}')">🔊 Nghe</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 function revealSent(i,btn){
   document.getElementById('sent-eng-'+i).style.display='block';
   btn.style.display='none'; addXP(3);
 }
-
 /* ════════════════════════════════════════════
    WORD BANK — mobile-optimized, IPA toggle, edit/delete
 ════════════════════════════════════════════ */
@@ -2163,6 +2262,57 @@ function renderWB(){
       </div>
     </div>
   `).join('');
+
+/* ════════════════════════════════════════════
+   IMPORT WORDS FROM FILE
+════════════════════════════════════════════ */
+function importWordsFile(input) {
+  const file = input.files[0]; if(!file) return;
+  const guide  = document.getElementById('import-guide');
+  const result = document.getElementById('import-result');
+  if(guide) guide.style.display='block';
+  if(result) result.textContent='Đang đọc file...';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text  = e.target.result;
+    const rawLines = text.split(/\r?\n/).filter(l=>l.trim()&&!l.startsWith('#'));
+    let added=0, skipped=0, errors=0;
+    for (const line of rawLines) {
+      const sep   = line.includes('\t') ? '\t' : line.includes('|') ? '|' : ',';
+      const parts = line.split(sep).map(p=>p.trim());
+      const word    = parts[0]||'';
+      const meaning = parts[1]||'';
+      if (!word || !meaning) { errors++; continue; }
+      if (words.find(w=>w.word.toLowerCase()===word.toLowerCase())) { skipped++; continue; }
+      const nw = {
+        id: Date.now()+added, word, phonetic: parts[2]||'', partOfSpeech:'',
+        meaning, example: parts[3]||'', topic: parts[4]||'general', level: parseInt(parts[5])||3
+      };
+      words.unshift(nw);
+      if(sbUrl&&sbKey) saveWordToSB(nw);
+      added++;
+    }
+    saveState(); renderWB(); renderWordStats();
+    const msg = '<span style="color:var(--accent)">✓ Thêm '+added+' từ mới</span>'+(skipped?' · bỏ qua '+skipped+' từ trùng':'')+(errors?' · '+errors+' dòng lỗi':'');
+    if(result) result.innerHTML = msg;
+    toast('✓ Import: '+added+' từ mới'+(skipped?' · '+skipped+' trùng':''), added>0?'good':'');
+  };
+  reader.readAsText(file,'UTF-8');
+  input.value='';
+}
+function downloadImportTemplate() {
+  const csv = ['# Lingo Import Template',
+    '# Cột: word,meaning,phonetic,example,topic,level',
+    '# topic: general/travel/food/business/tech/daily  |  level: 1-5',
+    'serendipity,Sự may mắn tình cờ,/ˌser.ənˈdɪp.ɪ.ti/,Finding that café was pure serendipity.,general,4',
+    'resilient,Kiên cường,/rɪˈzɪl.i.ənt/,Startups must be resilient.,business,3',
+  ].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent('\ufeff'+csv);
+  a.download = 'lingo-import.csv';
+  a.click();
+}
+
 }
 function topicLabel(key) {
   const t = topics.find(t=>t.key===key);
@@ -2337,22 +2487,48 @@ function renderWFSelected() {
     return w?`<span class="chip chip-green" style="font-size:12px;gap:4px;">${w.word} <button onclick="toggleWFWord(${id},null,null,document.getElementById('wf-btn-${id}'))" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);padding:0;line-height:1;">×</button></span>`:'';
   }).join('');
 }
+function startEditFamily(fid) {
+  const f = families.find(x=>x.id===fid); if(!f) return;
+  document.getElementById('wf-root').value    = f.root;
+  document.getElementById('wf-edit-id').value = fid;
+  const t=document.getElementById('wf-form-title'); if(t) t.textContent='✎ Thêm từ vào nhóm: '+f.root;
+  const s=document.getElementById('wf-save-btn');   if(s) s.textContent='Lưu thay đổi';
+  const c=document.getElementById('wf-cancel-btn'); if(c) c.style.display='inline-flex';
+  wfSelected = [...f.wordIds];
+  renderWFSearch(); renderWFSelected();
+  document.querySelector('#sc-families .card')?.scrollIntoView({behavior:'smooth'});
+}
+function cancelEditFamily() {
+  document.getElementById('wf-root').value='';
+  document.getElementById('wf-edit-id').value='';
+  const t=document.getElementById('wf-form-title'); if(t) t.textContent='Tạo nhóm mới';
+  const s=document.getElementById('wf-save-btn');   if(s) s.textContent='Lưu nhóm';
+  const c=document.getElementById('wf-cancel-btn'); if(c) c.style.display='none';
+  wfSelected=[]; renderWFSearch(); renderWFSelected();
+}
+function removeFamilyWord(fid, wordId) {
+  const f = families.find(x=>x.id===fid); if(!f) return;
+  f.wordIds = f.wordIds.filter(id=>id!==wordId);
+  saveState(); pushMetaToSB(); renderFamilies();
+}
 function saveWordFamily() {
-  const root = document.getElementById('wf-root').value.trim();
+  const root   = document.getElementById('wf-root').value.trim();
+  const editId = document.getElementById('wf-edit-id')?.value||'';
   if (!root) { toast('Nhập tên gốc từ!','bad'); return; }
-  if (wfSelected.length < 2) { toast('Chọn ít nhất 2 từ!','bad'); return; }
-  const existing = families.findIndex(f=>f.root.toLowerCase()===root.toLowerCase());
-  if (existing !== -1) {
-    // update
-    families[existing].wordIds = [...new Set([...families[existing].wordIds, ...wfSelected])];
+  if (wfSelected.length < 1) { toast('Chọn ít nhất 1 từ!','bad'); return; }
+  if (editId) {
+    const idx = families.findIndex(f=>String(f.id)===String(editId));
+    if (idx !== -1) { families[idx].root=root; families[idx].wordIds=[...new Set(wfSelected)]; }
   } else {
-    families.push({ id: Date.now(), root, wordIds: [...wfSelected] });
+    const existing = families.findIndex(f=>f.root.toLowerCase()===root.toLowerCase());
+    if (existing !== -1) {
+      families[existing].wordIds = [...new Set([...families[existing].wordIds,...wfSelected])];
+    } else {
+      families.push({ id:Date.now(), root, wordIds:[...wfSelected] });
+    }
   }
   saveState(); pushMetaToSB();
-  document.getElementById('wf-root').value='';
-  wfSelected=[];
-  renderWFSearch();
-  renderWFSelected();
+  cancelEditFamily();
   renderFamilies();
   toast('✓ Đã lưu nhóm "'+root+'"','good');
 }
@@ -2372,21 +2548,22 @@ function renderFamilies() {
     const wObjs = f.wordIds.map(id=>words.find(w=>w.id===id)).filter(Boolean);
     return `
       <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
           <div>
             <div style="font-family:var(--serif);font-size:18px;font-weight:600;">${f.root}</div>
             <div style="font-size:11px;color:var(--muted);">${wObjs.length} từ trong nhóm</div>
           </div>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
             <button class="btn btn-sm btn-ghost" onclick="toggleFamilyDetail('fd-${f.id}')">Xem từ ▾</button>
+            <button class="btn btn-sm" style="background:var(--accent-lt);color:var(--accent);border:1px solid var(--accent-md);font-size:11px;padding:4px 10px;border-radius:var(--r);" onclick="startEditFamily(${f.id})">+ Thêm từ</button>
             <button class="wr-btn" onclick="deleteFamily(${f.id})">×</button>
           </div>
         </div>
         <div id="fd-${f.id}" style="display:none;margin-top:8px;border-top:1px solid var(--rule);padding-top:12px;">
           ${wObjs.map(w=>`
-            <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);">
+            <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--rule);">
               <div style="flex:1;">
-                <div style="display:flex;align-items:center;gap:6px;">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                   <span style="font-weight:600;font-size:14px;">${w.word}</span>
                   ${w.partOfSpeech?`<span style="font-size:10px;background:var(--blue-lt);color:var(--blue);padding:1px 6px;border-radius:8px;font-weight:600;">${w.partOfSpeech}</span>`:''}
                   <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${w.phonetic}</span>
@@ -2394,7 +2571,10 @@ function renderFamilies() {
                 <div style="font-size:13px;color:var(--mid);margin-top:2px;">${w.meaning}</div>
                 ${w.example?`<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:2px;">"${w.example}"</div>`:''}
               </div>
-              <button class="btn btn-sm btn-ghost" onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
+              <div style="display:flex;gap:4px;flex-shrink:0;">
+                <button class="btn btn-sm btn-ghost" onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
+                <button class="wr-btn" title="Xóa khỏi nhóm" onclick="removeFamilyWord(${f.id},${w.id})" style="color:var(--red);">×</button>
+              </div>
             </div>
           `).join('')}
         </div>
@@ -2405,6 +2585,7 @@ function renderFamilies() {
 function toggleFamilyDetail(id) {
   const el = document.getElementById(id); if(!el) return;
   el.style.display = el.style.display==='block' ? 'none' : 'block';
+}
 }
 
 /* ════════════════════════════════════════════
