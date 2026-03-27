@@ -606,7 +606,10 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 
         <!-- Daily word -->
         <div class="daily-card">
-          <div class="daily-label">Từ của ngày hôm nay</div>
+          <div class="daily-label" style="display:flex;align-items:center;gap:8px;">
+            <span>Từ của ngày hôm nay</span>
+            <span id="dw-hard-badge" class="chip" style="display:none;background:rgba(160,92,32,.25);color:#f0c070;font-size:10px;padding:1px 8px;">★ Từ khó</span>
+          </div>
           <div class="daily-word"     id="dw-word">Serendipity</div>
           <div class="daily-phonetic" id="dw-phon">/ˌser.ənˈdɪp.ɪ.ti/</div>
           <div class="daily-meaning"  id="dw-meaning">(n) Sự may mắn tình cờ</div>
@@ -1438,7 +1441,7 @@ function go(tab, sideBtn, bnId) {
   if (tab==='stats')     renderStats();
   if (tab==='goal')      renderGoal();
   if (tab==='home')      {
-    renderGoalBanner(); renderWordStats();
+    renderDailyWord(); renderGoalBanner(); renderWordStats();
     // Show/hide sync banner based on SB connection
     const banner = document.getElementById('sync-banner');
     if (banner) banner.style.display = (sbUrl&&sbKey) ? 'block' : 'none';
@@ -1561,6 +1564,43 @@ function renderTodayWords() {
       <span class="tw-viet">${w.meaning}</span>
     </div>
   `).join('');
+}
+
+/* ════════════════════════════════════════════
+   DAILY WORD — random từ khó hoặc random tất cả, đổi mỗi ngày
+════════════════════════════════════════════ */
+function renderDailyWord() {
+  if (!words || words.length === 0) return;
+
+  // Seed ngẫu nhiên theo ngày — cùng ngày luôn ra cùng từ, khác ngày khác từ
+  const t = today();
+  const dateSeed = t.replace(/-/g,'');
+  // Simple deterministic hash từ date string
+  let hash = 0;
+  for (let i = 0; i < dateSeed.length; i++) {
+    hash = ((hash << 5) - hash + dateSeed.charCodeAt(i)) | 0;
+  }
+  hash = Math.abs(hash);
+
+  // Ưu tiên: từ khó (hardWordIds) → nếu không có thì random tất cả
+  const pool = hardWordIds.size > 0
+    ? words.filter(w => hardWordIds.has(w.id))
+    : words;
+  const actualPool = pool.length > 0 ? pool : words;
+
+  const w = actualPool[hash % actualPool.length];
+  if (!w) return;
+
+  const posLabel = w.partOfSpeech ? '(' + w.partOfSpeech + ') ' : '';
+  const el = id => document.getElementById(id);
+  if (el('dw-word'))    el('dw-word').textContent    = w.word;
+  if (el('dw-phon'))    el('dw-phon').textContent    = w.phonetic || '';
+  if (el('dw-meaning')) el('dw-meaning').textContent = posLabel + w.meaning;
+  if (el('dw-eg'))      el('dw-eg').textContent      = w.example ? '"' + w.example + '"' : '';
+
+  // Nếu từ này là từ khó → hiện badge
+  const badge = el('dw-hard-badge');
+  if (badge) badge.style.display = hardWordIds.has(w.id) ? 'inline-flex' : 'none';
 }
 
 /* ════════════════════════════════════════════
@@ -2624,16 +2664,18 @@ async function fullUploadToSB() {
   if (!sbUrl || !sbKey) return;
   const statusEl = document.getElementById('sync-result');
 
-  // ── Step 1: DELETE tất cả words ──
-  // Filter phải match rows → dùng "created_at=not.is.null" (luôn đúng với TIMESTAMPTZ)
+  // ── Step 1: Lưu mapping oldId→wordString trước khi DELETE ──
+  // Dùng để remap learnedLog, learnedEver, hardWordIds, families sau khi có ID mới
+  const oldIdToWord = new Map(words.map(w => [w.id, w.word]));
+  const wordToOldId = new Map(words.map(w => [w.word, w.id]));
+
+  // ── Step 2: DELETE tất cả words ──
   const delW = await sbReq('DELETE', 'words?created_at=not.is.null', null, null);
-  // Nếu bảng rỗng thì DELETE trả về 200/204 với mảng rỗng → vẫn OK
   if (!delW.ok && delW.status !== 200 && delW.status !== 204) {
     console.warn('[SB] DELETE words status:', delW.status, delW.error);
-    // Không return — vẫn tiếp tục INSERT
   }
 
-  // ── Step 2: INSERT tất cả words (batch 1 request) ──
+  // ── Step 3: INSERT tất cả words (batch 1 request) ──
   let uploadedWords = 0;
   if (words.length > 0) {
     const rows = words.map(w => ({
@@ -2650,14 +2692,58 @@ async function fullUploadToSB() {
       toast('⚠ Lỗi lưu từ vựng: ' + ins.error, 'bad');
       if (statusEl) statusEl.textContent = '⚠ Lỗi từ vựng (' + ins.status + '): ' + ins.error;
       console.error('[SB] INSERT words failed:', ins);
-      return; // Dừng nếu words fail
+      return;
     }
-    // Cập nhật ID SB → local
+    // Cập nhật ID SB → local, đồng thời build newId map
+    const newIdByWord = new Map();
     if (Array.isArray(ins.data) && ins.data.length === words.length) {
-      words = words.map((w, i) => ({ ...w, id: ins.data[i].id || w.id }));
+      words = words.map((w, i) => {
+        const newId = ins.data[i].id || w.id;
+        newIdByWord.set(w.word, newId);
+        return { ...w, id: newId };
+      });
     }
     uploadedWords = Array.isArray(ins.data) ? ins.data.length : rows.length;
-    console.log('[SB] Inserted', uploadedWords, 'words');
+
+    // ── Remap learnedLog, learnedEver, hardWordIds, families với ID mới ──
+    if (newIdByWord.size > 0) {
+      // learnedLog: { date: [oldId, ...] } → { date: [newId, ...] }
+      const remappedLog = {};
+      Object.entries(learnedLog).forEach(([date, ids]) => {
+        remappedLog[date] = ids.map(oldId => {
+          const word = oldIdToWord.get(oldId);
+          return word && newIdByWord.has(word) ? newIdByWord.get(word) : oldId;
+        }).filter(Boolean);
+      });
+      learnedLog = remappedLog;
+
+      // learnedEver: Set<oldId> → Set<newId>
+      const newEver = new Set();
+      learnedEver.forEach(oldId => {
+        const word = oldIdToWord.get(oldId);
+        newEver.add(word && newIdByWord.has(word) ? newIdByWord.get(word) : oldId);
+      });
+      learnedEver = newEver;
+
+      // hardWordIds: Set<oldId> → Set<newId>
+      const newHard = new Set();
+      hardWordIds.forEach(oldId => {
+        const word = oldIdToWord.get(oldId);
+        newHard.add(word && newIdByWord.has(word) ? newIdByWord.get(word) : oldId);
+      });
+      hardWordIds = newHard;
+
+      // families: wordIds array remap
+      families = families.map(f => ({
+        ...f,
+        wordIds: f.wordIds.map(oldId => {
+          const word = oldIdToWord.get(oldId);
+          return word && newIdByWord.has(word) ? newIdByWord.get(word) : oldId;
+        })
+      }));
+    }
+    saveState(); // Lưu IDs mới và remapped data
+    console.log('[SB] Inserted', uploadedWords, 'words, remapped IDs');
   }
 
   // ── Step 3: DELETE tất cả sentences ──
@@ -2808,6 +2894,7 @@ async function loadAllFromSB() {
     toast('⚠ Chưa có data trên Supabase', 'bad');
   }
 
+  renderDailyWord();
   renderWB();
   renderWordStats();
   renderGoalBanner();
@@ -2915,6 +3002,7 @@ async function init(){
     }
   }
   // Render sau khi đã có data (từ SB hoặc localStorage)
+  renderDailyWord();
   renderGoalBanner();
   renderWordStats();
   startFC();
