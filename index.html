@@ -395,6 +395,39 @@ input::placeholder{color:var(--muted)}
 .status-wait{background:var(--amber-lt);color:var(--amber)}
 .status-wait .status-dot{background:var(--amber)}
 
+/* ── RICH TEXT EDITOR (ngữ pháp) ── */
+.rte-toolbar{
+  display:flex;gap:3px;padding:5px 6px;flex-wrap:wrap;
+  background:var(--paper);border:1px solid var(--rule2);
+  border-radius:var(--r) var(--r) 0 0;border-bottom:none;
+}
+.rte-btn{
+  padding:3px 9px;border:1px solid transparent;border-radius:4px;
+  background:none;font-size:13px;cursor:pointer;min-width:28px;
+  text-align:center;line-height:1.5;transition:background .1s;
+}
+.rte-btn:hover{background:var(--white);border-color:var(--rule2);}
+.rte-sep{width:1px;background:var(--rule2);margin:3px 2px;align-self:stretch;}
+.rte-yellow{color:#8a6400;font-weight:700;border-bottom:2.5px solid #f0c000;}
+.rte-green {color:var(--accent);font-weight:700;border-bottom:2.5px solid var(--accent);}
+.rte-red   {color:var(--red);font-weight:700;border-bottom:2.5px solid var(--red);}
+.rte-blue  {color:var(--blue);font-weight:700;border-bottom:2.5px solid var(--blue);}
+.rte-editor{
+  width:100%;min-height:80px;max-height:200px;overflow-y:auto;
+  padding:8px 10px;background:var(--white);
+  border:1px solid var(--rule2);border-radius:0 0 var(--r) var(--r);
+  font-size:13px;line-height:1.7;font-family:var(--sans);color:var(--ink);
+  outline:none;cursor:text;white-space:pre-wrap;
+}
+.rte-editor:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(28,27,24,.07);}
+.rte-editor:empty::before{
+  content:attr(placeholder);color:var(--muted);pointer-events:none;display:block;
+}
+.sent-note-html{
+  font-size:13px;padding:8px 12px;background:var(--paper);
+  border-radius:var(--r);line-height:1.8;word-break:break-word;
+}
+
 /* combo */
 #combo-pop{position:fixed;top:68px;right:16px;z-index:150;font-family:var(--serif);font-size:14px;background:var(--ink);color:white;padding:7px 14px;border-radius:22px;opacity:0;transform:scale(.85);transition:all .25s;pointer-events:none}
 #combo-pop.show{opacity:1;transform:scale(1)}
@@ -436,36 +469,6 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
   cursor:pointer;transition:all .15s;
 }
 .more-item:hover,.more-item:active{background:var(--accent-lt);color:var(--accent);}
-/* ── NOTE RICH TEXT EDITOR ── */
-.note-toolbar{
-  display:flex;gap:3px;padding:5px 6px;
-  background:var(--paper);border:1px solid var(--rule2);
-  border-radius:var(--r) var(--r) 0 0;border-bottom:none;flex-wrap:wrap;
-}
-.note-tool{
-  padding:3px 9px;border:1px solid transparent;border-radius:4px;
-  background:none;font-size:13px;cursor:pointer;min-width:28px;
-  text-align:center;line-height:1.5;transition:background .1s,border-color .1s;
-}
-.note-tool:hover{background:var(--white);border-color:var(--rule2);}
-.note-tool-sep{width:1px;background:var(--rule2);margin:2px 3px;align-self:stretch;}
-.note-tool-yellow{color:#8a6400;font-weight:700;border-bottom:2px solid #f0c000;}
-.note-tool-green{color:var(--accent);font-weight:700;border-bottom:2px solid var(--accent);}
-.note-tool-red{color:var(--red);font-weight:700;border-bottom:2px solid var(--red);}
-.note-tool-blue{color:var(--blue);font-weight:700;border-bottom:2px solid var(--blue);}
-.note-editor{
-  width:100%;min-height:80px;max-height:220px;overflow-y:auto;
-  padding:8px 10px;background:var(--white);
-  border:1px solid var(--rule2);border-radius:0 0 var(--r) var(--r);
-  font-size:13px;line-height:1.7;font-family:var(--sans);color:var(--ink);
-  outline:none;cursor:text;white-space:pre-wrap;
-}
-.note-editor:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(28,27,24,.07);}
-.note-editor:empty::before{content:attr(placeholder);color:var(--muted);pointer-events:none;display:block;}
-.sent-note-rendered{
-  font-size:13px;padding:8px 12px;background:var(--paper);
-  border-radius:var(--r);line-height:1.8;
-}
 </style>
 </head>
 <body>
@@ -827,7 +830,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
       <!-- ══ SENTENCES ══ -->
       <section class="screen" id="sc-sentences">
         <div class="page-title">Ngữ pháp &amp; Giao tiếp</div>
-        <div class="page-sub">Câu mẫu · cấu trúc · ghi chú nhiều dòng · tô màu văn bản</div>
+        <div class="page-sub">Câu mẫu · ghi chú nhiều dòng · bôi đen để định dạng</div>
         <div class="add-sent-form" id="sent-add-form">
           <h4 id="sent-form-title">+ Thêm câu mẫu mới</h4>
           <input type="hidden" id="sn-edit-id">
@@ -835,26 +838,23 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <div class="field"><label>Câu tiếng Việt *</label><input type="text" id="sn-viet" placeholder="Bạn có thể nói chậm hơn không?"></div>
             <div class="field"><label>Câu tiếng Anh *</label><input type="text" id="sn-eng"  placeholder="Could you speak more slowly?"></div>
             <div class="field sent-form-full">
-              <label>Ghi chú ngữ pháp (nhiều dòng, hỗ trợ **in đậm** và ==màu==)</label>
-              <!-- Word-style rich text toolbar -->
-              <div class="note-toolbar" id="note-toolbar">
-                <button type="button" class="note-tool" onmousedown="event.preventDefault();noteCmd('bold')"       title="In đậm (Ctrl+B)"><strong>B</strong></button>
-                <button type="button" class="note-tool" onmousedown="event.preventDefault();noteCmd('italic')"     title="In nghiêng (Ctrl+I)"><em>I</em></button>
-                <button type="button" class="note-tool" onmousedown="event.preventDefault();noteCmd('underline')"  title="Gạch chân (Ctrl+U)"><u>U</u></button>
-                <div class="note-tool-sep"></div>
-                <button type="button" class="note-tool note-tool-yellow" onmousedown="event.preventDefault();noteHighlight('#fff176')" title="Highlight vàng">A</button>
-                <button type="button" class="note-tool note-tool-green"  onmousedown="event.preventDefault();noteColor('#2d5a27')"     title="Màu xanh lá">A</button>
-                <button type="button" class="note-tool note-tool-red"    onmousedown="event.preventDefault();noteColor('#be3a2e')"     title="Màu đỏ">A</button>
-                <button type="button" class="note-tool note-tool-blue"   onmousedown="event.preventDefault();noteColor('#1e4d8c')"     title="Màu xanh dương">A</button>
-                <div class="note-tool-sep"></div>
-                <button type="button" class="note-tool" onmousedown="event.preventDefault();noteCmd('removeFormat')" title="Xóa định dạng" style="font-size:11px;">✕ format</button>
+              <label>Ghi chú ngữ pháp</label>
+              <div class="rte-toolbar">
+                <button type="button" class="rte-btn" onmousedown="event.preventDefault();rteCmd('bold')"      title="Ctrl+B"><strong>B</strong></button>
+                <button type="button" class="rte-btn" onmousedown="event.preventDefault();rteCmd('italic')"    title="Ctrl+I"><em>I</em></button>
+                <button type="button" class="rte-btn" onmousedown="event.preventDefault();rteCmd('underline')" title="Ctrl+U"><u>U</u></button>
+                <span class="rte-sep"></span>
+                <button type="button" class="rte-btn rte-yellow" onmousedown="event.preventDefault();rteHl('#fff176')"  title="Highlight vàng">A</button>
+                <button type="button" class="rte-btn rte-green"  onmousedown="event.preventDefault();rteClr('#2d5a27')" title="Màu xanh">A</button>
+                <button type="button" class="rte-btn rte-red"    onmousedown="event.preventDefault();rteClr('#be3a2e')" title="Màu đỏ">A</button>
+                <button type="button" class="rte-btn rte-blue"   onmousedown="event.preventDefault();rteClr('#1e4d8c')" title="Màu xanh dương">A</button>
+                <span class="rte-sep"></span>
+                <button type="button" class="rte-btn" onmousedown="event.preventDefault();rteCmd('removeFormat')" title="Xóa định dạng" style="font-size:11px;padding:3px 7px;">✕</button>
               </div>
-              <div id="sn-note-editor"
+              <div id="sn-note-editor" class="rte-editor"
                 contenteditable="true"
-                class="note-editor"
-                placeholder="Ghi chú ngữ pháp... Bôi đen text rồi nhấn B/I/U hoặc chọn màu"
-                onkeydown="handleNoteKey(event)"
-              ></div>
+                placeholder="Ghi chú... Bôi đen text rồi nhấn B / I / U hoặc chọn màu"
+                onkeydown="rteKey(event)"></div>
             </div>
             <div class="field"><label>Chủ đề</label>
               <select id="sn-type">
@@ -863,7 +863,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
               </select>
             </div>
             <div class="field" style="justify-content:flex-end;display:flex;gap:6px;align-items:flex-end;">
-              <button class="btn btn-ghost" id="sn-cancel-edit" onclick="cancelEditSent()" style="display:none;">Hủy</button>
+              <button class="btn btn-ghost" id="sn-cancel-btn" onclick="cancelEditSent()" style="display:none;">Hủy</button>
               <button class="btn btn-primary" id="sn-submit-btn" onclick="addSentence()">Thêm câu</button>
             </div>
           </div>
@@ -909,48 +909,11 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
       <section class="screen" id="sc-wordbank">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;gap:12px;flex-wrap:wrap;">
           <div><div class="page-title">Kho từ vựng</div><div class="page-sub" style="margin-bottom:0;">Toàn bộ từ của bạn</div></div>
-          <div style="display:flex;gap:8px;flex-shrink:0;">
-            <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">↑ Import file</button>
-            <input type="file" id="import-file" accept=".csv,.tsv,.txt" style="display:none" onchange="importWordsFile(this)">
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost" onclick="document.getElementById('import-file-input').click()">↑ Import CSV</button>
+            <input type="file" id="import-file-input" accept=".csv,.tsv,.txt" style="display:none" onchange="importWordsFile(this)">
             <button class="btn btn-primary" onclick="openModal('addModal');populateTopicSelects()">+ Thêm từ</button>
           </div>
-        </div>
-        <!-- Import guide -->
-        <div id="import-guide" style="display:none;background:var(--accent-lt);border:1px solid var(--accent-md);border-radius:var(--r2);padding:14px;margin-top:10px;">
-          <div style="font-weight:600;color:var(--accent);margin-bottom:10px;font-size:13px;">📄 Hướng dẫn import từ file</div>
-          <div style="font-size:12px;color:var(--mid);line-height:1.9;margin-bottom:10px;">
-            File CSV/Excel mỗi dòng 1 từ, các cột theo thứ tự:<br>
-          </div>
-          <!-- Preview table -->
-          <div style="overflow-x:auto;margin-bottom:10px;">
-            <table style="font-size:11px;border-collapse:collapse;width:100%;background:var(--white);border-radius:var(--r);overflow:hidden;">
-              <tr style="background:var(--ink);color:white;">
-                <td style="padding:5px 8px;font-weight:600;">word *</td>
-                <td style="padding:5px 8px;font-weight:600;">meaning *</td>
-                <td style="padding:5px 8px;">phonetic</td>
-                <td style="padding:5px 8px;">example</td>
-                <td style="padding:5px 8px;">topic</td>
-                <td style="padding:5px 8px;">level</td>
-              </tr>
-              <tr style="color:var(--muted);">
-                <td style="padding:4px 8px;border-top:1px solid var(--rule);">resilient</td>
-                <td style="padding:4px 8px;border-top:1px solid var(--rule);">Kiên cường</td>
-                <td style="padding:4px 8px;border-top:1px solid var(--rule);">/rɪˈzɪl.i.ənt/</td>
-                <td style="padding:4px 8px;border-top:1px solid var(--rule);">Be resilient.</td>
-                <td style="padding:4px 8px;border-top:1px solid var(--rule);">business</td>
-                <td style="padding:4px 8px;border-top:1px solid var(--rule);">3</td>
-              </tr>
-            </table>
-          </div>
-          <div style="font-size:11px;color:var(--mid);line-height:1.8;margin-bottom:10px;">
-            • Chỉ cần 2 cột đầu (<strong>word</strong> và <strong>meaning</strong>), các cột còn lại tùy chọn<br>
-            • Phân cách bằng <strong>dấu phẩy</strong>, <strong>tab</strong>, hoặc <strong>|</strong><br>
-            • topic: general / travel / food / business / tech / daily<br>
-            • Từ trùng sẽ <strong>không bị ghi đè</strong> — chỉ thêm từ mới<br>
-            • Tải file mẫu rồi mở bằng Excel để điền dữ liệu
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="downloadImportTemplate()">⬇ Tải file mẫu Excel (.csv)</button>
-          <div id="import-result" style="margin-top:8px;font-size:12px;font-weight:600;"></div>
         </div>
         <div class="wb-toolbar" style="margin-top:18px;">
           <input type="text" placeholder="Tìm từ vựng..." id="wb-s" oninput="renderWB()" style="flex:1;min-width:140px;">
@@ -1100,16 +1063,12 @@ CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);<
       <!-- ══ WORD FAMILIES ══ -->
       <section class="screen" id="sc-families">
         <div class="page-title">Word Family</div>
-        <div class="page-sub">Nhóm các từ có cùng gốc · Nhấn "Thêm từ" để bổ sung vào nhóm đã có</div>
+        <div class="page-sub">Nhóm các từ có cùng gốc · Nhấn vào nhóm để xem tất cả biến thể</div>
         <div class="card" style="margin-bottom:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-            <div class="section-title" style="margin:0;" id="wf-form-title">Tạo nhóm mới</div>
-            <button class="btn btn-ghost btn-sm" id="wf-cancel-btn" onclick="cancelEditFamily()" style="display:none;">✕ Hủy</button>
-          </div>
+          <div class="section-title" style="margin-bottom:14px;">Tạo nhóm Word Family mới</div>
           <div class="field" style="margin-bottom:10px;">
             <label>Tên gốc từ (root) *</label>
             <input type="text" id="wf-root" placeholder="VD: innovate, happy, decide...">
-            <input type="hidden" id="wf-edit-id">
           </div>
           <div class="field" style="margin-bottom:10px;">
             <label>Chọn từ trong kho (gõ để tìm)</label>
@@ -1120,7 +1079,7 @@ CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);<
             <label>Từ đã chọn</label>
             <div id="wf-selected" style="display:flex;flex-wrap:wrap;gap:5px;min-height:34px;padding:6px;background:var(--paper);border-radius:var(--r);border:1px solid var(--rule2);"></div>
           </div>
-          <button class="btn btn-primary" onclick="saveWordFamily()" id="wf-save-btn">Lưu nhóm</button>
+          <button class="btn btn-primary" onclick="saveWordFamily()">Lưu nhóm</button>
         </div>
         <div id="families-list"></div>
       </section>
@@ -2166,59 +2125,65 @@ function setSentType(t,btn){
   document.querySelectorAll('.sentence-type-row .f-chip').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on'); renderSentences();
 }
-// Parse note markup: **bold** *italic* ==highlight== ~~red~~text~~end~~
-function wrapNoteText(before, after) {
-  const ta = document.getElementById('sn-note');
-  if (!ta) return;
-  const start = ta.selectionStart, end = ta.selectionEnd;
-  const selected = ta.value.slice(start, end) || 'text';
-  ta.value = ta.value.slice(0,start) + before + selected + after + ta.value.slice(end);
-  ta.focus();
-  ta.setSelectionRange(start+before.length, start+before.length+selected.length);
-}
+/* ── Rich text editor helpers ── */
+function rteCmd(cmd){ document.execCommand(cmd,false,null); }
+function rteClr(c){ document.execCommand('styleWithCSS',false,true); document.execCommand('foreColor',false,c); }
+function rteHl(c){  document.execCommand('styleWithCSS',false,true); document.execCommand('hiliteColor',false,c); }
+function rteKey(e){ if(e.ctrlKey||e.metaKey){ if(e.key==='b'){e.preventDefault();rteCmd('bold');} if(e.key==='i'){e.preventDefault();rteCmd('italic');} if(e.key==='u'){e.preventDefault();rteCmd('underline');} } }
+function rteGet()  { return document.getElementById('sn-note-editor')?.innerHTML||''; }
+function rteSet(h) { const el=document.getElementById('sn-note-editor'); if(el) el.innerHTML=h||''; }
+function rteClear(){ const el=document.getElementById('sn-note-editor'); if(el) el.innerHTML=''; }
 function addSentence(){
-  const editId = (document.getElementById('sn-edit-id')?.value||'');
-  if (editId) { updateSentence(); return; }
+  const editId=(document.getElementById('sn-edit-id')?.value||'');
+  if(editId){ updateSentence(); return; }
   const viet=document.getElementById('sn-viet').value.trim();
   const eng=document.getElementById('sn-eng').value.trim();
-  if(!viet||!eng){toast('Nhập câu tiếng Việt và tiếng Anh!','bad');return;}
-  const ns={id:Date.now(),viet,eng,note:getNoteHTML(),type:document.getElementById('sn-type').value};
+  if(!viet||!eng){ toast('Nhập câu tiếng Việt và tiếng Anh!','bad'); return; }
+  const ns={id:Date.now(),viet,eng,note:rteGet(),type:document.getElementById('sn-type').value};
   sentences.unshift(ns); saveState();
-// Real execCommand rich text (Word-style)
-function noteGetEditor(){return document.getElementById('sn-note-editor');}
-function noteCmd(cmd){const e=noteGetEditor();if(!e)return;e.focus();document.execCommand(cmd,false,null);}
-function noteColor(c){const e=noteGetEditor();if(!e)return;e.focus();document.execCommand('styleWithCSS',false,true);document.execCommand('foreColor',false,c);}
-function noteHighlight(c){const e=noteGetEditor();if(!e)return;e.focus();document.execCommand('styleWithCSS',false,true);document.execCommand('hiliteColor',false,c);}
-function handleNoteKey(ev){
-  if(ev.ctrlKey||ev.metaKey){
-    if(ev.key==='b'){ev.preventDefault();noteCmd('bold');}
-    if(ev.key==='i'){ev.preventDefault();noteCmd('italic');}
-    if(ev.key==='u'){ev.preventDefault();noteCmd('underline');}
+  if(sbUrl&&sbKey){
+    sbReq('POST','sentences',{viet:ns.viet,eng:ns.eng,note:ns.note||'',type:ns.type||'daily'},'return=representation')
+      .then(r=>{ if(r.ok&&Array.isArray(r.data)&&r.data[0]?.id){ const idx=sentences.findIndex(x=>x.id===ns.id); if(idx!==-1){sentences[idx].id=r.data[0].id; saveState();} } });
   }
+  document.getElementById('sn-viet').value='';
+  document.getElementById('sn-eng').value='';
+  rteClear();
+  toast('✓ Đã thêm câu mẫu','good'); addXP(3); renderSentences();
 }
-function getNoteHTML(){const e=noteGetEditor();return e?e.innerHTML:'';}
-function setNoteHTML(h){const e=noteGetEditor();if(e)e.innerHTML=h||'';}
-function clearNote(){const e=noteGetEditor();if(e)e.innerHTML='';}
-// Legacy: plain text / old markup → keep for backward compat
-function parseNoteMarkup(t){if(!t)return '';return t;}
+function openEditSent(id){
+  const s=sentences.find(x=>x.id===id); if(!s) return;
+  document.getElementById('sn-edit-id').value=id;
+  document.getElementById('sn-viet').value=s.viet;
+  document.getElementById('sn-eng').value=s.eng;
+  rteSet(s.note||'');
+  document.getElementById('sn-type').value=s.type||'daily';
+  const t=document.getElementById('sent-form-title'); if(t) t.textContent='✎ Chỉnh sửa câu mẫu';
+  const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='Lưu thay đổi';
+  const c=document.getElementById('sn-cancel-btn');   if(c) c.style.display='inline-flex';
+  document.getElementById('sent-add-form')?.scrollIntoView({behavior:'smooth'});
+}
+function cancelEditSent(){
+  document.getElementById('sn-edit-id').value='';
+  document.getElementById('sn-viet').value='';
+  document.getElementById('sn-eng').value='';
+  rteClear();
   const t=document.getElementById('sent-form-title'); if(t) t.textContent='+ Thêm câu mẫu mới';
   const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='Thêm câu';
-  const c=document.getElementById('sn-cancel-edit');  if(c) c.style.display='none';
+  const c=document.getElementById('sn-cancel-btn');   if(c) c.style.display='none';
 }
-function updateSentence() {
-  const id   = parseInt(document.getElementById('sn-edit-id').value);
-  const viet = document.getElementById('sn-viet').value.trim();
-  const eng  = document.getElementById('sn-eng').value.trim();
-  if(!viet||!eng){toast('Nhập câu tiếng Việt và tiếng Anh!','bad');return;}
-  const idx  = sentences.findIndex(s=>s.id===id);
-  if(idx===-1){toast('Không tìm thấy câu!','bad');return;}
-  const note = getNoteHTML();
-  const type = document.getElementById('sn-type').value;
-  sentences[idx] = {...sentences[idx], viet, eng, note, type};
+function updateSentence(){
+  const id=parseInt(document.getElementById('sn-edit-id').value);
+  const viet=document.getElementById('sn-viet').value.trim();
+  const eng=document.getElementById('sn-eng').value.trim();
+  if(!viet||!eng){ toast('Nhập câu và tiếng Anh!','bad'); return; }
+  const idx=sentences.findIndex(s=>s.id===id);
+  if(idx===-1){ toast('Không tìm thấy!','bad'); return; }
+  const note=rteGet(), type=document.getElementById('sn-type').value;
+  sentences[idx]={...sentences[idx],viet,eng,note,type};
   saveState();
   if(sbUrl&&sbKey) sbReq('PATCH','sentences?id=eq.'+id,{viet,eng,note,type},'return=minimal');
   cancelEditSent();
-  toast('✓ Đã cập nhật câu mẫu','good');
+  toast('✓ Đã cập nhật','good');
   renderSentences();
 }
 function deleteSentence(id){
@@ -2231,21 +2196,20 @@ function renderSentences(){
   const el=document.getElementById('sent-list'); if(!el) return;
   if(list.length===0){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Thêm câu mẫu phía trên!</div>';return;}
   el.innerHTML=list.map((s,i)=>{
-    const noteHtml = s.note ? '<div class="sent-note-rendered">💡 '+s.note+'</div>' : '';
-    const engSafe = s.eng.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return `
-    <div class="sent-card">
+    const hasNote=s.note&&s.note.trim()&&s.note!=='<br>';
+    const engSafe=s.eng.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="sent-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <div class="sent-viet">${s.viet}</div>
         <div style="display:flex;gap:4px;flex-shrink:0;margin-top:2px;">
-          <button class="wr-btn" title="Sửa" onclick="openEditSent(${s.id})" style="color:var(--blue);">✎</button>
-          <button class="wr-btn" title="Xóa" onclick="deleteSentence(${s.id})">×</button>
+          <button class="wr-btn" style="color:var(--blue);" onclick="openEditSent(${s.id})" title="Sửa">✎</button>
+          <button class="wr-btn" onclick="deleteSentence(${s.id})" title="Xóa">×</button>
         </div>
       </div>
       <button class="sent-reveal-btn" id="srb-${i}" onclick="revealSent(${i},this)">Nhấn để xem câu tiếng Anh</button>
       <div id="sent-eng-${i}" style="display:none;">
         <div class="sent-eng">${s.eng}</div>
-        ${noteHtml}
+        ${hasNote?`<div class="sent-note-html">💡 ${s.note}</div>`:''}
         <button class="wr-btn" style="margin-top:8px;width:auto;padding:5px 10px;font-size:12px;" onclick="speak('${engSafe}')">🔊 Nghe</button>
       </div>
     </div>`;
@@ -2309,60 +2273,46 @@ function renderWB(){
       </div>
     </div>
   `).join('');
+}
 
 /* ════════════════════════════════════════════
    IMPORT WORDS FROM FILE
 ════════════════════════════════════════════ */
 function importWordsFile(input) {
-  const file = input.files[0]; if(!file) return;
-  const guide  = document.getElementById('import-guide');
-  const result = document.getElementById('import-result');
-  if(guide) guide.style.display='block';
-  if(result) result.textContent='Đang đọc file...';
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const text  = e.target.result;
-    const rawLines = text.split(/\r?\n/).filter(l=>l.trim()&&!l.startsWith('#'));
-    let added=0, skipped=0, errors=0;
-    for (const line of rawLines) {
-      const sep   = line.includes('\t') ? '\t' : line.includes('|') ? '|' : ',';
-      const parts = line.split(sep).map(p=>p.trim());
-      const word    = parts[0]||'';
-      const meaning = parts[1]||'';
-      if (!word || !meaning) { errors++; continue; }
-      if (words.find(w=>w.word.toLowerCase()===word.toLowerCase())) { skipped++; continue; }
-      const nw = {
-        id: Date.now()+added, word, phonetic: parts[2]||'', partOfSpeech:'',
-        meaning, example: parts[3]||'', topic: parts[4]||'general', level: parseInt(parts[5])||3
-      };
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const rawLines=e.target.result.split(/\r?\n/).filter(l=>l.trim()&&!l.startsWith('#'));
+    let added=0,skipped=0,errors=0;
+    for(const line of rawLines){
+      const sep=line.includes('\t')?'\t':line.includes('|')?'|':',';
+      const p=line.split(sep).map(x=>x.trim().replace(/^"|"$/g,''));
+      if(p[0].toLowerCase()==='word') continue;
+      const word=p[0]||'', meaning=p[1]||'';
+      if(!word||!meaning){errors++;continue;}
+      if(words.find(w=>w.word.toLowerCase()===word.toLowerCase())){skipped++;continue;}
+      const nw={id:Date.now()+added,word,phonetic:p[2]||'',partOfSpeech:'',meaning,example:p[3]||'',topic:p[4]||'general',level:parseInt(p[5])||3};
       words.unshift(nw);
       if(sbUrl&&sbKey) saveWordToSB(nw);
       added++;
     }
     saveState(); renderWB(); renderWordStats();
-    const msg = '<span style="color:var(--accent)">✓ Thêm '+added+' từ mới</span>'+(skipped?' · bỏ qua '+skipped+' từ trùng':'')+(errors?' · '+errors+' dòng lỗi':'');
-    if(result) result.innerHTML = msg;
-    toast('✓ Import: '+added+' từ mới'+(skipped?' · '+skipped+' trùng':''), added>0?'good':'');
+    toast('Import: '+added+' từ mới'+(skipped?' · '+skipped+' trùng':''), added>0?'good':'');
   };
   reader.readAsText(file,'UTF-8');
   input.value='';
 }
-function downloadImportTemplate() {
-  // Excel-ready CSV với header rõ ràng + ví dụ
-  const rows = [
+function downloadImportTemplate(){
+  const rows=[
     ['word','meaning','phonetic','example','topic','level'],
-    ['serendipity','Sự may mắn tình cờ','/ˌser.ənˈdɪp.ɪ.ti/','Finding that café was pure serendipity.','general','4'],
-    ['resilient','Kiên cường đàn hồi','/rɪˈzɪl.i.ənt/','Startups must be resilient to failure.','business','3'],
-    ['eloquent','Hùng hồn lưu loát','/ˈel.ə.kwənt/','She gave an eloquent speech.','general','3'],
-    ['','(xóa dòng ví dụ, thêm từ của bạn vào bên dưới)','','','',''],
+    ['serendipity','Su may man tinh co','','','general','4'],
+    ['resilient','Kien cuong','','','business','3'],
   ];
-  const csv = rows.map(r => r.map(c => '"'+c.replace(/"/g,'""')+'"').join(',')).join('\r\n');
-  const a = document.createElement('a');
-  // BOM để Excel nhận UTF-8 đúng (hiện tiếng Việt)
-  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
-  a.download = 'lingo-import-template.csv';
-  a.click();
-  toast('✓ Đã tải file mẫu — mở bằng Excel để điền từ', 'good');
+  const csv=rows.map(r=>r.map(c=>'"'+c+'"').join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='lingo-import.csv'; a.click();
+  toast('Da tai file mau CSV','good');
 }
 
 function topicLabel(key) {
@@ -2538,48 +2488,22 @@ function renderWFSelected() {
     return w?`<span class="chip chip-green" style="font-size:12px;gap:4px;">${w.word} <button onclick="toggleWFWord(${id},null,null,document.getElementById('wf-btn-${id}'))" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);padding:0;line-height:1;">×</button></span>`:'';
   }).join('');
 }
-function startEditFamily(fid) {
-  const f = families.find(x=>x.id===fid); if(!f) return;
-  document.getElementById('wf-root').value    = f.root;
-  document.getElementById('wf-edit-id').value = fid;
-  const t=document.getElementById('wf-form-title'); if(t) t.textContent='✎ Thêm từ vào nhóm: '+f.root;
-  const s=document.getElementById('wf-save-btn');   if(s) s.textContent='Lưu thay đổi';
-  const c=document.getElementById('wf-cancel-btn'); if(c) c.style.display='inline-flex';
-  wfSelected = [...f.wordIds];
-  renderWFSearch(); renderWFSelected();
-  document.querySelector('#sc-families .card')?.scrollIntoView({behavior:'smooth'});
-}
-function cancelEditFamily() {
-  document.getElementById('wf-root').value='';
-  document.getElementById('wf-edit-id').value='';
-  const t=document.getElementById('wf-form-title'); if(t) t.textContent='Tạo nhóm mới';
-  const s=document.getElementById('wf-save-btn');   if(s) s.textContent='Lưu nhóm';
-  const c=document.getElementById('wf-cancel-btn'); if(c) c.style.display='none';
-  wfSelected=[]; renderWFSearch(); renderWFSelected();
-}
-function removeFamilyWord(fid, wordId) {
-  const f = families.find(x=>x.id===fid); if(!f) return;
-  f.wordIds = f.wordIds.filter(id=>id!==wordId);
-  saveState(); pushMetaToSB(); renderFamilies();
-}
 function saveWordFamily() {
-  const root   = document.getElementById('wf-root').value.trim();
-  const editId = document.getElementById('wf-edit-id')?.value||'';
+  const root = document.getElementById('wf-root').value.trim();
   if (!root) { toast('Nhập tên gốc từ!','bad'); return; }
-  if (wfSelected.length < 1) { toast('Chọn ít nhất 1 từ!','bad'); return; }
-  if (editId) {
-    const idx = families.findIndex(f=>String(f.id)===String(editId));
-    if (idx !== -1) { families[idx].root=root; families[idx].wordIds=[...new Set(wfSelected)]; }
+  if (wfSelected.length < 2) { toast('Chọn ít nhất 2 từ!','bad'); return; }
+  const existing = families.findIndex(f=>f.root.toLowerCase()===root.toLowerCase());
+  if (existing !== -1) {
+    // update
+    families[existing].wordIds = [...new Set([...families[existing].wordIds, ...wfSelected])];
   } else {
-    const existing = families.findIndex(f=>f.root.toLowerCase()===root.toLowerCase());
-    if (existing !== -1) {
-      families[existing].wordIds = [...new Set([...families[existing].wordIds,...wfSelected])];
-    } else {
-      families.push({ id:Date.now(), root, wordIds:[...wfSelected] });
-    }
+    families.push({ id: Date.now(), root, wordIds: [...wfSelected] });
   }
   saveState(); pushMetaToSB();
-  cancelEditFamily();
+  document.getElementById('wf-root').value='';
+  wfSelected=[];
+  renderWFSearch();
+  renderWFSelected();
   renderFamilies();
   toast('✓ Đã lưu nhóm "'+root+'"','good');
 }
@@ -2599,22 +2523,21 @@ function renderFamilies() {
     const wObjs = f.wordIds.map(id=>words.find(w=>w.id===id)).filter(Boolean);
     return `
       <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div>
             <div style="font-family:var(--serif);font-size:18px;font-weight:600;">${f.root}</div>
             <div style="font-size:11px;color:var(--muted);">${wObjs.length} từ trong nhóm</div>
           </div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <div style="display:flex;gap:6px;">
             <button class="btn btn-sm btn-ghost" onclick="toggleFamilyDetail('fd-${f.id}')">Xem từ ▾</button>
-            <button class="btn btn-sm" style="background:var(--accent-lt);color:var(--accent);border:1px solid var(--accent-md);font-size:11px;padding:4px 10px;border-radius:var(--r);" onclick="startEditFamily(${f.id})">+ Thêm từ</button>
             <button class="wr-btn" onclick="deleteFamily(${f.id})">×</button>
           </div>
         </div>
         <div id="fd-${f.id}" style="display:none;margin-top:8px;border-top:1px solid var(--rule);padding-top:12px;">
           ${wObjs.map(w=>`
-            <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--rule);">
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);">
               <div style="flex:1;">
-                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:6px;">
                   <span style="font-weight:600;font-size:14px;">${w.word}</span>
                   ${w.partOfSpeech?`<span style="font-size:10px;background:var(--blue-lt);color:var(--blue);padding:1px 6px;border-radius:8px;font-weight:600;">${w.partOfSpeech}</span>`:''}
                   <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${w.phonetic}</span>
@@ -2622,10 +2545,7 @@ function renderFamilies() {
                 <div style="font-size:13px;color:var(--mid);margin-top:2px;">${w.meaning}</div>
                 ${w.example?`<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:2px;">"${w.example}"</div>`:''}
               </div>
-              <div style="display:flex;gap:4px;flex-shrink:0;">
-                <button class="btn btn-sm btn-ghost" onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
-                <button class="wr-btn" title="Xóa khỏi nhóm" onclick="removeFamilyWord(${f.id},${w.id})" style="color:var(--red);">×</button>
-              </div>
+              <button class="btn btn-sm btn-ghost" onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
             </div>
           `).join('')}
         </div>
@@ -2636,7 +2556,6 @@ function renderFamilies() {
 function toggleFamilyDetail(id) {
   const el = document.getElementById(id); if(!el) return;
   el.style.display = el.style.display==='block' ? 'none' : 'block';
-}
 }
 
 /* ════════════════════════════════════════════
@@ -3218,6 +3137,7 @@ async function init(){
 
   populateTopicSelects();
   populateTopicFilters();
+  renderTopics();
   buildHeatmap('hmap',10);
   updateCounters();
 
