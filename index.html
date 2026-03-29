@@ -436,6 +436,36 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
   cursor:pointer;transition:all .15s;
 }
 .more-item:hover,.more-item:active{background:var(--accent-lt);color:var(--accent);}
+/* ── NOTE RICH TEXT EDITOR ── */
+.note-toolbar{
+  display:flex;gap:3px;padding:5px 6px;
+  background:var(--paper);border:1px solid var(--rule2);
+  border-radius:var(--r) var(--r) 0 0;border-bottom:none;flex-wrap:wrap;
+}
+.note-tool{
+  padding:3px 9px;border:1px solid transparent;border-radius:4px;
+  background:none;font-size:13px;cursor:pointer;min-width:28px;
+  text-align:center;line-height:1.5;transition:background .1s,border-color .1s;
+}
+.note-tool:hover{background:var(--white);border-color:var(--rule2);}
+.note-tool-sep{width:1px;background:var(--rule2);margin:2px 3px;align-self:stretch;}
+.note-tool-yellow{color:#8a6400;font-weight:700;border-bottom:2px solid #f0c000;}
+.note-tool-green{color:var(--accent);font-weight:700;border-bottom:2px solid var(--accent);}
+.note-tool-red{color:var(--red);font-weight:700;border-bottom:2px solid var(--red);}
+.note-tool-blue{color:var(--blue);font-weight:700;border-bottom:2px solid var(--blue);}
+.note-editor{
+  width:100%;min-height:80px;max-height:220px;overflow-y:auto;
+  padding:8px 10px;background:var(--white);
+  border:1px solid var(--rule2);border-radius:0 0 var(--r) var(--r);
+  font-size:13px;line-height:1.7;font-family:var(--sans);color:var(--ink);
+  outline:none;cursor:text;white-space:pre-wrap;
+}
+.note-editor:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(28,27,24,.07);}
+.note-editor:empty::before{content:attr(placeholder);color:var(--muted);pointer-events:none;display:block;}
+.sent-note-rendered{
+  font-size:13px;padding:8px 12px;background:var(--paper);
+  border-radius:var(--r);line-height:1.8;
+}
 </style>
 </head>
 <body>
@@ -806,16 +836,25 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <div class="field"><label>Câu tiếng Anh *</label><input type="text" id="sn-eng"  placeholder="Could you speak more slowly?"></div>
             <div class="field sent-form-full">
               <label>Ghi chú ngữ pháp (nhiều dòng, hỗ trợ **in đậm** và ==màu==)</label>
-              <!-- Rich text toolbar -->
-              <div class="note-toolbar">
-                <button type="button" class="note-tool" onclick="wrapNoteText('**','**')" title="In đậm"><strong>B</strong></button>
-                <button type="button" class="note-tool" onclick="wrapNoteText('*','*')"   title="In nghiêng"><em>I</em></button>
-                <button type="button" class="note-tool note-tool-yellow" onclick="wrapNoteText('==','==')"  title="Highlight vàng">A</button>
-                <button type="button" class="note-tool note-tool-green"  onclick="wrapNoteText('~~green~~','~~end~~')"  title="Màu xanh">A</button>
-                <button type="button" class="note-tool note-tool-red"    onclick="wrapNoteText('~~red~~','~~end~~')"  title="Màu đỏ">A</button>
-                <button type="button" class="note-tool note-tool-blue"   onclick="wrapNoteText('~~blue~~','~~end~~')"  title="Màu xanh dương">A</button>
+              <!-- Word-style rich text toolbar -->
+              <div class="note-toolbar" id="note-toolbar">
+                <button type="button" class="note-tool" onmousedown="event.preventDefault();noteCmd('bold')"       title="In đậm (Ctrl+B)"><strong>B</strong></button>
+                <button type="button" class="note-tool" onmousedown="event.preventDefault();noteCmd('italic')"     title="In nghiêng (Ctrl+I)"><em>I</em></button>
+                <button type="button" class="note-tool" onmousedown="event.preventDefault();noteCmd('underline')"  title="Gạch chân (Ctrl+U)"><u>U</u></button>
+                <div class="note-tool-sep"></div>
+                <button type="button" class="note-tool note-tool-yellow" onmousedown="event.preventDefault();noteHighlight('#fff176')" title="Highlight vàng">A</button>
+                <button type="button" class="note-tool note-tool-green"  onmousedown="event.preventDefault();noteColor('#2d5a27')"     title="Màu xanh lá">A</button>
+                <button type="button" class="note-tool note-tool-red"    onmousedown="event.preventDefault();noteColor('#be3a2e')"     title="Màu đỏ">A</button>
+                <button type="button" class="note-tool note-tool-blue"   onmousedown="event.preventDefault();noteColor('#1e4d8c')"     title="Màu xanh dương">A</button>
+                <div class="note-tool-sep"></div>
+                <button type="button" class="note-tool" onmousedown="event.preventDefault();noteCmd('removeFormat')" title="Xóa định dạng" style="font-size:11px;">✕ format</button>
               </div>
-              <textarea id="sn-note" rows="3" placeholder="Could you...? lịch sự hơn Can you...?&#10;Cú pháp: **in đậm** *in nghiêng* ==highlight== ~~red~~màu~~end~~"></textarea>
+              <div id="sn-note-editor"
+                contenteditable="true"
+                class="note-editor"
+                placeholder="Ghi chú ngữ pháp... Bôi đen text rồi nhấn B/I/U hoặc chọn màu"
+                onkeydown="handleNoteKey(event)"
+              ></div>
             </div>
             <div class="field"><label>Chủ đề</label>
               <select id="sn-type">
@@ -877,16 +916,41 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
           </div>
         </div>
         <!-- Import guide -->
-        <div id="import-guide" style="display:none;background:var(--accent-lt);border:1px solid var(--accent-md);border-radius:var(--r2);padding:14px;margin-top:10px;font-size:12px;color:var(--mid);line-height:1.9;">
-          <div style="font-weight:600;color:var(--accent);margin-bottom:6px;">📄 Hướng dẫn import file</div>
-          <div>
-            Định dạng mỗi dòng: <code style="background:var(--paper);padding:1px 6px;border-radius:4px;">word | meaning | phonetic | example | topic | level</code><br>
-            Chỉ cần 2 cột đầu bắt buộc (word và meaning), các cột sau tùy chọn.<br>
-            Có thể dùng <strong>dấu phẩy (,)</strong> hoặc <strong>tab</strong> hoặc <strong>| </strong> để phân cách.<br>
-            Từ đã có trong kho sẽ <strong>không bị ghi đè</strong> — chỉ thêm từ mới.<br>
-            <a href="#" onclick="downloadImportTemplate();return false;" style="color:var(--accent);">⬇ Tải file mẫu .csv</a>
+        <div id="import-guide" style="display:none;background:var(--accent-lt);border:1px solid var(--accent-md);border-radius:var(--r2);padding:14px;margin-top:10px;">
+          <div style="font-weight:600;color:var(--accent);margin-bottom:10px;font-size:13px;">📄 Hướng dẫn import từ file</div>
+          <div style="font-size:12px;color:var(--mid);line-height:1.9;margin-bottom:10px;">
+            File CSV/Excel mỗi dòng 1 từ, các cột theo thứ tự:<br>
           </div>
-          <div id="import-result" style="margin-top:8px;font-weight:600;"></div>
+          <!-- Preview table -->
+          <div style="overflow-x:auto;margin-bottom:10px;">
+            <table style="font-size:11px;border-collapse:collapse;width:100%;background:var(--white);border-radius:var(--r);overflow:hidden;">
+              <tr style="background:var(--ink);color:white;">
+                <td style="padding:5px 8px;font-weight:600;">word *</td>
+                <td style="padding:5px 8px;font-weight:600;">meaning *</td>
+                <td style="padding:5px 8px;">phonetic</td>
+                <td style="padding:5px 8px;">example</td>
+                <td style="padding:5px 8px;">topic</td>
+                <td style="padding:5px 8px;">level</td>
+              </tr>
+              <tr style="color:var(--muted);">
+                <td style="padding:4px 8px;border-top:1px solid var(--rule);">resilient</td>
+                <td style="padding:4px 8px;border-top:1px solid var(--rule);">Kiên cường</td>
+                <td style="padding:4px 8px;border-top:1px solid var(--rule);">/rɪˈzɪl.i.ənt/</td>
+                <td style="padding:4px 8px;border-top:1px solid var(--rule);">Be resilient.</td>
+                <td style="padding:4px 8px;border-top:1px solid var(--rule);">business</td>
+                <td style="padding:4px 8px;border-top:1px solid var(--rule);">3</td>
+              </tr>
+            </table>
+          </div>
+          <div style="font-size:11px;color:var(--mid);line-height:1.8;margin-bottom:10px;">
+            • Chỉ cần 2 cột đầu (<strong>word</strong> và <strong>meaning</strong>), các cột còn lại tùy chọn<br>
+            • Phân cách bằng <strong>dấu phẩy</strong>, <strong>tab</strong>, hoặc <strong>|</strong><br>
+            • topic: general / travel / food / business / tech / daily<br>
+            • Từ trùng sẽ <strong>không bị ghi đè</strong> — chỉ thêm từ mới<br>
+            • Tải file mẫu rồi mở bằng Excel để điền dữ liệu
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="downloadImportTemplate()">⬇ Tải file mẫu Excel (.csv)</button>
+          <div id="import-result" style="margin-top:8px;font-size:12px;font-weight:600;"></div>
         </div>
         <div class="wb-toolbar" style="margin-top:18px;">
           <input type="text" placeholder="Tìm từ vựng..." id="wb-s" oninput="renderWB()" style="flex:1;min-width:140px;">
@@ -2103,18 +2167,6 @@ function setSentType(t,btn){
   btn.classList.add('on'); renderSentences();
 }
 // Parse note markup: **bold** *italic* ==highlight== ~~red~~text~~end~~
-function parseNoteMarkup(text) {
-  if (!text) return '';
-  let t = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  t = t.replace(/\*([^*]+?)\*/g,'<em>$1</em>');
-  t = t.replace(/==(.+?)==/g,'<span class="hl">$1</span>');
-  t = t.replace(/~~green~~([\s\S]+?)~~end~~/g,'<span class="cl-green">$1</span>');
-  t = t.replace(/~~red~~([\s\S]+?)~~end~~/g,'<span class="cl-red">$1</span>');
-  t = t.replace(/~~blue~~([\s\S]+?)~~end~~/g,'<span class="cl-blue">$1</span>');
-  t = t.replace(/\n/g,'<br>');
-  return t;
-}
 function wrapNoteText(before, after) {
   const ta = document.getElementById('sn-note');
   if (!ta) return;
@@ -2130,30 +2182,25 @@ function addSentence(){
   const viet=document.getElementById('sn-viet').value.trim();
   const eng=document.getElementById('sn-eng').value.trim();
   if(!viet||!eng){toast('Nhập câu tiếng Việt và tiếng Anh!','bad');return;}
-  const ns={id:Date.now(),viet,eng,note:document.getElementById('sn-note').value.trim()||'',type:document.getElementById('sn-type').value};
+  const ns={id:Date.now(),viet,eng,note:getNoteHTML(),type:document.getElementById('sn-type').value};
   sentences.unshift(ns); saveState();
-  if(sbUrl&&sbKey){
-    sbReq('POST','sentences',{viet:ns.viet,eng:ns.eng,note:ns.note||'',type:ns.type||'daily'},'return=representation')
-      .then(r=>{ if(r.ok&&Array.isArray(r.data)&&r.data[0]?.id){ const idx=sentences.findIndex(x=>x.id===ns.id); if(idx!==-1){sentences[idx].id=r.data[0].id; saveState();} } });
+// Real execCommand rich text (Word-style)
+function noteGetEditor(){return document.getElementById('sn-note-editor');}
+function noteCmd(cmd){const e=noteGetEditor();if(!e)return;e.focus();document.execCommand(cmd,false,null);}
+function noteColor(c){const e=noteGetEditor();if(!e)return;e.focus();document.execCommand('styleWithCSS',false,true);document.execCommand('foreColor',false,c);}
+function noteHighlight(c){const e=noteGetEditor();if(!e)return;e.focus();document.execCommand('styleWithCSS',false,true);document.execCommand('hiliteColor',false,c);}
+function handleNoteKey(ev){
+  if(ev.ctrlKey||ev.metaKey){
+    if(ev.key==='b'){ev.preventDefault();noteCmd('bold');}
+    if(ev.key==='i'){ev.preventDefault();noteCmd('italic');}
+    if(ev.key==='u'){ev.preventDefault();noteCmd('underline');}
   }
-  ['sn-viet','sn-eng','sn-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  toast('✓ Đã thêm câu mẫu','good'); addXP(3); renderSentences();
 }
-function openEditSent(id) {
-  const s = sentences.find(x=>x.id===id); if(!s) return;
-  document.getElementById('sn-edit-id').value = id;
-  document.getElementById('sn-viet').value    = s.viet;
-  document.getElementById('sn-eng').value     = s.eng;
-  document.getElementById('sn-note').value    = s.note||'';
-  document.getElementById('sn-type').value    = s.type||'daily';
-  const t=document.getElementById('sent-form-title'); if(t) t.textContent='✎ Chỉnh sửa câu mẫu';
-  const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='Lưu thay đổi';
-  const c=document.getElementById('sn-cancel-edit');  if(c) c.style.display='inline-flex';
-  document.getElementById('sent-add-form')?.scrollIntoView({behavior:'smooth'});
-}
-function cancelEditSent() {
-  document.getElementById('sn-edit-id').value='';
-  ['sn-viet','sn-eng','sn-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+function getNoteHTML(){const e=noteGetEditor();return e?e.innerHTML:'';}
+function setNoteHTML(h){const e=noteGetEditor();if(e)e.innerHTML=h||'';}
+function clearNote(){const e=noteGetEditor();if(e)e.innerHTML='';}
+// Legacy: plain text / old markup → keep for backward compat
+function parseNoteMarkup(t){if(!t)return '';return t;}
   const t=document.getElementById('sent-form-title'); if(t) t.textContent='+ Thêm câu mẫu mới';
   const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='Thêm câu';
   const c=document.getElementById('sn-cancel-edit');  if(c) c.style.display='none';
@@ -2165,7 +2212,7 @@ function updateSentence() {
   if(!viet||!eng){toast('Nhập câu tiếng Việt và tiếng Anh!','bad');return;}
   const idx  = sentences.findIndex(s=>s.id===id);
   if(idx===-1){toast('Không tìm thấy câu!','bad');return;}
-  const note = document.getElementById('sn-note').value.trim();
+  const note = getNoteHTML();
   const type = document.getElementById('sn-type').value;
   sentences[idx] = {...sentences[idx], viet, eng, note, type};
   saveState();
@@ -2184,7 +2231,7 @@ function renderSentences(){
   const el=document.getElementById('sent-list'); if(!el) return;
   if(list.length===0){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Thêm câu mẫu phía trên!</div>';return;}
   el.innerHTML=list.map((s,i)=>{
-    const noteHtml = s.note ? '<div class="sent-note-rendered">💡 '+parseNoteMarkup(s.note)+'</div>' : '';
+    const noteHtml = s.note ? '<div class="sent-note-rendered">💡 '+s.note+'</div>' : '';
     const engSafe = s.eng.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `
     <div class="sent-card">
@@ -2301,16 +2348,21 @@ function importWordsFile(input) {
   input.value='';
 }
 function downloadImportTemplate() {
-  const csv = ['# Lingo Import Template',
-    '# Cột: word,meaning,phonetic,example,topic,level',
-    '# topic: general/travel/food/business/tech/daily  |  level: 1-5',
-    'serendipity,Sự may mắn tình cờ,/ˌser.ənˈdɪp.ɪ.ti/,Finding that café was pure serendipity.,general,4',
-    'resilient,Kiên cường,/rɪˈzɪl.i.ənt/,Startups must be resilient.,business,3',
-  ].join('\n');
+  // Excel-ready CSV với header rõ ràng + ví dụ
+  const rows = [
+    ['word','meaning','phonetic','example','topic','level'],
+    ['serendipity','Sự may mắn tình cờ','/ˌser.ənˈdɪp.ɪ.ti/','Finding that café was pure serendipity.','general','4'],
+    ['resilient','Kiên cường đàn hồi','/rɪˈzɪl.i.ənt/','Startups must be resilient to failure.','business','3'],
+    ['eloquent','Hùng hồn lưu loát','/ˈel.ə.kwənt/','She gave an eloquent speech.','general','3'],
+    ['','(xóa dòng ví dụ, thêm từ của bạn vào bên dưới)','','','',''],
+  ];
+  const csv = rows.map(r => r.map(c => '"'+c.replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent('\ufeff'+csv);
-  a.download = 'lingo-import.csv';
+  // BOM để Excel nhận UTF-8 đúng (hiện tiếng Việt)
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = 'lingo-import-template.csv';
   a.click();
+  toast('✓ Đã tải file mẫu — mở bằng Excel để điền từ', 'good');
 }
 
 function topicLabel(key) {
