@@ -1479,7 +1479,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
           <div style="flex:1;height:1px;background:var(--rule);"></div>
           <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">6 Tiers</span>
         </div>
-        <div class="rank-cards" id="rank-cards"></div>
+        <div class="rank-cards" id="rank-list"></div>
 
         <!-- Customize XP -->
         <div class="xp-customize-wrap">
@@ -3340,7 +3340,7 @@ function renderRank() {
   }
 
   // ── All Ranks cards (Stitch row style) ──
-  const cardsEl = document.getElementById('rank-cards');
+  const cardsEl = document.getElementById('rank-list');
   if (cardsEl) {
     // Background tints per rank (warm/cool alternating like Stitch)
     const bgTints = ['#FDF6E3','#F1F5F2','#FEF9EF','#F0F4F8','#F8F0F8','#FFFAF0'];
@@ -3384,6 +3384,84 @@ function renderRank() {
         </div>`;
     }).join('');
   }
+
+  // ── Customize XP table (Stitch table style) ──
+  const editorEl = document.getElementById('xp-editor-grid');
+  if (editorEl) {
+    const rows = RANK_DEFS.map(def => {
+      const thresh = rankThresholds[def.id] || DEFAULT_THRESHOLDS[def.id];
+      const isCur  = def.id === r.piece;
+      return `<tr class="${isCur ? 'xp-cur-row' : ''}">
+        <td style="display:flex;align-items:center;gap:8px;">
+          ${pieceImg(def.piece, 20)}
+          ${def.name}
+        </td>
+        ${thresh.map((t, s) => `<td>
+          <input type="number" class="xp-thresh-input" min="1" max="9999999"
+            data-rank="${def.id}" data-star="${s}" value="${t}">
+        </td>`).join('')}
+      </tr>`;
+    }).join('');
+    editorEl.innerHTML = `<table class="xp-tbl">
+      <thead><tr>
+        <th>Rank</th>
+        <th>Milestone ★1</th>
+        <th>Milestone ★2</th>
+        <th>Milestone ★3</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  renderRankBadge();
+}
+function renderRankBadge() {
+  const r    = getCurrentRank();
+  const stars = '★'.repeat(r.star) + '☆'.repeat(3 - r.star);
+  const rIdx  = RANK_DEFS.findIndex(d => d.id === r.piece);
+  const icon  = document.getElementById('home-rank-icon');
+  const name  = document.getElementById('home-rank-name');
+  if (icon) icon.textContent = rIdx >= 4 ? '♛' : rIdx >= 3 ? '♜' : rIdx >= 2 ? '♝' : rIdx >= 1 ? '♞' : '♟';
+  if (name) name.textContent = `${r.def.name} ${stars}`;
+}
+
+function renderRank() {
+  const r      = getCurrentRank();
+  const rIdx   = RANK_DEFS.findIndex(d => d.id === r.piece);
+  const pct    = r.nextThresh > r.prevThresh
+    ? Math.min(100,Math.round((xp-r.prevThresh)/(r.nextThresh-r.prevThresh)*100)) : 100;
+  const nextName = r.star<3 ? r.def.name+' ★'.repeat(r.star+1)
+    : (rIdx<RANK_DEFS.length-1 ? RANK_DEFS[rIdx+1].name : 'MAX');
+
+  // Hero card
+  const heroEl = document.getElementById('rank-hero');
+  if (heroEl) {
+    const starsHtml = [0,1,2].map(s => {
+      const ok = s < r.star;
+      return `<div style="text-align:center;">
+        <div class="rank-star ${ok?'earned':''}">${ok?'★':'☆'}</div>
+        <div class="weapon-badge ${ok?'earned':'locked'}" style="max-width:110px;font-size:10px;">${r.def.weapons[s]}</div>
+      </div>`;
+    }).join('');
+    heroEl.innerHTML = `
+      <div class="rank-piece-svg" style="color:${r.def.color}">${PIECE_SVG[r.def.piece]||PIECE_SVG.pawn}</div>
+      <div class="rank-title">${r.def.name}</div>
+      <div class="rank-sub-title">${r.def.sub} · ${r.def.desc}</div>
+      <div class="rank-stars">${starsHtml}</div>
+      <div class="rank-xp-bar-wrap">
+        <div class="rank-xp-label">
+          <span>${r.prevThresh.toLocaleString()} XP</span>
+          <span style="color:var(--accent);font-weight:700;">${xp.toLocaleString()} XP</span>
+          <span>${r.nextThresh.toLocaleString()} XP</span>
+        </div>
+        <div class="rank-xp-track"><div class="rank-xp-fill" style="width:${pct}%"></div></div>
+        <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:4px;">
+          Còn ${Math.max(0,r.nextThresh-xp).toLocaleString()} XP → ${nextName}
+        </div>
+      </div>`;
+  }
+
+
 
   // ── Customize XP table (Stitch table style) ──
   const editorEl = document.getElementById('xp-editor-grid');
