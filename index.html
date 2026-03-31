@@ -436,6 +436,627 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
   cursor:pointer;transition:all .15s;
 }
 .more-item:hover,.more-item:active{background:var(--accent-lt);color:var(--accent);}
+
+/* ════ CHESS RANK SYSTEM (Stitch design) ════ */
+
+/* ── Hero banner ── */
+.rank-hero{
+  position:relative;overflow:hidden;
+  background:var(--accent-lt);border:1px solid var(--accent-md);
+  border-radius:var(--r2);padding:28px 24px;
+  display:flex;flex-direction:column;gap:0;
+  margin-bottom:24px;box-shadow:var(--shadow);
+}
+@media(min-width:600px){
+  .rank-hero{flex-direction:row;align-items:center;gap:28px;padding:36px 40px;}
+}
+/* Piece circle */
+.rh-piece-wrap{
+  flex-shrink:0;align-self:center;
+  width:128px;height:128px;border-radius:50%;
+  background:var(--white);box-shadow:0 8px 32px rgba(0,0,0,.1);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.rh-piece-wrap img{width:88px;height:88px;object-fit:contain;filter:brightness(0.92) contrast(1.1);}
+.rh-level-pill{
+  position:absolute;bottom:-6px;right:-6px;
+  background:var(--amber);color:white;
+  font-size:10px;font-weight:700;padding:2px 10px;
+  border-radius:20px;letter-spacing:.08em;text-transform:uppercase;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+/* Hero text */
+.rh-info{flex:1;min-width:0;}
+.rh-name{
+  font-family:var(--serif);font-size:36px;font-weight:800;
+  color:var(--ink);line-height:1;margin-bottom:4px;
+}
+.rh-desc{font-size:14px;color:var(--mid);font-style:italic;margin-bottom:20px;}
+/* Stats row */
+.rh-stats{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:16px;}
+.rh-stat{display:flex;flex-direction:column;}
+.rh-stat-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.rh-stat-val{font-size:20px;font-weight:700;color:var(--accent);}
+.rh-stat-divider{width:1px;background:rgba(0,0,0,.08);align-self:stretch;}
+/* XP bar */
+.rh-bar-track{
+  height:12px;background:var(--rule);border-radius:6px;overflow:hidden;
+}
+.rh-bar-fill{
+  height:100%;border-radius:6px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-dark,#2d5a27));
+  transition:width .7s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── All Ranks list (card rows like Stitch) ── */
+.rank-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.rank-card{
+  display:flex;align-items:center;gap:14px;
+  padding:16px 18px;border-radius:var(--r2);
+  border:1px solid transparent;transition:all .2s;
+  background:var(--white);box-shadow:var(--shadow);
+}
+.rank-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);}
+.rank-card.rank-card-active{
+  border-color:var(--accent-md);
+  background:linear-gradient(to right,var(--accent-lt),var(--white));
+}
+.rank-card.rank-card-locked{opacity:.55;filter:grayscale(.6);}
+.rank-card.rank-card-locked:hover{opacity:.8;filter:grayscale(.2);}
+/* Piece icon cell */
+.rc-icon{
+  width:56px;height:56px;flex-shrink:0;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  background:transparent;transition:transform .2s;
+}
+.rank-card:hover .rc-icon{transform:scale(1.12);}
+.rc-icon img{width:40px;height:40px;object-fit:contain;filter:brightness(0.92) contrast(1.1);}
+/* Info */
+.rc-info{flex:1;min-width:0;}
+.rc-name{font-weight:700;font-size:15px;color:var(--ink);}
+.rc-stars{display:flex;gap:2px;margin-top:3px;}
+.rc-star{font-size:16px;color:var(--rule2);}
+.rc-star.on{color:var(--amber);}
+/* XP columns */
+.rc-xp-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:right;flex-shrink:0;}
+.rc-xp-col{display:flex;flex-direction:column;}
+.rc-xp-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.rc-xp-val{font-size:13px;font-weight:700;color:var(--ink);}
+.rc-cur-badge{
+  font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px;
+  background:var(--accent);color:white;margin-left:6px;vertical-align:middle;
+}
+
+/* ── Customize XP (Stitch table style) ── */
+.xp-customize-wrap{
+  background:var(--accent-lt);border:1px solid var(--accent-md);
+  border-radius:var(--r2);padding:24px 20px;margin-bottom:20px;
+}
+.xp-customize-wrap .section-title{margin-bottom:16px;}
+.xp-tbl{
+  width:100%;border-collapse:separate;border-spacing:0;
+  background:var(--white);border-radius:var(--r2);
+  overflow:hidden;box-shadow:var(--shadow);
+}
+.xp-tbl thead tr{background:var(--paper);}
+.xp-tbl thead th{
+  padding:10px 14px;font-size:10px;font-weight:700;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+  border-bottom:1px solid var(--rule2);
+}
+.xp-tbl thead th:first-child{text-align:left;}
+.xp-tbl tbody tr{border-bottom:1px solid var(--rule);}
+.xp-tbl tbody tr:last-child td{border-bottom:none;}
+.xp-tbl tbody tr:hover{background:var(--paper);}
+.xp-tbl tbody tr.xp-cur-row{background:var(--accent-lt);}
+.xp-tbl td{padding:12px 14px;border-bottom:1px solid var(--rule);}
+.xp-tbl td:first-child{font-weight:700;font-size:13px;color:var(--ink);}
+.xp-tbl input[type=number]{
+  width:90px;background:var(--paper);border:none;border-radius:8px;
+  padding:6px 8px;font-size:13px;font-weight:700;font-family:var(--sans);
+  color:var(--ink);text-align:right;
+  transition:box-shadow .15s;
+}
+.xp-tbl input[type=number]:focus{
+  outline:none;box-shadow:0 0 0 2px var(--accent-md);background:var(--white);
+}
+.xp-save-btn{
+  display:flex;align-items:center;gap:8px;
+  margin-top:16px;margin-left:auto;
+  padding:12px 28px;border-radius:var(--r2);
+  background:var(--ink);color:var(--white);
+  font-weight:700;font-size:14px;cursor:pointer;border:none;
+  transition:opacity .15s,transform .1s;
+}
+.xp-save-btn:hover{opacity:.9;}
+.xp-save-btn:active{transform:scale(.97);}
+
+/* Weapons (unchanged) */
+.weapon-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:500;border:1px solid;margin:3px 2px;}
+.weapon-badge.earned{background:var(--accent-lt);border-color:var(--accent-md);color:var(--accent);}
+.weapon-badge.locked{background:var(--paper);border-color:var(--rule2);color:var(--muted);}
+
+/* ── IMPORT ── */html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- PWA / iOS standalone -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lingo">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fafaf8">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232d5a27'/><text y='.9em' font-size='72' x='12'>📚</text></svg>">
+<title>Lingo — Học Tiếng Anh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --white:#ffffff;--off:#fafaf8;--paper:#f4f3ef;--rule:#e8e6e0;--rule2:#d8d5cc;
+  --muted:#9c9789;--mid:#6b6860;--ink:#1c1b18;
+  --accent:#2d5a27;--accent-lt:#eef4ec;--accent-md:#c5ddc2;
+  --amber:#a05c20;--amber-lt:#fdf3e8;
+  --red:#be3a2e;--red-lt:#fdf0ee;
+  --blue:#1e4d8c;--blue-lt:#edf2fb;
+  --serif:'Fraunces',serif;--sans:'Plus Jakarta Sans',sans-serif;--mono:'DM Mono',monospace;
+  --r:8px;--r2:14px;--r3:20px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+  --shadow2:0 2px 8px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);font-size:15px;line-height:1.6;color:var(--ink);background:var(--off);min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--rule2);border-radius:2px}
+button{font-family:var(--sans);cursor:pointer}
+input,select,textarea{font-family:var(--sans)}
+
+/* ── LAYOUT ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;background:var(--white);border-right:1px solid var(--rule);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.main{flex:1;min-width:0;overflow-x:hidden}
+.inner{max-width:740px;margin:0 auto;padding:40px 32px}
+
+/* ── SIDEBAR ── */
+.logo-wrap{padding:28px 20px 20px;border-bottom:1px solid var(--rule)}
+.logo{font-family:var(--serif);font-size:22px;color:var(--ink);letter-spacing:-.3px}
+.logo em{color:var(--accent);font-style:normal}
+.nav-section{padding:16px 12px 8px}
+.nav-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;padding:0 8px;margin-bottom:6px}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;background:none;border:none;border-radius:var(--r);font-size:14px;font-weight:400;color:var(--mid);transition:all .15s;text-align:left}
+.nav-btn:hover{background:var(--paper);color:var(--ink)}
+.nav-btn.active{background:var(--accent-lt);color:var(--accent);font-weight:500}
+.nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.sidebar-stats{margin-top:auto;padding:16px;border-top:1px solid var(--rule);display:flex;gap:8px}
+.s-stat{flex:1;text-align:center;padding:10px 4px;background:var(--paper);border-radius:var(--r)}
+.s-stat .val{font-family:var(--serif);font-size:20px;color:var(--ink);display:block;line-height:1}
+.s-stat .lbl{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* ── MOBILE TOP BAR ── */
+.topbar{display:none;position:sticky;top:0;z-index:90;background:rgba(250,250,248,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule);padding:10px 16px;align-items:center;gap:10px}
+.topbar-logo{font-family:var(--serif);font-size:18px;flex-shrink:0}
+.topbar-logo em{color:var(--accent);font-style:normal}
+.topbar-pills{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
+.tp{font-size:11px;color:var(--mid);background:var(--paper);padding:3px 8px;border-radius:10px;white-space:nowrap}
+.tp strong{color:var(--ink);font-weight:600}
+
+/* ── BOTTOM NAV (6 items) ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-top:1px solid var(--rule);padding:4px 0 max(4px,env(safe-area-inset-bottom))}
+.bottom-nav-inner{display:flex}
+.bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:none;font-size:9px;color:var(--muted);padding:5px 0;transition:color .15s;line-height:1.2}
+.bn-btn .bni{font-size:19px;display:block}
+.bn-btn.active{color:var(--accent)}
+
+@media(max-width:720px){
+  .sidebar{display:none}
+  .topbar{display:flex}
+  .bottom-nav{display:block}
+  .inner{padding:16px 14px 80px}
+}
+
+/* ── SCREENS ── */
+.screen{display:none}
+.screen.active{display:block;animation:fadeUp .22s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── TYPOGRAPHY ── */
+.page-title{font-family:var(--serif);font-size:28px;line-height:1.2;color:var(--ink);margin-bottom:4px}
+.page-sub{font-size:14px;color:var(--muted);margin-bottom:28px}
+.section-title{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;border-radius:var(--r);font-size:14px;font-weight:500;border:1px solid transparent;transition:all .15s;line-height:1}
+.btn-primary{background:var(--ink);color:var(--white)}
+.btn-primary:hover{background:#2d2c28;box-shadow:var(--shadow)}
+.btn-ghost{background:none;border-color:var(--rule2);color:var(--mid)}
+.btn-ghost:hover{border-color:var(--ink);color:var(--ink)}
+.btn-accent{background:var(--accent);color:white}
+.btn-accent:hover{background:#245021}
+.btn-danger{background:var(--red);color:white}
+.btn-danger:hover{background:#a0312a}
+.btn-full{width:100%}
+.btn-lg{padding:12px 24px;font-size:15px}
+.btn-sm{padding:6px 12px;font-size:13px}
+
+/* ── CHIPS ── */
+.chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.chip-green{background:var(--accent-lt);color:var(--accent)}
+.chip-amber{background:var(--amber-lt);color:var(--amber)}
+.chip-red{background:var(--red-lt);color:var(--red)}
+.chip-blue{background:var(--blue-lt);color:var(--blue)}
+.chip-muted{background:var(--paper);color:var(--mid)}
+
+.card{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:20px;box-shadow:var(--shadow)}
+.card+.card{margin-top:12px}
+hr{border:none;border-top:1px solid var(--rule);margin:20px 0}
+
+/* ── INPUTS ── */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:500;color:var(--mid)}
+input[type=text],input[type=number],input[type=date],select,textarea{padding:9px 12px;background:var(--white);border:1px solid var(--rule2);border-radius:var(--r);font-size:14px;color:var(--ink);outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(28,27,24,.07)}
+select{cursor:pointer}
+select option{background:white}
+textarea{resize:vertical;min-height:72px}
+input::placeholder{color:var(--muted)}
+
+/* ── PROGRESS ── */
+.prog-track{height:3px;background:var(--rule);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:var(--ink);border-radius:2px;transition:width .4s ease}
+.prog-fill-green{background:var(--accent)}
+.prog-fill-amber{background:var(--amber)}
+.prog-fill-red{background:var(--red)}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(12px);z-index:999;background:var(--ink);color:white;padding:10px 18px;border-radius:24px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.good{background:var(--accent)}
+#toast.bad{background:var(--red)}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(28,27,24,.4);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal-box{background:var(--white);border:1px solid var(--rule);border-radius:var(--r3);padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow2)}
+.modal-title{font-family:var(--serif);font-size:20px;margin-bottom:20px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-full{grid-column:span 2}
+@media(max-width:480px){.modal-grid{grid-template-columns:1fr}.modal-full{grid-column:span 1}}
+
+/* ══════════════════════════════
+   HOME SCREEN
+══════════════════════════════ */
+.greeting-block{margin-bottom:24px}
+.greeting-block h1{font-family:var(--serif);font-size:30px;line-height:1.15;margin-bottom:6px}
+.greeting-block p{font-size:14px;color:var(--mid)}
+
+.daily-card{background:var(--ink);color:var(--white);border-radius:var(--r3);padding:22px;margin-bottom:20px;position:relative;overflow:hidden}
+.daily-card::after{content:'';position:absolute;right:-20px;top:-20px;width:110px;height:110px;border-radius:50%;border:1px solid rgba(255,255,255,.07)}
+.daily-label{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:8px}
+.daily-word{font-family:var(--serif);font-size:34px;line-height:1;margin-bottom:4px}
+.daily-phonetic{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.45);margin-bottom:8px}
+.daily-meaning{font-size:15px;color:rgba(255,255,255,.75);margin-bottom:8px}
+.daily-example{font-size:12px;color:rgba(255,255,255,.38);font-style:italic;border-left:2px solid rgba(255,255,255,.15);padding-left:12px}
+.daily-listen{position:absolute;right:20px;bottom:20px;width:34px;height:34px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:50%;font-size:15px;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center}
+.daily-listen:hover{background:rgba(255,255,255,.18)}
+
+/* ── WORD STATS PANEL ── */
+.word-stats-panel{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.wsp-box{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:14px 12px;box-shadow:var(--shadow);cursor:default;transition:border-color .15s}
+.wsp-box.clickable{cursor:pointer}
+.wsp-box.clickable:hover{border-color:var(--ink)}
+.wsp-top{display:flex;align-items:baseline;gap:5px;margin-bottom:3px}
+.wsp-num{font-family:var(--serif);font-size:22px;line-height:1;color:var(--ink)}
+.wsp-denom{font-size:13px;color:var(--muted)}
+.wsp-label{font-size:11px;color:var(--muted);line-height:1.3}
+.wsp-sub{font-size:10px;color:var(--accent);margin-top:2px;font-weight:500}
+
+/* ── TODAY LEARNED DRAWER ── */
+.today-drawer{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:16px;margin-bottom:20px;box-shadow:var(--shadow);display:none}
+.today-drawer.open{display:block;animation:fadeUp .2s ease}
+.today-drawer-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.today-drawer-title{font-size:13px;font-weight:600;color:var(--ink)}
+.today-words-grid{display:flex;flex-wrap:wrap;gap:6px}
+.tw-pill{padding:5px 12px;background:var(--accent-lt);border:1px solid var(--accent-md);border-radius:20px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.tw-pill:hover{background:var(--accent);color:white;border-color:var(--accent)}
+.tw-pill .tw-viet{font-size:11px;color:var(--muted)}
+.tw-pill:hover .tw-viet{color:rgba(255,255,255,.7)}
+
+.mode-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+.mode-tile{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:14px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.mode-tile:hover{border-color:var(--ink);transform:translateY(-1px);box-shadow:var(--shadow2)}
+.mt-icon{font-size:20px;margin-bottom:6px}
+.mt-name{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.mt-desc{font-size:11px;color:var(--muted)}
+
+.streak-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}
+.streak-box{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:12px;text-align:center;box-shadow:var(--shadow)}
+.streak-box .num{font-family:var(--serif);font-size:24px;color:var(--ink);line-height:1}
+.streak-box .lbl{font-size:10px;color:var(--muted);margin-top:3px}
+
+.heatmap{display:flex;gap:2px;flex-wrap:wrap}
+.hm-cell{width:11px;height:11px;border-radius:2px;background:var(--rule);transition:transform .15s;cursor:default}
+.hm-cell:hover{transform:scale(1.3)}
+.hm-1{background:var(--accent-md)}
+.hm-2{background:#8cb989}
+.hm-3{background:var(--accent)}
+
+/* ── GOAL BANNER ── */
+.goal-banner{border-radius:var(--r2);padding:16px 18px;margin-bottom:20px;border:1px solid var(--rule);background:var(--white);box-shadow:var(--shadow)}
+.goal-banner.on-track{border-color:#c5ddc2;background:var(--accent-lt)}
+.goal-banner.behind{border-color:#f0d8b8;background:var(--amber-lt)}
+.goal-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.goal-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.goal-sub{font-size:12px;color:var(--mid)}
+.goal-nums .g-big{font-family:var(--serif);font-size:26px;line-height:1;color:var(--ink)}
+.goal-nums .g-small{font-size:10px;color:var(--muted)}
+.goal-prog-wrap{margin-top:10px}
+
+/* ── FLASHCARD ── */
+.fc-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.fc-counter{font-size:13px;color:var(--muted)}
+.fc-badges{display:flex;gap:6px}
+.fc-card-scene{perspective:900px;height:260px;cursor:pointer;margin-bottom:20px;user-select:none}
+.fc-card-3d{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.4,0,.2,1);border-radius:var(--r3)}
+.fc-card-3d.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;border-radius:var(--r3);backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center}
+.fc-front{background:var(--white);border:1px solid var(--rule);box-shadow:var(--shadow2)}
+.fc-back{background:var(--paper);border:1px solid var(--rule2);box-shadow:var(--shadow2);transform:rotateY(180deg)}
+.fc-eng{font-family:var(--serif);font-size:44px;line-height:1;color:var(--ink);margin-bottom:8px}
+.fc-phon{font-family:var(--mono);font-size:15px;color:var(--muted);margin-bottom:14px}
+.fc-tap-hint{font-size:12px;color:var(--muted)}
+.fc-viet{font-family:var(--serif);font-size:28px;line-height:1.3;color:var(--ink);margin-bottom:10px}
+.fc-eg{font-size:13px;color:var(--mid);font-style:italic;border-left:2px solid var(--rule2);padding-left:12px;text-align:left;width:100%}
+.fc-rate-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.fc-rate-btn{padding:12px 8px;border-radius:var(--r);font-size:13px;font-weight:500;border:1px solid;transition:all .15s}
+.rate-again{background:var(--red-lt);border-color:#f0c4c0;color:var(--red)}
+.rate-again:hover{background:var(--red);color:white;border-color:var(--red)}
+.rate-hard{background:var(--amber-lt);border-color:#f0d8b8;color:var(--amber)}
+.rate-hard:hover{background:var(--amber);color:white;border-color:var(--amber)}
+.rate-easy{background:var(--accent-lt);border-color:var(--accent-md);color:var(--accent)}
+.rate-easy:hover{background:var(--accent);color:white;border-color:var(--accent)}
+.fc-rate-note{text-align:center;font-size:11px;color:var(--muted);margin-bottom:12px}
+.fc-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.f-chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--rule2);background:var(--white);color:var(--mid);cursor:pointer;transition:all .15s}
+.f-chip:hover{border-color:var(--ink);color:var(--ink)}
+.f-chip.on{background:var(--ink);color:white;border-color:var(--ink)}
+.fc-done-box{text-align:center;padding:40px 20px}
+.fc-done-box .done-num{font-family:var(--serif);font-size:60px;color:var(--ink);line-height:1;margin-bottom:8px}
+.fc-done-box h3{font-family:var(--serif);font-size:22px;margin-bottom:8px}
+.fc-done-box p{font-size:14px;color:var(--mid);margin-bottom:20px}
+
+/* ── QUIZ ── */
+.quiz-type-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.q-type-btn{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid var(--rule2);background:var(--white);color:var(--mid);cursor:pointer;transition:all .15s}
+.q-type-btn:hover{border-color:var(--ink);color:var(--ink)}
+.q-type-btn.on{background:var(--ink);color:white;border-color:var(--ink)}
+.quiz-qbox{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:26px;text-align:center;margin-bottom:14px;box-shadow:var(--shadow)}
+.q-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.q-word{font-family:var(--serif);font-size:36px;line-height:1.1;margin-bottom:6px}
+.q-phon{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.quiz-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.q-opt{padding:13px 14px;background:var(--white);border:1px solid var(--rule);border-radius:var(--r);font-size:14px;font-weight:400;color:var(--ink);cursor:pointer;text-align:left;transition:all .15s;box-shadow:var(--shadow)}
+.q-opt:hover{border-color:var(--ink)}
+.q-opt.correct{background:var(--accent-lt);border-color:var(--accent);color:var(--accent);font-weight:500}
+.q-opt.wrong{background:var(--red-lt);border-color:var(--red);color:var(--red)}
+.q-opt.disabled{pointer-events:none}
+.quiz-fb{padding:11px 14px;border-radius:var(--r);font-size:14px;display:none;margin-bottom:12px}
+.quiz-fb.ok{background:var(--accent-lt);color:var(--accent)}
+.quiz-fb.no{background:var(--red-lt);color:var(--red)}
+.quiz-result-box{background:var(--white);border:1px solid var(--rule);border-radius:var(--r3);padding:36px;text-align:center;box-shadow:var(--shadow2)}
+.qr-score{font-family:var(--serif);font-size:68px;line-height:1;margin-bottom:6px}
+.qr-msg{font-size:15px;color:var(--mid);margin-bottom:18px}
+
+/* ── LISTENING ── */
+.listen-panel{background:var(--white);border:1px solid var(--rule);border-radius:var(--r3);padding:28px;text-align:center;box-shadow:var(--shadow2);margin-bottom:18px}
+.listen-btn{width:68px;height:68px;background:var(--ink);color:white;border:none;border-radius:50%;font-size:24px;cursor:pointer;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:var(--shadow)}
+.listen-btn:hover{background:#2d2c28;transform:scale(1.04)}
+.listen-btn.playing{animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(28,27,24,.2)}50%{box-shadow:0 0 0 12px rgba(28,27,24,0)}}
+.listen-word{font-family:var(--serif);font-size:30px;margin-bottom:5px}
+.listen-phon{font-family:var(--mono);font-size:13px;color:var(--muted);margin-bottom:8px}
+.listen-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.listen-speed-row{display:flex;gap:8px;justify-content:center;margin-bottom:18px}
+.speed-btn{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--rule2);background:var(--white);color:var(--mid);cursor:pointer;transition:all .15s}
+.speed-btn.on{background:var(--ink);color:white;border-color:var(--ink)}
+
+/* ── SENTENCES ── */
+.sent-card{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:20px;margin-bottom:10px;box-shadow:var(--shadow)}
+.sent-viet{font-size:17px;font-weight:500;color:var(--ink);margin-bottom:8px}
+.sent-eng{font-family:var(--serif);font-size:19px;color:var(--accent);margin-bottom:6px}
+.sent-note{font-size:12px;color:var(--muted);padding:8px 12px;background:var(--paper);border-radius:var(--r)}
+.sent-reveal-btn{background:none;border:1px dashed var(--rule2);border-radius:var(--r);padding:9px 14px;font-size:13px;color:var(--muted);cursor:pointer;margin-bottom:8px;transition:all .15s}
+.sent-reveal-btn:hover{border-color:var(--ink);color:var(--ink)}
+.sentence-type-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.add-sent-form{background:var(--paper);border:1px solid var(--rule2);border-radius:var(--r2);padding:18px;margin-bottom:18px}
+.add-sent-form h4{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--ink)}
+.sent-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:560px){.sent-form-grid{grid-template-columns:1fr}}
+.sent-form-full{grid-column:span 2}
+@media(max-width:560px){.sent-form-full{grid-column:span 1}}
+
+/* ── GOAL ── */
+.goal-form-card{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:22px;margin-bottom:14px;box-shadow:var(--shadow)}
+.goal-form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:560px){.goal-form-grid{grid-template-columns:1fr 1fr}}
+.summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.sum-box{background:var(--white);border:1px solid var(--rule);border-radius:var(--r);padding:14px;text-align:center;box-shadow:var(--shadow)}
+.sum-box .sb-num{font-family:var(--serif);font-size:28px;line-height:1}
+.sum-box .sb-lbl{font-size:11px;color:var(--muted);margin-top:3px}
+.carryover-note{background:var(--amber-lt);border:1px solid #f0d8b8;border-radius:var(--r);padding:11px 14px;font-size:13px;color:var(--amber);margin-bottom:14px}
+.goal-day-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule)}
+.goal-day-row:last-child{border:none}
+.gd-date{font-size:12px;color:var(--muted);width:76px;flex-shrink:0}
+.gd-bar-wrap{flex:1;height:5px;background:var(--rule);border-radius:3px;overflow:hidden}
+.gd-bar{height:100%;border-radius:3px;transition:width .4s}
+.gd-bar.done{background:var(--accent)}
+.gd-bar.partial{background:var(--amber)}
+.gd-bar.miss{background:var(--red)}
+.gd-stat{font-size:12px;font-weight:500;width:52px;text-align:right;flex-shrink:0}
+.gd-stat.done{color:var(--accent)}
+.gd-stat.partial{color:var(--amber)}
+.gd-stat.miss{color:var(--red)}
+.gd-detail-btn{font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;flex-shrink:0}
+.gd-detail-btn:hover{color:var(--ink)}
+/* day detail popup */
+.day-detail-panel{background:var(--accent-lt);border:1px solid var(--accent-md);border-radius:var(--r);padding:10px 14px;margin-top:4px;margin-bottom:4px}
+.ddp-title{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.ddp-words{display:flex;flex-wrap:wrap;gap:5px}
+.ddp-word{padding:3px 10px;background:white;border:1px solid var(--accent-md);border-radius:12px;font-size:12px;color:var(--ink)}
+
+/* ── WORD BANK CARDS ── */
+.words-list{display:flex;flex-direction:column;gap:6px;}
+.wb-card{
+  background:var(--white);
+  border:1px solid var(--rule);
+  border-radius:var(--r2);
+  padding:12px 14px;
+  box-shadow:var(--shadow);
+  transition:border-color .15s;
+}
+.wb-card:hover{border-color:var(--rule2);}
+.wb-row1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:3px;}
+.wb-word{font-weight:600;font-size:15px;color:var(--ink);}
+.wb-pos{
+  font-size:10px;font-weight:600;
+  background:var(--blue-lt);color:var(--blue);
+  padding:1px 7px;border-radius:8px;
+  white-space:nowrap;flex-shrink:0;
+}
+.wb-ipa{
+  font-family:var(--mono);font-size:12px;color:var(--muted);
+  flex-shrink:0;
+}
+.wb-meaning{font-size:13px;color:var(--mid);margin-bottom:8px;line-height:1.4;}
+.wb-row3{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.wb-topic{font-size:10px;padding:2px 8px;}
+.wb-actions{display:flex;gap:5px;flex-shrink:0;}
+.wb-edit{color:var(--blue);}
+.wb-edit:hover{background:var(--blue-lt);border-color:var(--blue);}
+.wb-del:hover{background:var(--red-lt);border-color:var(--red);}
+.wb-hard{border-color:#f0d8b8 !important;background:linear-gradient(to right, var(--amber-lt), var(--white)) !important;}
+.wb-hard-star{color:var(--amber);font-size:14px;flex-shrink:0;line-height:1;}
+
+/* wr-btn shared for all small icon buttons */
+.wr-btn{width:28px;height:28px;background:none;border:1px solid var(--rule);border-radius:6px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.wr-btn:hover{background:var(--paper);border-color:var(--rule2);}
+
+/* ── STATS ── */
+.stats-header{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:22px}
+.stat-tile{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:16px;box-shadow:var(--shadow)}
+.stat-tile .big{font-family:var(--serif);font-size:34px;line-height:1;margin-bottom:4px}
+.stat-tile .label{font-size:12px;color:var(--muted)}
+.ach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:500px){.ach-grid{grid-template-columns:repeat(2,1fr)}}
+.ach-item{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:14px;text-align:center;box-shadow:var(--shadow)}
+.ach-item.unlocked{border-color:#c5ddc2;background:var(--accent-lt)}
+.ach-item.locked{opacity:.4;filter:grayscale(1)}
+.ach-icon{font-size:22px;margin-bottom:7px}
+.ach-name{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.ach-desc{font-size:11px;color:var(--muted)}
+.danger-zone{background:var(--red-lt);border:1px solid #f0c4c0;border-radius:var(--r2);padding:18px;margin-top:22px}
+.danger-zone h4{font-size:14px;font-weight:600;color:var(--red);margin-bottom:6px}
+.danger-zone p{font-size:13px;color:var(--mid);margin-bottom:12px}
+
+/* ── SETUP ── */
+.setup-step{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:22px;margin-bottom:12px;box-shadow:var(--shadow)}
+.step-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.step-num{width:28px;height:28px;background:var(--ink);color:white;border-radius:50%;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-title{font-weight:600;font-size:15px}
+.step-desc{font-size:13px;color:var(--mid);margin-bottom:12px;line-height:1.7}
+.code-block{background:var(--ink);color:#a8d5a2;border-radius:var(--r);padding:13px 14px;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto;white-space:pre;margin:10px 0}
+.status-line{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--r);font-size:13px;font-weight:500;margin-top:12px}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.status-ok{background:var(--accent-lt);color:var(--accent)}
+.status-ok .status-dot{background:var(--accent)}
+.status-wait{background:var(--amber-lt);color:var(--amber)}
+.status-wait .status-dot{background:var(--amber)}
+
+/* combo */
+#combo-pop{position:fixed;top:68px;right:16px;z-index:150;font-family:var(--serif);font-size:14px;background:var(--ink);color:white;padding:7px 14px;border-radius:22px;opacity:0;transform:scale(.85);transition:all .25s;pointer-events:none}
+#combo-pop.show{opacity:1;transform:scale(1)}
+
+/* ── EDIT BUTTON ── */
+.wr-btn.edit-btn{color:var(--blue);}
+.wr-btn.edit-btn:hover{background:var(--blue-lt);border-color:var(--blue);}
+
+/* ── FLASHCARD flip both ways ── */
+.fc-card-scene{cursor:pointer;}
+
+/* ── WORD FAMILY card ── */
+#families-list .card{transition:border-color .15s;}
+#families-list .card:hover{border-color:var(--rule2);}
+
+/* ── PWA STANDALONE: hide browser chrome padding ── */
+@media all and (display-mode: standalone){
+  .topbar{ padding-top: max(12px, env(safe-area-inset-top)); }
+  .bottom-nav{ padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+}
+/* iOS Safari standalone via JS class */
+body.standalone .topbar{ padding-top: max(44px, env(safe-area-inset-top)); }
+body.standalone .bottom-nav{ padding-bottom: max(20px, env(safe-area-inset-bottom)); height: auto; }
+body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-bottom) + 80px)); }
+
+/* ── SB STATUS indicator in topbar ── */
+.sb-dot-wrap{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.sb-dot-wrap.connected{background:var(--accent);}
+
+/* ── SYNC BUTTON LOADING STATE ── */
+@keyframes spin-icon{from{display:inline-block;transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.btn-syncing{opacity:.7;pointer-events:none;position:relative;}
+
+/* ── MORE MENU (mobile) ── */
+.more-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:var(--paper);border:none;border-radius:var(--r);
+  padding:10px 6px;font-size:10px;font-weight:500;color:var(--mid);
+  cursor:pointer;transition:all .15s;
+}
+.more-item:hover,.more-item:active{background:var(--accent-lt);color:var(--accent);}
+
+/* ════ CHESS RANK SYSTEM ════ */
+.rank-hero{display:flex;flex-direction:column;align-items:center;padding:22px 16px 16px;text-align:center;background:linear-gradient(135deg,var(--accent-lt) 0%,var(--white) 70%);border:1px solid var(--accent-md);border-radius:var(--r2);margin-bottom:20px;box-shadow:var(--shadow);}
+.rank-piece-svg{width:72px;height:72px;margin-bottom:10px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.18));}
+.rank-title{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--ink);}
+.rank-sub-title{font-size:12px;color:var(--mid);margin-top:2px;}
+.rank-xp-bar-wrap{width:100%;margin-top:14px;}
+.rank-xp-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;}
+.rank-xp-track{height:9px;background:var(--rule);border-radius:5px;overflow:hidden;}
+.rank-xp-fill{height:100%;background:var(--accent);border-radius:5px;transition:width .6s ease;}
+.rank-stars{display:flex;gap:8px;margin-top:12px;justify-content:center;}
+.rank-star{width:34px;height:34px;border-radius:50%;border:2px solid var(--rule2);background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:15px;}
+.rank-star.earned{background:var(--amber-lt);border-color:var(--amber);box-shadow:0 0 8px rgba(240,190,0,.35);}
+.weapon-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:500;border:1px solid;margin-top:4px;}
+.weapon-badge.earned{background:var(--accent-lt);border-color:var(--accent-md);color:var(--accent);}
+.weapon-badge.locked{background:var(--paper);border-color:var(--rule2);color:var(--muted);}
+/* Rank table */
+.rank-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px;}
+.rank-table thead tr{background:var(--ink);color:white;}
+.rank-table thead th{padding:8px 8px;text-align:left;font-size:11px;font-weight:600;white-space:nowrap;}
+.rank-table thead th:nth-child(n+3){text-align:right;}
+.rank-table tbody tr{border-bottom:1px solid var(--rule);}
+.rank-table tbody tr:hover{background:var(--paper);}
+.rank-table tbody tr.cur-row{background:var(--accent-lt);border-left:3px solid var(--accent);}
+.rank-table tbody tr.lock-row td{color:var(--muted);opacity:.6;}
+.rank-table td{padding:8px 8px;vertical-align:middle;}
+.rank-table td:nth-child(n+3){text-align:right;font-size:11px;color:var(--mid);}
+.rpc{display:flex;align-items:center;gap:8px;}
+.rpc svg{width:30px;height:30px;flex-shrink:0;}
+.rpn{font-weight:700;font-size:13px;color:var(--ink);}
+.rps{font-size:10px;color:var(--muted);display:block;}
+.rss{display:flex;gap:2px;}
+.rss span{font-size:13px;color:var(--rule2);}
+.rss span.on{color:var(--amber);}
+.rcb{font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:var(--accent);color:white;margin-left:5px;vertical-align:middle;}
+/* XP editor table */
+.xp-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.xp-table th{padding:6px 8px;background:var(--paper);border:1px solid var(--rule2);font-size:11px;font-weight:600;color:var(--mid);text-align:center;}
+.xp-table th:first-child{text-align:left;}
+.xp-table td{padding:4px 6px;border:1px solid var(--rule2);text-align:center;}
+.xp-table td:first-child{text-align:left;font-weight:600;font-size:11px;}
+.xp-table tr.xp-cur{background:var(--accent-lt);}
+.xp-table input{width:68px;text-align:right;font-size:11px;padding:3px 4px;border:1px solid var(--rule2);border-radius:3px;background:var(--white);}
 </style>
 </head>
 <body>
@@ -891,16 +1512,31 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 
       <!-- ══ RANK ══ -->
       <section class="screen" id="sc-rank">
-        <div class="page-title">Hệ thống Cấp bậc</div>
-        <div class="page-sub">Quân cờ vua · 6 cấp · 3 sao/cấp · tự đặt mốc XP</div>
-        <div class="rank-hero" id="rank-hero"></div>
-        <div class="section-title" style="margin-bottom:10px;">Tất cả cấp bậc</div>
-        <div class="rank-list" id="rank-list"></div>
-        <div class="card" style="margin-bottom:20px;">
-          <div class="section-title" style="margin-bottom:4px;">Tùy chỉnh mốc XP ⚙</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Nhập mốc XP để lên từng sao của từng cấp.</div>
-          <div class="xp-editor-grid" id="xp-editor-grid"></div>
-          <button class="btn btn-primary" style="margin-top:12px;width:100%;" onclick="saveRankThresholds()">Lưu mốc XP</button>
+        <!-- Hero banner -->
+        <div class="rank-hero" id="rank-hero">
+          <!-- rendered by renderRank() -->
+        </div>
+
+        <!-- All ranks -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div class="section-title" style="margin:0;">All Ranks</div>
+          <div style="flex:1;height:1px;background:var(--rule);"></div>
+          <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">6 Tiers</span>
+        </div>
+        <div class="rank-cards" id="rank-cards"></div>
+
+        <!-- Customize XP -->
+        <div class="xp-customize-wrap">
+          <div class="section-title" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span>Customize XP</span>
+            <span style="font-size:13px;font-weight:400;color:var(--mid);">· tự đặt mốc XP cho từng cấp</span>
+          </div>
+          <div id="xp-editor-grid"></div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="xp-save-btn" onclick="saveRankThresholds()">
+              <span style="font-size:18px;">💾</span> Lưu mốc XP
+            </button>
+          </div>
         </div>
       </section>
 
@@ -2593,70 +3229,48 @@ function renderStats(){
 ════════════════════════════════════════════ */
 
 // SVG paths cho từng quân cờ (simplified chess piece silhouettes)
-const PIECE_SVG = {
-  pawn: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="22" r="14" fill="currentColor"/>
-    <path d="M35 40 Q50 52 65 40 L70 75 Q50 80 30 75Z" fill="currentColor"/>
-    <rect x="25" y="75" width="50" height="10" rx="5" fill="currentColor"/>
-  </svg>`,
-  knight: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <path d="M30 85 L30 60 Q28 45 38 30 Q42 18 55 15 Q68 13 72 25 Q65 22 60 30 Q75 35 72 55 L70 85Z" fill="currentColor"/>
-    <rect x="22" y="82" width="56" height="10" rx="5" fill="currentColor"/>
-  </svg>`,
-  bishop: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="18" r="10" fill="currentColor"/>
-    <path d="M50 26 L35 68 Q50 74 65 68Z" fill="currentColor"/>
-    <ellipse cx="50" cy="70" rx="22" ry="8" fill="currentColor"/>
-    <rect x="26" y="78" width="48" height="9" rx="4" fill="currentColor"/>
-  </svg>`,
-  rook: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <rect x="28" y="10" width="13" height="18" rx="2" fill="currentColor"/>
-    <rect x="44" y="10" width="13" height="18" rx="2" fill="currentColor"/>
-    <rect x="60" y="10" width="13" height="18" rx="2" fill="currentColor"/>
-    <rect x="30" y="26" width="41" height="46" rx="3" fill="currentColor"/>
-    <rect x="24" y="72" width="53" height="10" rx="4" fill="currentColor"/>
-    <rect x="20" y="82" width="61" height="9" rx="4" fill="currentColor"/>
-  </svg>`,
-  queen: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="12" r="8" fill="currentColor"/>
-    <circle cx="25" cy="20" r="7" fill="currentColor"/>
-    <circle cx="75" cy="20" r="7" fill="currentColor"/>
-    <path d="M18 28 L30 65 L50 55 L70 65 L82 28 Q60 38 50 30 Q40 38 18 28Z" fill="currentColor"/>
-    <rect x="26" y="65" width="49" height="10" rx="4" fill="currentColor"/>
-    <rect x="22" y="75" width="57" height="9" rx="4" fill="currentColor"/>
-  </svg>`,
-  king: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <rect x="44" y="6" width="12" height="28" rx="4" fill="currentColor"/>
-    <rect x="34" y="14" width="32" height="12" rx="4" fill="currentColor"/>
-    <path d="M28 38 Q50 48 72 38 L68 72 Q50 78 32 72Z" fill="currentColor"/>
-    <rect x="24" y="72" width="52" height="10" rx="4" fill="currentColor"/>
-    <rect x="20" y="82" width="60" height="9" rx="4" fill="currentColor"/>
-  </svg>`,
+// Real chess piece images from Stitch design
+const PIECE_IMG = {
+  pawn:   'https://lh3.googleusercontent.com/aida/ADBb0uhQkvCCDPLmmgwb8AMRiC1KEr17aJxAVMQW6GL8qHEqj3Qy7jFWw2xzrc_MK6tjgiJ7oiLezQRPV0d14Alq7prN_BJhMs_7Vc59o1CjupvDxI_TheBdB6MwQs_t9f8ST1Qb-uErwc2z5l2kYNSt5r3xEUvMeLFh75bRcdkv2pzva4it68E85MDVqJgKEBkBE6KGVkSTgDoTN07FoX3G9GElaOAtForolWguwlwWULSoRXbFevxxq8Ef3TtnpD81XvDT52_CaDxR1Q',
+  knight: 'https://lh3.googleusercontent.com/aida/ADBb0ugcwciHmRVcOw6f0-oD4YXK3f7KWzpAS_RP_hpqSMvrVlRKTxtgxn55uH14U099ZdMjwt_S0qKeDKSccHcNF2AkCdUVxQX-wdO3YmoRX8_pszav4ZPMryS18TVD2PEagelSzqo5a697MVyaJOH6Eps_yQcQXgNgmP0XDID5i8Dg9EBK2aiQZ11_7zAnBZ_Cqp_qozDXczsds6Y0dTF3PgqemD2jBc4CMSQGrr89d7GPzQYOVr3FlKgmxoqBzPlOfteBRG-dhanL',
+  bishop: 'https://lh3.googleusercontent.com/aida/ADBb0uiz-XKq5EHi4IWP9u8LSJ1MZXg4M6Jzca0SzMcFDa3l_JYQYLCPl-cVCfcR_61_iMPZMrKAN5ogaQ9y4gWNS4hrgD8JGWdLqKIe4wUrLlqg71CIeNV3ObMP2rP0xNJozZC-PL16hPaf5vtsredAwIeFZ5D0VDgm85vdjhiZI-4jd4CI2s315OMK7DwYfsol-y6i3dPjLkz9WXE8_RXFDfogSzxjWOjdESG39MKcHiLGhft6sxEXKXI6eIcv8jgU3v-nzVIeTobV8w',
+  rook:   'https://lh3.googleusercontent.com/aida/ADBb0ujaL27YnkxHeJziQsFlYgVPpGBculbjk54LApbEGiMMt_gPuaZj_YhwX4MCU9UDFo8U0gw9bGPjd8YzvEGDcj8x4EESNCFCS0zZrm2mqEzHJujBfAxJyQBBe8yrth_pXHDQHco2BAwKhuux7EUZk9w1TvjgDexMVc68I6b5tc6En3KmdsPbFBcqZ4MkmlC5OsnYwh_SMYzD-oNZhFhVLfOjJu1JKEGvvP1x8uX2gWEPW09p96lfpgUqKlJflyJYAyynUAx1w0ylfw',
+  queen:  'https://lh3.googleusercontent.com/aida/ADBb0uhlflcdI1kO7aOfiLkkEuWPzQR3wXJyN5WAXcAeoTtVjBN1q_G2tOwXaI0NldxM4x0uap-6DXt1chdIlDRT_0eLLECGcxu1jo8rg-gvWFYC7PP-pAfHp7WfnQpFwqCw2OVK2EzzwdYpl_RAy2D4p3PcfyF1v5ESVJ-qv9eeMcpmAJDgJvONrUZR21T00tdcmXliAG_BiQXLy7Lv0ONoHHklpRl_HA28yjDDpz-a11NIPk8LnG33Xf5HE9y_HnBchWRP7cnhgRMSjw',
+  king:   'https://lh3.googleusercontent.com/aida/ADBb0ujLMqZmLOy0I5sR2ZYiR3KictacQF3GgpmUtDzCh7NKK2ADRg8jzC1TVmkVxZcfcwQDbKJmDsegkIhd8aXKkAO8u7uhYDT1eTnANtsEe88aNU9CYmqERKMr8bKIesChJM-7k4mHO0D-skD4ACwsGxK_V2dCgM4uzd5QYYzFURsUgmqOQ7LYRyfGstXk4KfFWrpCfhjuL1Bp2z2fO4B9RlskfUsrsIVQFA1YsBd0CUz-3dQVLw5i8A5Y6CVSmgbIcDc6yw',
 };
+// Helper: render piece as img tag
+function pieceImg(piece, size) {
+  const url = PIECE_IMG[piece] || PIECE_IMG.pawn;
+  return `<img src="${url}" alt="${piece}" style="width:${size}px;height:${size}px;object-fit:contain;filter:brightness(0.92) contrast(1.1);">`;
+}
+// Legacy SVG alias (kept for any old references)
+const PIECE_SVG = {};
+Object.keys(PIECE_IMG).forEach(k => { PIECE_SVG[k] = pieceImg(k, 40); });
 PIECE_SVG.pawn2  = PIECE_SVG.pawn;
+PIECE_SVG.knight2= PIECE_SVG.knight;PIECE_SVG.pawn2  = PIECE_SVG.pawn;
 PIECE_SVG.knight2= PIECE_SVG.knight;
 
 // Rank definitions — 8 quân cờ, mỗi cấp 3 sao
 // weapons: 3 vũ khí đặc biệt mỗi cấp (unlock ở sao 1, 2, 3)
 const RANK_DEFS = [
-  { id:'pawn',    name:'Tốt',   nameEn:'Pawn',    color:'#7a7a7a', piece:'pawn',
-    weapons:['📖 Từ điển nhỏ','🗂 Thẻ nhớ cơ bản','⏱ Timer 5 phút'],
-    desc:'Khởi đầu hành trình. Mỗi bước đều có giá trị.' },
-  { id:'knight',  name:'Mã',    nameEn:'Knight',  color:'#5a7a3a', piece:'knight',
-    weapons:['🐴 Nhảy vọt (skip 1 từ/ngày)','🎯 Bonus Quiz ×1.2','🔁 Ôn lại từ khó'],
-    desc:'Di chuyển linh hoạt, học theo cách riêng của mình.' },
-  { id:'bishop',  name:'Tượng', nameEn:'Bishop',  color:'#3a6a9a', piece:'bishop',
-    weapons:['💡 Gợi ý nghĩa','🎧 Chế độ nghe nâng cao','📝 Ghi chú không giới hạn'],
-    desc:'Nhìn xa, hiểu sâu. Tư duy theo đường chéo.' },
-  { id:'rook',    name:'Xe',    nameEn:'Rook',    color:'#8a4a2a', piece:'rook',
-    weapons:['🏰 Bảo vệ streak (1 lần/tuần)','📊 Thống kê chi tiết','🔓 Mở chủ đề đặc biệt'],
-    desc:'Vững chắc như thành trì. Kiên trì mới thắng.' },
-  { id:'queen',   name:'Hậu',   nameEn:'Queen',   color:'#7a3a8a', piece:'queen',
-    weapons:['👑 XP ×1.5 mọi hoạt động','🌟 Từ vàng (highlight đặc biệt)','⚡ Nạp streak khẩn cấp'],
-    desc:'Mạnh nhất trên bàn cờ. Làm chủ ngôn ngữ.' },
-  { id:'king',    name:'Vua',   nameEn:'King',    color:'#1a1a1a', piece:'king',
-    weapons:['♛ Danh hiệu Grand Master','🎖 Huy hiệu vàng','🏆 Hall of Fame'],
-    desc:'Đỉnh cao của hành trình. Vua không bao giờ đầu hàng.' },
+  { id:'pawn',   name:'Pawn',   sub:'Tốt',   color:'#6b7280', piece:'pawn',
+    weapons:['📖 Flashcard cơ bản','🗂 Ghi nhớ 10 từ/ngày','⏱ Streak bonus ×1'],
+    desc:'The first step of a thousand-mile journey.' },
+  { id:'knight', name:'Knight', sub:'Mã',    color:'#16a34a', piece:'knight',
+    weapons:['🐴 Skip 1 từ khó/ngày','🎯 Quiz bonus ×1.2','🔁 Ôn lại tự động'],
+    desc:'Moves in L-shape — unpredictable and bold.' },
+  { id:'bishop', name:'Bishop', sub:'Tượng', color:'#2563eb', piece:'bishop',
+    weapons:['💡 Gợi ý nghĩa ẩn','🎧 Nghe nâng cao','📝 Ghi chú không giới hạn'],
+    desc:'Sees far diagonally. Deep understanding.' },
+  { id:'rook',   name:'Rook',   sub:'Xe',    color:'#b45309', piece:'rook',
+    weapons:['🏰 Bảo vệ streak 1 lần/tuần','📊 Thống kê chi tiết','🔓 Mở chủ đề đặc biệt'],
+    desc:'Solid as a castle. Consistency wins.' },
+  { id:'queen',  name:'Queen',  sub:'Hậu',   color:'#7c3aed', piece:'queen',
+    weapons:['👑 XP ×1.5 mọi hoạt động','🌟 Highlight từ vàng','⚡ Khôi phục streak'],
+    desc:'The most powerful piece on the board.' },
+  { id:'king',   name:'King',   sub:'Vua',   color:'#111827', piece:'king',
+    weapons:['♛ Grand Master title','🎖 Huy hiệu vàng','🏆 Hall of Fame'],
+    desc:'The ultimate rank. The king never retreats.' },
 ];
 
 // Default XP thresholds — tổng XP để đạt toàn bộ sao của cấp đó
@@ -2722,99 +3336,223 @@ function showRankUp(newRank, oldRank) {
   }
 }
 
-function renderRankBadge() {
-  const r = getCurrentRank();
-  const stars = '★'.repeat(r.star) + '☆'.repeat(3-r.star);
-  const icon = document.getElementById('home-rank-icon');
-  const name = document.getElementById('home-rank-name');
-  if (icon) icon.textContent = r.star>=3 ? '♛' : r.star>=2 ? '♜' : r.star>=1 ? '♝' : '♟';
-  if (name) name.textContent = `${r.def.name} (${r.def.nameEn}) ${stars}`;
-}
+
 
 function renderRank() {
-  const r = getCurrentRank();
-  const rankIdx = RANK_DEFS.findIndex(d => d.id === r.piece);
-  const pct = r.nextThresh > r.prevThresh
+  const r    = getCurrentRank();
+  const rIdx = RANK_DEFS.findIndex(d => d.id === r.piece);
+  const pct  = r.nextThresh > r.prevThresh
     ? Math.min(100, Math.round((xp - r.prevThresh) / (r.nextThresh - r.prevThresh) * 100))
     : 100;
+  const nextName = r.star < 3
+    ? r.def.name + ' ★' + (r.star + 1)
+    : (rIdx < RANK_DEFS.length - 1 ? RANK_DEFS[rIdx + 1].name : 'MAX');
+  const nextXpLeft = Math.max(0, r.nextThresh - xp).toLocaleString();
 
-  // ── Hero card ──
+  // ── Hero banner (Stitch style) ──
   const heroEl = document.getElementById('rank-hero');
   if (heroEl) {
-    const starsHtml = [0,1,2].map(s => {
-      const earned = s < r.star;
-      const weapon = r.def.weapons[s];
-      return `<div style="text-align:center;">
-        <div class="rank-star ${earned?'earned':''}">
-          ${earned ? '★' : '☆'}
-        </div>
-        <div class="rank-star-label">
-          <div class="weapon-badge ${earned?'earned':'locked'}">
-            ${weapon}
-          </div>
-        </div>
-      </div>`;
+    const weaponsHtml = r.def.weapons.map((w, s) => {
+      const ok = s < r.star;
+      return `<span class="weapon-badge ${ok ? 'earned' : 'locked'}">${w}</span>`;
     }).join('');
 
     heroEl.innerHTML = `
-      <div class="rank-piece-svg" style="color:${r.def.color}">
-        ${PIECE_SVG[r.def.piece]||PIECE_SVG.pawn}
+      <div class="rh-piece-wrap">
+        ${pieceImg(r.def.piece, 80)}
+        <div class="rh-level-pill">Tier ${rIdx + 1}</div>
       </div>
-      <div class="rank-title">${r.def.name} <span style="font-size:16px;color:var(--muted);">(${r.def.nameEn})</span></div>
-      <div class="rank-sub">${r.def.desc}</div>
-      <div class="rank-stars" style="margin-bottom:4px;">${starsHtml}</div>
+      <div class="rh-info">
+        <div class="rh-name">${r.def.name}</div>
+        <div class="rh-desc">"${r.def.desc}"</div>
+        <div class="rh-stats">
+          <div class="rh-stat">
+            <span class="rh-stat-label">Streak Bonus</span>
+            <span class="rh-stat-val">+${(rIdx + 1) * 5}% XP</span>
+          </div>
+          <div class="rh-stat-divider"></div>
+          <div class="rh-stat">
+            <span class="rh-stat-label">Progress to ${nextName}</span>
+            <span class="rh-stat-val">${xp.toLocaleString()} / ${r.nextThresh.toLocaleString()} XP</span>
+          </div>
+        </div>
+        <div class="rh-bar-track">
+          <div class="rh-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">
+          ${nextXpLeft} XP còn lại để ${r.star < 3 ? 'đạt ★' + (r.star + 1) : 'lên ' + nextName}
+        </div>
+        <div style="margin-top:10px;">${weaponsHtml}</div>
+      </div>`;
+  }
+
+  // ── All Ranks cards (Stitch row style) ──
+  const cardsEl = document.getElementById('rank-cards');
+  if (cardsEl) {
+    // Background tints per rank (warm/cool alternating like Stitch)
+    const bgTints = ['#FDF6E3','#F1F5F2','#FEF9EF','#F0F4F8','#F8F0F8','#FFFAF0'];
+    cardsEl.innerHTML = RANK_DEFS.map((def, idx) => {
+      const thresh  = rankThresholds[def.id] || DEFAULT_THRESHOLDS[def.id];
+      let earned = 0;
+      thresh.forEach((t, s) => { if (xp >= t) earned = s + 1; });
+      const isCur  = def.id === r.piece;
+      const isLock = idx > rIdx;
+      const starsHtml = [0, 1, 2].map(s =>
+        `<span class="rc-star ${s < earned ? 'on' : ''}">${s < earned ? '★' : '★'}</span>`
+      ).join('');
+      const bg = isCur ? '' : `background:${bgTints[idx]};`;
+      return `
+        <div class="rank-card ${isCur ? 'rank-card-active' : ''} ${isLock ? 'rank-card-locked' : ''}"
+             style="${bg}">
+          <div class="rc-icon" style="color:${def.color}">
+            ${pieceImg(def.piece, 40)}
+          </div>
+          <div class="rc-info">
+            <div class="rc-name">
+              ${def.name}
+              ${isCur ? '<span class="rc-cur-badge">Current</span>' : ''}
+            </div>
+            <div class="rc-stars">${starsHtml}</div>
+          </div>
+          <div class="rc-xp-cols">
+            <div class="rc-xp-col">
+              <span class="rc-xp-label">Star 1</span>
+              <span class="rc-xp-val">${thresh[0].toLocaleString()}</span>
+            </div>
+            <div class="rc-xp-col">
+              <span class="rc-xp-label">Star 2</span>
+              <span class="rc-xp-val">${thresh[1].toLocaleString()}</span>
+            </div>
+            <div class="rc-xp-col">
+              <span class="rc-xp-label">Star 3</span>
+              <span class="rc-xp-val">${thresh[2].toLocaleString()}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Customize XP table (Stitch table style) ──
+  const editorEl = document.getElementById('xp-editor-grid');
+  if (editorEl) {
+    const rows = RANK_DEFS.map(def => {
+      const thresh = rankThresholds[def.id] || DEFAULT_THRESHOLDS[def.id];
+      const isCur  = def.id === r.piece;
+      return `<tr class="${isCur ? 'xp-cur-row' : ''}">
+        <td style="display:flex;align-items:center;gap:8px;">
+          ${pieceImg(def.piece, 20)}
+          ${def.name}
+        </td>
+        ${thresh.map((t, s) => `<td>
+          <input type="number" class="xp-thresh-input" min="1" max="9999999"
+            data-rank="${def.id}" data-star="${s}" value="${t}">
+        </td>`).join('')}
+      </tr>`;
+    }).join('');
+    editorEl.innerHTML = `<table class="xp-tbl">
+      <thead><tr>
+        <th>Rank</th>
+        <th>Milestone ★1</th>
+        <th>Milestone ★2</th>
+        <th>Milestone ★3</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  renderRankBadge();
+}
+function renderRankBadge() {
+  const r    = getCurrentRank();
+  const stars = '★'.repeat(r.star) + '☆'.repeat(3 - r.star);
+  const rIdx  = RANK_DEFS.findIndex(d => d.id === r.piece);
+  const icon  = document.getElementById('home-rank-icon');
+  const name  = document.getElementById('home-rank-name');
+  if (icon) icon.textContent = rIdx >= 4 ? '♛' : rIdx >= 3 ? '♜' : rIdx >= 2 ? '♝' : rIdx >= 1 ? '♞' : '♟';
+  if (name) name.textContent = `${r.def.name} ${stars}`;
+}
+
+function renderRank() {
+  const r      = getCurrentRank();
+  const rIdx   = RANK_DEFS.findIndex(d => d.id === r.piece);
+  const pct    = r.nextThresh > r.prevThresh
+    ? Math.min(100,Math.round((xp-r.prevThresh)/(r.nextThresh-r.prevThresh)*100)) : 100;
+  const nextName = r.star<3 ? r.def.name+' ★'.repeat(r.star+1)
+    : (rIdx<RANK_DEFS.length-1 ? RANK_DEFS[rIdx+1].name : 'MAX');
+
+  // Hero card
+  const heroEl = document.getElementById('rank-hero');
+  if (heroEl) {
+    const starsHtml = [0,1,2].map(s => {
+      const ok = s < r.star;
+      return `<div style="text-align:center;">
+        <div class="rank-star ${ok?'earned':''}">${ok?'★':'☆'}</div>
+        <div class="weapon-badge ${ok?'earned':'locked'}" style="max-width:110px;font-size:10px;">${r.def.weapons[s]}</div>
+      </div>`;
+    }).join('');
+    heroEl.innerHTML = `
+      <div class="rank-piece-svg" style="color:${r.def.color}">${PIECE_SVG[r.def.piece]||PIECE_SVG.pawn}</div>
+      <div class="rank-title">${r.def.name}</div>
+      <div class="rank-sub-title">${r.def.sub} · ${r.def.desc}</div>
+      <div class="rank-stars">${starsHtml}</div>
       <div class="rank-xp-bar-wrap">
         <div class="rank-xp-label">
           <span>${r.prevThresh.toLocaleString()} XP</span>
-          <span style="color:var(--accent);font-weight:700;">${xp.toLocaleString()} XP hiện tại</span>
+          <span style="color:var(--accent);font-weight:700;">${xp.toLocaleString()} XP</span>
           <span>${r.nextThresh.toLocaleString()} XP</span>
         </div>
         <div class="rank-xp-track"><div class="rank-xp-fill" style="width:${pct}%"></div></div>
         <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:4px;">
-          Còn ${Math.max(0,r.nextThresh-xp).toLocaleString()} XP để đạt ${r.star<3?'★'.repeat(r.star+1):RANK_DEFS[Math.min(rankIdx+1,RANK_DEFS.length-1)].name}
+          Còn ${Math.max(0,r.nextThresh-xp).toLocaleString()} XP → ${nextName}
         </div>
       </div>`;
   }
 
-  // ── Rank list ──
+  // Rank table
   const listEl = document.getElementById('rank-list');
   if (listEl) {
-    listEl.innerHTML = RANK_DEFS.map((def, idx) => {
-      const thresh = rankThresholds[def.id] || DEFAULT_THRESHOLDS[def.id];
-      let earnedStars = 0;
-      thresh.forEach((t,s) => { if(xp>=t) earnedStars=s+1; });
-      const isCurrent = def.id === r.piece;
-      const isLocked  = idx > rankIdx;
-      const starsRow  = [0,1,2].map(s =>
-        `<span class="rank-row-star ${s<earnedStars?'on':''}">${s<earnedStars?'★':'☆'}</span>`
-      ).join('');
-      const minXP = thresh[0].toLocaleString();
-      return `<div class="rank-row ${isCurrent?'current':''} ${isLocked?'locked-row':''}">
-        <div class="rank-row-icon" style="color:${def.color}">${PIECE_SVG[def.piece]||PIECE_SVG.pawn}</div>
-        <div class="rank-row-info">
-          <div class="rank-row-name">${def.name} <span style="font-size:11px;color:var(--muted);">(${def.nameEn})</span></div>
-          <div class="rank-row-req">Từ ${minXP} XP · ${def.desc.slice(0,30)}...</div>
-          <div class="rank-row-stars" style="margin-top:4px;">${starsRow}</div>
-        </div>
-        ${isCurrent ? '<span class="rank-current-badge">Đang ở đây</span>' : ''}
-      </div>`;
+    const rows = RANK_DEFS.map((def,idx) => {
+      const thresh = rankThresholds[def.id]||DEFAULT_THRESHOLDS[def.id];
+      let earned=0; thresh.forEach((t,s)=>{ if(xp>=t) earned=s+1; });
+      const isCur  = def.id===r.piece;
+      const isLock = idx>rIdx;
+      const stars  = [0,1,2].map(s=>`<span class="${s<earned?'on':''}">${s<earned?'★':'☆'}</span>`).join('');
+      const piece  = `<div style="color:${def.color};width:30px;height:30px;">${PIECE_SVG[def.piece]||PIECE_SVG.pawn}</div>`;
+      return `<tr class="${isCur?'cur-row':''} ${isLock?'lock-row':''}">
+        <td><div class="rpc">${piece}<div>
+          <div class="rpn">${def.name}${isCur?'<span class="rcb">now</span>':''}</div>
+          <span class="rps">${def.sub}</span>
+        </div></div></td>
+        <td><div class="rss">${stars}</div></td>
+        <td>${thresh[0].toLocaleString()}</td>
+        <td>${thresh[1].toLocaleString()}</td>
+        <td>${thresh[2].toLocaleString()}</td>
+      </tr>`;
     }).join('');
+    listEl.innerHTML = `<table class="rank-table">
+      <thead><tr>
+        <th>Rank</th><th>Sao</th>
+        <th style="text-align:right;">★¹1 XP</th>
+        <th style="text-align:right;">★¹2 XP</th>
+        <th style="text-align:right;">★¹3 XP</th>
+      </tr></thead>
+      <tbody>${rows}</tbody></table>`;
   }
 
-  // ── XP Editor ──
+  // XP editor table
   const editorEl = document.getElementById('xp-editor-grid');
   if (editorEl) {
-    editorEl.innerHTML = RANK_DEFS.map(def => {
-      const thresh = rankThresholds[def.id] || DEFAULT_THRESHOLDS[def.id];
-      return thresh.map((t,s) => `
-        <div class="xp-editor-row">
-          <label>${def.name} ★${s+1}</label>
-          <input type="number" class="xp-thresh-input" min="1" max="9999999"
-            data-rank="${def.id}" data-star="${s}" value="${t}">
-        </div>`).join('');
+    const rows2 = RANK_DEFS.map(def => {
+      const thresh = rankThresholds[def.id]||DEFAULT_THRESHOLDS[def.id];
+      return `<tr class="${def.id===r.piece?'xp-cur':''}">
+        <td>${def.name}</td>
+        ${thresh.map((t,s)=>`<td><input type="number" class="xp-thresh-input" min="1" max="9999999" data-rank="${def.id}" data-star="${s}" value="${t}"></td>`).join('')}
+      </tr>`;
     }).join('');
+    editorEl.innerHTML = `<table class="xp-table">
+      <thead><tr><th>Rank</th><th>★¹1</th><th>★¹2</th><th>★¹3</th></tr></thead>
+      <tbody>${rows2}</tbody></table>`;
   }
-
   renderRankBadge();
 }
 
