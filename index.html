@@ -450,13 +450,13 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 /* Piece circle */
 .rh-piece-wrap{
   flex-shrink:0;align-self:flex-start;
-  width:148px;height:148px;border-radius:16px;
+  width:148px;height:156px;border-radius:16px;
   background:var(--white);box-shadow:0 4px 20px rgba(0,0,0,.08);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  position:relative;padding:16px 12px 10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:0;
+  position:relative;padding:12px 12px 14px;
 }
-.rh-piece-wrap img{width:80px;height:80px;object-fit:contain;filter:brightness(0.88) contrast(1.15);}
-.rh-piece-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;}
+.rh-piece-wrap img{width:82px;height:82px;object-fit:contain;filter:brightness(0.88) contrast(1.15);margin-bottom:8px;}
+.rh-piece-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;flex-shrink:0;}
 .rh-level-pill{
   position:absolute;bottom:-6px;right:-6px;
   background:var(--amber);color:white;
@@ -517,10 +517,10 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 .rc-star{font-size:16px;color:var(--rule2);}
 .rc-star.on{color:var(--amber);}
 /* XP columns */
-.rc-xp-cols{display:grid;grid-template-columns:repeat(3,80px);gap:16px;text-align:right;flex-shrink:0;}
+.rc-xp-cols{display:grid;grid-template-columns:repeat(3,82px);gap:20px;text-align:right;flex-shrink:0;}
 .rc-xp-col{display:flex;flex-direction:column;}
-.rc-xp-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
-.rc-xp-val{font-size:13px;font-weight:700;color:var(--ink);}
+.rc-xp-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;display:block;}
+.rc-xp-val{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;}
 .rc-cur-badge{
   font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px;
   background:var(--accent);color:white;margin-left:6px;vertical-align:middle;
@@ -541,7 +541,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 .xp-tbl thead th{
   padding:10px 14px;font-size:10px;font-weight:700;
   color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
-  border-bottom:1px solid var(--rule2);
+  border-bottom:1px solid var(--rule2);text-align:center;
 }
 .xp-tbl thead th:first-child{text-align:left;}
 .xp-tbl tbody tr{border-bottom:1px solid var(--rule);}
@@ -3192,7 +3192,7 @@ const PIECE_IMG = {
   bishop: 'https://lh3.googleusercontent.com/aida/ADBb0uiz-XKq5EHi4IWP9u8LSJ1MZXg4M6Jzca0SzMcFDa3l_JYQYLCPl-cVCfcR_61_iMPZMrKAN5ogaQ9y4gWNS4hrgD8JGWdLqKIe4wUrLlqg71CIeNV3ObMP2rP0xNJozZC-PL16hPaf5vtsredAwIeFZ5D0VDgm85vdjhiZI-4jd4CI2s315OMK7DwYfsol-y6i3dPjLkz9WXE8_RXFDfogSzxjWOjdESG39MKcHiLGhft6sxEXKXI6eIcv8jgU3v-nzVIeTobV8w',
   rook:   'https://lh3.googleusercontent.com/aida/ADBb0ujaL27YnkxHeJziQsFlYgVPpGBculbjk54LApbEGiMMt_gPuaZj_YhwX4MCU9UDFo8U0gw9bGPjd8YzvEGDcj8x4EESNCFCS0zZrm2mqEzHJujBfAxJyQBBe8yrth_pXHDQHco2BAwKhuux7EUZk9w1TvjgDexMVc68I6b5tc6En3KmdsPbFBcqZ4MkmlC5OsnYwh_SMYzD-oNZhFhVLfOjJu1JKEGvvP1x8uX2gWEPW09p96lfpgUqKlJflyJYAyynUAx1w0ylfw',
   queen:  'https://lh3.googleusercontent.com/aida/ADBb0uhlflcdI1kO7aOfiLkkEuWPzQR3wXJyN5WAXcAeoTtVjBN1q_G2tOwXaI0NldxM4x0uap-6DXt1chdIlDRT_0eLLECGcxu1jo8rg-gvWFYC7PP-pAfHp7WfnQpFwqCw2OVK2EzzwdYpl_RAy2D4p3PcfyF1v5ESVJ-qv9eeMcpmAJDgJvONrUZR21T00tdcmXliAG_BiQXLy7Lv0ONoHHklpRl_HA28yjDDpz-a11NIPk8LnG33Xf5HE9y_HnBchWRP7cnhgRMSjw',
-  king:   'https://lh3.googleusercontent.com/aida/ADBb0ujLMqZmLOy0I5sR2ZYiR3KictacQF3GgpmUtDzCh7NKK2ADRg8jzC1TVmkVxZcfcwQDbKJmDsegkIhd8aXKkAO8u7uhYDT1eTnANtsEe88aNU9CYmqERKMr8bKIesChJM-7k4mHO0D-skD4ACwsGxK_V2dCgM4uzd5QYYzFURsUgmqOQ7LYRyfGstXk4KfFWrpCfhjuL1Bp2z2fO4B9RlskfUsrsIVQFA1YsBd0CUz-3dQVLw5i8A5Y6CVSmgbIcDc6yw',
+  king:   'https://lh3.googleusercontent.com/aida/ADBb0ujLMqZmLOy0I5sR2ZYiR3KictacQF3GgpmUtDzCh7NKK2ADRg8jzC1TVmkVxZcfcwQDbKJmDsegkIhd8aXKkAO8u7uhYDT1eTnANtsEe88aNU9CYmqERKMr8bKIesChJM-7k4mHO0D-skD4ACwsGxK_V2dCgM4uzd5QYYzFURsUgmqOQ7LYRyfGstXk4KfFWrpCfhjuL1Bp2z2fO4B9RlskfUsrsIVQFA1eSBd0CUz-3dQVLw5i8A5Y6CVSmgbIcDc6yw',
 };
 // Helper: render piece as img tag
 function pieceImg(piece, size) {
@@ -3362,23 +3362,22 @@ function renderRank() {
           </div>
           <div class="rc-info">
             <div class="rc-name">
-              ${def.name}
-              ${isCur ? '<span class="rc-cur-badge">Current</span>' : ''}
+              ${def.name}${isCur ? ' <span class="rc-cur-badge">Current</span>' : ''}
             </div>
             <div class="rc-stars">${starsHtml}</div>
           </div>
           <div class="rc-xp-cols">
             <div class="rc-xp-col">
-              <span class="rc-xp-label">Star 1</span>
-              <span class="rc-xp-val">${thresh[0].toLocaleString()}</span>
+              <span class="rc-xp-label">STAR 1</span>
+              <span class="rc-xp-val">${thresh[0].toLocaleString()} XP</span>
             </div>
             <div class="rc-xp-col">
-              <span class="rc-xp-label">Star 2</span>
-              <span class="rc-xp-val">${thresh[1].toLocaleString()}</span>
+              <span class="rc-xp-label">STAR 2</span>
+              <span class="rc-xp-val">${thresh[1].toLocaleString()} XP</span>
             </div>
             <div class="rc-xp-col">
-              <span class="rc-xp-label">Star 3</span>
-              <span class="rc-xp-val">${thresh[2].toLocaleString()}</span>
+              <span class="rc-xp-label">STAR 3</span>
+              <span class="rc-xp-val">${thresh[2].toLocaleString()} XP</span>
             </div>
           </div>
         </div>`;
@@ -3404,10 +3403,10 @@ function renderRank() {
     }).join('');
     editorEl.innerHTML = `<table class="xp-tbl">
       <thead><tr>
-        <th>Rank</th>
-        <th>Milestone ★1</th>
-        <th>Milestone ★2</th>
-        <th>Milestone ★3</th>
+        <th style="text-align:left;">Rank</th>
+        <th>★</th>
+        <th>★★</th>
+        <th>★★★</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
