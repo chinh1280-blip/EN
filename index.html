@@ -490,8 +490,8 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 /* ── All Ranks list (card rows like Stitch) ── */
 .rank-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
 .rank-card{
-  display:flex;align-items:center;gap:16px;
-  padding:16px 20px;border-radius:var(--r2);
+  display:flex;align-items:center;gap:12px;
+  padding:14px 20px;border-radius:var(--r2);
   border:1px solid transparent;transition:all .2s;
   background:var(--white);
 }
@@ -504,20 +504,21 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 .rank-card.rank-card-locked:hover{opacity:.8;filter:grayscale(.2);}
 /* Piece icon cell */
 .rc-icon{
-  width:56px;height:56px;flex-shrink:0;border-radius:14px;
+  width:48px;height:48px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   background:transparent;transition:transform .2s;
 }
-.rank-card:hover .rc-icon{transform:scale(1.12);}
-.rc-icon img{width:40px;height:40px;object-fit:contain;filter:brightness(0.92) contrast(1.1);}
+.rank-card:hover .rc-icon{transform:scale(1.08);}
+.rc-icon img{width:38px;height:38px;object-fit:contain;filter:brightness(0.88) contrast(1.12);}
 /* Info */
-.rc-info{flex:1;min-width:0;}
-.rc-name{font-weight:700;font-size:15px;color:var(--ink);}
-.rc-stars{display:flex;gap:2px;margin-top:3px;}
-.rc-star{font-size:16px;color:var(--rule2);}
+.rc-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;}
+.rc-name{font-weight:700;font-size:14px;color:var(--ink);white-space:nowrap;}
+.rc-stars{display:flex;gap:2px;margin-top:2px;}
+.rc-star{font-size:14px;color:var(--rule2);}
 .rc-star.on{color:var(--amber);}
 /* XP columns */
-.rc-xp-cols{display:grid;grid-template-columns:repeat(3,82px);gap:20px;text-align:right;flex-shrink:0;}
+.rc-xp-cols{display:flex;gap:0;flex-shrink:0;}
+.rc-xp-col{width:88px;text-align:right;padding-right:4px;}
 .rc-xp-col{display:flex;flex-direction:column;}
 .rc-xp-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;display:block;}
 .rc-xp-val{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;}
@@ -1474,10 +1475,20 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         </div>
 
         <!-- All ranks -->
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-          <div class="section-title" style="margin:0;">All Ranks</div>
-          <div style="flex:1;height:1px;background:var(--rule);"></div>
-          <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">6 Tiers</span>
+        <!-- All Ranks header matching Stitch exactly -->
+        <div style="display:flex;align-items:center;margin-bottom:16px;">
+          <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-right:12px;">All Ranks</span>
+          <div style="flex:1;height:1px;background:var(--rule2);"></div>
+          <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-left:12px;">6 Tiers</span>
+        </div>
+        <!-- Column header row matching Stitch -->
+        <div style="display:flex;align-items:center;gap:12px;padding:0 20px 8px;border-bottom:1px solid var(--rule);">
+          <div style="width:48px;flex-shrink:0;"></div>
+          <div style="flex:1;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Rank</div>
+          <div style="width:50px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;text-align:center;">Sao</div>
+          <div style="width:88px;text-align:right;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">STAR 1</div>
+          <div style="width:88px;text-align:right;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">STAR 2</div>
+          <div style="width:88px;text-align:right;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">STAR 3</div>
         </div>
         <div class="rank-cards" id="rank-list"></div>
 
@@ -3414,6 +3425,616 @@ function renderRank() {
 
   renderRankBadge();
 }
+
+function renderAch(){
+  const tl=totalLearnedCount();
+  const achs=[
+    {n:'First Step',  d:'Học từ đầu tiên',       i:'⭐', ok:tl>=1},
+    {n:'Week Streak', d:'7 ngày liên tiếp',        i:'🔥', ok:streak>=7},
+    {n:'Quiz Ace',    d:'Đúng 50 câu quiz',         i:'🧠', ok:totalCorrect>=50},
+    {n:'50 từ mới',   d:'Học được 50 từ mới',      i:'📚', ok:tl>=50},
+    {n:'Level 5',     d:'Đạt 2000 XP',              i:'⚡', ok:xp>=2000},
+    {n:'Listener',    d:'Nghe nhận biết 20 từ',     i:'👂', ok:listenCount>=20},
+    {n:'Grammar',     d:'Thêm 5 câu mẫu riêng',    i:'✍️', ok:sentences.filter(s=>s.id>1000).length>=5},
+    {n:'Streak 30',   d:'30 ngày liên tiếp',        i:'🏆', ok:streak>=30},
+    {n:'100 từ mới',  d:'Học được 100 từ mới',     i:'🎯', ok:tl>=100},
+  ];
+  document.getElementById('ach-grid').innerHTML=achs.map(a=>`
+    <div class="ach-item ${a.ok?'unlocked':'locked'}">
+      <div class="ach-icon">${a.i}</div>
+      <div class="ach-name">${a.n}</div>
+      <div class="ach-desc">${a.d}</div>
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════════════════
+   RESET
+════════════════════════════════════════════ */
+function confirmReset(){
+  xp=0; streak=0; combo=0; totalCorrect=0; totalAnswered=0; listenCount=0;
+  learnedLog={}; learnedEver=new Set(); goal=null;
+  ['lingo_xp','lingo_streak','lingo_correct','lingo_answered','lingo_listen_count',
+   'lingo_learned_log','lingo_learned_ever','lingo_goal','lingo_last_date'].forEach(k=>LS.set(k,null));
+  closeModal('resetModal');
+  toast('✓ Đã bắt đầu lại. Kho từ vựng được giữ nguyên.','good');
+  updateCounters(); renderStats(); renderGoalBanner(); renderWordStats();
+  pushMetaToSB();
+  go('stats');
+}
+
+/* ════════════════════════════════════════════
+   SUPABASE — Single source of truth
+   Mọi thay đổi → SB trước, local sau.
+   Khi mở app có key → pull SB, ghi đè local.
+════════════════════════════════════════════ */
+
+// ── Core helper: mọi request SB đều qua đây ──
+// Trả về { ok, status, data, error }
+async function sbReq(method, path, body, prefer) {
+  if (!sbUrl || !sbKey) return { ok:false, status:0, error:'No credentials', data:null };
+  const headers = {
+    'apikey':        sbKey,
+    'Authorization': 'Bearer ' + sbKey,
+    'Content-Type':  'application/json',
+    'Accept':        'application/json',
+  };
+  if (prefer) headers['Prefer'] = prefer;
+  try {
+    const opts = { method, headers };
+    if (body !== undefined && body !== null) opts.body = JSON.stringify(body);
+    const r = await fetch(sbUrl + '/rest/v1/' + path, opts);
+    const txt = await r.text();
+    let data = null;
+    try { data = JSON.parse(txt); } catch {}
+    if (!r.ok) {
+      const errMsg = (data && data.message) ? data.message
+                   : (data && data.error)   ? data.error
+                   : txt.slice(0, 300);
+      console.error('[SB]', method, path, r.status, errMsg);
+      return { ok:false, status:r.status, error:errMsg, data:null };
+    }
+    return { ok:true, status:r.status, data, error:null };
+  } catch(e) {
+    console.error('[SB] fetch error:', method, path, e.message);
+    return { ok:false, status:0, error:e.message, data:null };
+  }
+}
+
+// ── Status UI ──
+function updateSBStatus(connected) {
+  const el  = document.getElementById('sb-status');
+  const dot = document.getElementById('topbar-sb-dot');
+  if (el) {
+    el.innerHTML = connected
+      ? '<div class="status-dot"></div>Đã kết nối · Tự động đồng bộ đa thiết bị'
+      : '<div class="status-dot"></div>Chưa kết nối · Dùng LocalStorage';
+    el.className = connected ? 'status-line status-ok' : 'status-line status-wait';
+  }
+  if (dot) dot.className = 'sb-dot-wrap' + (connected ? ' connected' : '');
+}
+
+// ── Meta: lưu tiến độ, goal, hard words, families ──
+async function sbPushAllMeta() {
+  if (!sbUrl || !sbKey) return false;
+  const metaVal = JSON.stringify({
+    learnedLog,
+    learnedEver:  [...learnedEver],
+    hardWordIds:  [...hardWordIds],
+    goal, xp, streak, totalCorrect, totalAnswered, listenCount,
+    families,
+    topics: topics.filter(t => !['general','travel','food','business','tech','daily'].includes(t.key))
+  });
+  const r = await sbReq(
+    'POST', 'user_meta?on_conflict=key',
+    { key: 'lingo_meta', value: metaVal },
+    'resolution=merge-duplicates,return=minimal'
+  );
+  if (!r.ok) console.error('[SB] meta push failed:', r.status, r.error);
+  return r.ok;
+}
+
+async function sbPushHardWord() { sbPushAllMeta(); }
+function  pushMetaToSB()        { if (sbUrl && sbKey) sbPushAllMeta(); }
+
+// ── Timestamp helpers ──
+function fmtSyncTime(ts) {
+  if (!ts) return 'Chưa đồng bộ lần nào';
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60)   return 'vừa xong';
+  if (diff < 3600) return Math.floor(diff / 60) + ' phút trước';
+  if (diff < 86400)return Math.floor(diff / 3600) + ' giờ trước';
+  const d = new Date(ts);
+  return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'});
+}
+function updateSyncTimeDisplay() {
+  const el = document.getElementById('sync-last-time');
+  if (!el) return;
+  const ts = LS.get('lingo_last_sync', null);
+  el.textContent = ts ? 'Đồng bộ lần cuối: ' + fmtSyncTime(ts) : 'Chưa đồng bộ lần nào';
+}
+function markSynced() {
+  LS.set('lingo_last_sync', Date.now());
+  updateSyncTimeDisplay();
+}
+
+// ── Kết nối: test rồi pull ngay ──
+async function testSB() {
+  const urlRaw = (document.getElementById('sb-url')?.value || '').trim();
+  const key    = (document.getElementById('sb-key')?.value || '').trim();
+  const trEl   = document.getElementById('sb-test-result');
+  const btnEl  = document.getElementById('btn-test-sb');
+
+  if (!urlRaw || !key) { toast('Nhập URL và Key!', 'bad'); return; }
+
+  // Chuẩn hóa URL: bỏ dấu / cuối, bỏ /rest/v1 nếu user paste nhầm
+  const cleanUrl = urlRaw.replace(/\/+$/, '').replace(/\/rest\/v1.*$/, '');
+
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Đang kiểm tra...'; }
+  if (trEl)  trEl.textContent = '';
+
+  // ── Ping project bằng /auth/v1/settings — luôn tồn tại, không cần bảng ──
+  let pingStatus = 0;
+  try {
+    const pingResp = await fetch(cleanUrl + '/auth/v1/settings', {
+      headers: { apikey: key, Authorization: 'Bearer ' + key }
+    });
+    pingStatus = pingResp.status;
+  } catch(e) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Kiểm tra kết nối'; }
+    if (trEl) trEl.innerHTML = '<div style="color:var(--red);font-size:12px;margin-top:6px;">✗ Không kết nối được: ' + e.message + '<br>→ Kiểm tra lại URL (phải là https://xxxxx.supabase.co)</div>';
+    toast('Không kết nối được: ' + e.message, 'bad');
+    return;
+  }
+
+  if (pingStatus === 401) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Kiểm tra kết nối'; }
+    if (trEl) trEl.innerHTML = '<div style="color:var(--red);font-size:12px;margin-top:6px;">✗ Sai Anon Key (401)<br>→ Vào Supabase → Settings → API → copy lại anon/public key</div>';
+    toast('⚠ Sai Anon Key — kiểm tra lại', 'bad');
+    return;
+  }
+
+  // pingStatus 200 hoặc bất kỳ status nào < 500 = project tồn tại
+  if (pingStatus >= 500) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Kiểm tra kết nối'; }
+    if (trEl) trEl.innerHTML = '<div style="color:var(--red);font-size:12px;margin-top:6px;">✗ Server lỗi (' + pingStatus + ') — thử lại sau</div>';
+    toast('Server lỗi: ' + pingStatus, 'bad');
+    return;
+  }
+
+  // ── Kiểm tra bảng words đã tạo chưa ──
+  let tableOk = false;
+  try {
+    const tResp = await fetch(cleanUrl + '/rest/v1/words?limit=1', {
+      headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' }
+    });
+    const tBody = await tResp.text();
+    // 200 = bảng có, 404 + "schema cache" = bảng chưa tạo
+    tableOk = tResp.status === 200 || (tResp.status !== 404 && !tBody.includes('schema cache'));
+  } catch {}
+
+  // Lưu credentials — kết nối đã OK
+  sbUrl = cleanUrl;
+  sbKey = key;
+  LS.set('sb_url', cleanUrl);
+  LS.set('sb_key', key);
+  updateSBStatus(true);
+  if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Kiểm tra kết nối'; }
+  const banner = document.getElementById('sync-banner');
+  if (banner) banner.style.display = 'block';
+  updateSyncTimeDisplay();
+
+  if (!tableOk) {
+    // Kết nối OK nhưng bảng chưa có → hiển thị hướng dẫn rõ ràng
+    if (trEl) trEl.innerHTML = `
+      <div style="background:var(--amber-lt);border:1px solid #f0d8b8;border-radius:var(--r);padding:12px;margin-top:8px;font-size:12px;">
+        <div style="font-weight:600;color:var(--amber);margin-bottom:8px;">✓ Kết nối OK — nhưng bảng dữ liệu chưa được tạo</div>
+        <div style="color:var(--mid);line-height:1.9;">
+          <strong>Làm theo thứ tự:</strong><br>
+          1. Kéo xuống → nhấn <strong>"Sao chép SQL"</strong><br>
+          2. Mở <strong>supabase.com</strong> → chọn project → <strong>SQL Editor</strong><br>
+          3. Paste SQL → nhấn <strong>RUN</strong> (hoặc Ctrl+Enter)<br>
+          4. Quay lại đây → nhấn <strong>"Kiểm tra kết nối"</strong> lại<br>
+          5. Sau khi pass → về <strong>Home → ↑ Lưu lên cloud</strong>
+        </div>
+      </div>`;
+    toast('✓ Kết nối OK — cần tạo bảng SQL trước (xem hướng dẫn)', 'good');
+    return;
+  }
+
+  // Bảng đã có → pull data
+  if (trEl) trEl.innerHTML = '<div style="color:var(--accent);font-size:12px;margin-top:6px;">✓ Kết nối OK · Bảng đã có · Đang tải dữ liệu...</div>';
+  toast('✓ Kết nối thành công! Đang tải dữ liệu...', 'good');
+  await loadAllFromSB();
+}
+
+async function homeUpload() {
+  if (!sbUrl || !sbKey) { toast('Chưa kết nối Supabase!', 'bad'); return; }
+  const btn = document.getElementById('btn-upload');
+  if (btn) { btn.textContent = '↑ Đang lưu...'; btn.disabled = true; }
+  try {
+    await fullUploadToSB();
+  } finally {
+    if (btn) { btn.textContent = '↑ Lưu lên cloud'; btn.disabled = false; }
+  }
+}
+
+async function fullUploadToSB() {
+  if (!sbUrl || !sbKey) return;
+  const statusEl = document.getElementById('sync-result');
+
+  // ── Step 1: Lưu mapping oldId→wordString trước khi DELETE ──
+  // Dùng để remap learnedLog, learnedEver, hardWordIds, families sau khi có ID mới
+  const oldIdToWord = new Map(words.map(w => [w.id, w.word]));
+  const wordToOldId = new Map(words.map(w => [w.word, w.id]));
+
+  // ── Step 2: DELETE tất cả words ──
+  const delW = await sbReq('DELETE', 'words?created_at=not.is.null', null, null);
+  if (!delW.ok && delW.status !== 200 && delW.status !== 204) {
+    console.warn('[SB] DELETE words status:', delW.status, delW.error);
+  }
+
+  // ── Step 3: INSERT tất cả words (batch 1 request) ──
+  let uploadedWords = 0;
+  if (words.length > 0) {
+    const rows = words.map(w => ({
+      word:           w.word     || '',
+      phonetic:       w.phonetic || '',
+      part_of_speech: w.partOfSpeech || '',
+      meaning:        w.meaning  || '',
+      example:        w.example  || '',
+      topic:          w.topic    || 'general',
+      level:          w.level    || 3
+    }));
+    const ins = await sbReq('POST', 'words', rows, 'return=representation');
+    if (!ins.ok) {
+      toast('⚠ Lỗi lưu từ vựng: ' + ins.error, 'bad');
+      if (statusEl) statusEl.textContent = '⚠ Lỗi từ vựng (' + ins.status + '): ' + ins.error;
+      console.error('[SB] INSERT words failed:', ins);
+      return;
+    }
+    // Cập nhật ID SB → local, đồng thời build newId map
+    const newIdByWord = new Map();
+    if (Array.isArray(ins.data) && ins.data.length === words.length) {
+      words = words.map((w, i) => {
+        const newId = ins.data[i].id || w.id;
+        newIdByWord.set(w.word, newId);
+        return { ...w, id: newId };
+      });
+    }
+    uploadedWords = Array.isArray(ins.data) ? ins.data.length : rows.length;
+
+    // ── Remap learnedLog, learnedEver, hardWordIds, families với ID mới ──
+    if (newIdByWord.size > 0) {
+      // learnedLog: { date: [oldId, ...] } → { date: [newId, ...] }
+      const remappedLog = {};
+      Object.entries(learnedLog).forEach(([date, ids]) => {
+        remappedLog[date] = ids.map(oldId => {
+          const word = oldIdToWord.get(oldId);
+          return word && newIdByWord.has(word) ? newIdByWord.get(word) : oldId;
+        }).filter(Boolean);
+      });
+      learnedLog = remappedLog;
+
+      // learnedEver: Set<oldId> → Set<newId>
+      const newEver = new Set();
+      learnedEver.forEach(oldId => {
+        const word = oldIdToWord.get(oldId);
+        newEver.add(word && newIdByWord.has(word) ? newIdByWord.get(word) : oldId);
+      });
+      learnedEver = newEver;
+
+      // hardWordIds: Set<oldId> → Set<newId>
+      const newHard = new Set();
+      hardWordIds.forEach(oldId => {
+        const word = oldIdToWord.get(oldId);
+        newHard.add(word && newIdByWord.has(word) ? newIdByWord.get(word) : oldId);
+      });
+      hardWordIds = newHard;
+
+      // families: wordIds array remap
+      families = families.map(f => ({
+        ...f,
+        wordIds: f.wordIds.map(oldId => {
+          const word = oldIdToWord.get(oldId);
+          return word && newIdByWord.has(word) ? newIdByWord.get(word) : oldId;
+        })
+      }));
+    }
+    saveState(); // Lưu IDs mới và remapped data
+    console.log('[SB] Inserted', uploadedWords, 'words, remapped IDs');
+  }
+
+  // ── Step 3: DELETE tất cả sentences ──
+  await sbReq('DELETE', 'sentences?created_at=not.is.null', null, null);
+
+  // ── Step 4: INSERT tất cả sentences ──
+  let uploadedSents = 0;
+  if (sentences.length > 0) {
+    const rows = sentences.map(s => ({
+      viet: s.viet || '', eng: s.eng || '',
+      note: s.note || '', type: s.type || 'daily'
+    }));
+    const ins = await sbReq('POST', 'sentences', rows, 'return=representation');
+    if (ins.ok) {
+      if (Array.isArray(ins.data) && ins.data.length === sentences.length) {
+        sentences = sentences.map((s, i) => ({ ...s, id: ins.data[i].id || s.id }));
+      }
+      uploadedSents = Array.isArray(ins.data) ? ins.data.length : rows.length;
+    } else {
+      console.warn('[SB] INSERT sentences:', ins.status, ins.error);
+    }
+  }
+
+  // ── Step 5: Upsert meta ──
+  const metaOk = await sbPushAllMeta();
+  if (!metaOk) console.warn('[SB] Meta push failed');
+
+  saveState();
+  markSynced();
+
+  const msg = '✓ Đã lưu: ' + uploadedWords + ' từ · ' + uploadedSents + ' câu · meta';
+  toast(msg, 'good');
+  if (statusEl) statusEl.textContent = msg;
+  console.log('[SB] Upload complete:', uploadedWords, 'words,', uploadedSents, 'sents');
+}
+
+// ══════════════════════════════════════════════
+// ↓ TẢI VỀ — Pull từ SB, ghi đè local hoàn toàn
+// ══════════════════════════════════════════════
+async function homeDownload() {
+  if (!sbUrl || !sbKey) { toast('Chưa kết nối Supabase!', 'bad'); return; }
+  const btn = document.getElementById('btn-download');
+  if (btn) { btn.textContent = '↓ Đang tải...'; btn.disabled = true; }
+  try {
+    await loadAllFromSB();
+    startFC(); renderGoalBanner(); renderWordStats();
+    populateTopicSelects(); populateTopicFilters();
+  } finally {
+    if (btn) { btn.textContent = '↓ Tải về máy này'; btn.disabled = false; }
+  }
+}
+
+async function loadAllFromSB() {
+  if (!sbUrl || !sbKey) { toast('Kết nối Supabase trước!', 'bad'); return; }
+  const statusEl = document.getElementById('load-result');
+  if (statusEl) statusEl.textContent = 'Đang tải từ Supabase...';
+
+  // ── 1. Words ──
+  const wRes = await sbReq('GET', 'words?order=id.asc');
+  console.log('[SB] words:', wRes.status, wRes.ok ? (Array.isArray(wRes.data) ? wRes.data.length + ' rows' : typeof wRes.data) : wRes.error);
+
+  if (!wRes.ok) {
+    const msg = 'Lỗi tải từ vựng (' + wRes.status + '): ' + wRes.error;
+    if (statusEl) statusEl.textContent = '⚠ ' + msg;
+    toast('⚠ ' + msg, 'bad');
+    return;
+  }
+
+  const wData = Array.isArray(wRes.data) ? wRes.data : [];
+  words = wData.map(w => ({
+    id:           w.id,
+    word:         w.word         || '',
+    phonetic:     w.phonetic     || '',
+    partOfSpeech: w.part_of_speech || '',
+    meaning:      w.meaning      || '',
+    example:      w.example      || '',
+    topic:        w.topic        || 'general',
+    level:        w.level        || 3
+  }));
+
+  // ── 2. Sentences ──
+  const sRes = await sbReq('GET', 'sentences?order=id.asc');
+  console.log('[SB] sentences:', sRes.status, sRes.ok ? (Array.isArray(sRes.data) ? sRes.data.length + ' rows' : '-') : sRes.error);
+
+  if (sRes.ok && Array.isArray(sRes.data)) {
+    sentences = sRes.data.map(s => ({
+      id: s.id, viet: s.viet || '', eng: s.eng || '',
+      note: s.note || '', type: s.type || 'daily'
+    }));
+  }
+
+  // ── 3. Meta ──
+  const mRes = await sbReq('GET', 'user_meta?key=eq.lingo_meta');
+  console.log('[SB] meta:', mRes.status, mRes.ok ? (Array.isArray(mRes.data) ? mRes.data.length + ' rows' : '-') : mRes.error);
+
+  if (mRes.ok && Array.isArray(mRes.data) && mRes.data.length > 0 && mRes.data[0].value) {
+    try {
+      const m = JSON.parse(mRes.data[0].value);
+      if (m.learnedLog)            learnedLog   = m.learnedLog;
+      if (m.learnedEver)           learnedEver  = new Set(m.learnedEver);
+      if (m.hardWordIds)           hardWordIds  = new Set(m.hardWordIds);
+      if (m.goal      !== undefined) goal       = m.goal;
+      if (m.xp        !== undefined) xp         = m.xp;
+      if (m.streak    !== undefined) streak     = m.streak;
+      if (m.totalCorrect  !== undefined) totalCorrect  = m.totalCorrect;
+      if (m.totalAnswered !== undefined) totalAnswered = m.totalAnswered;
+      if (m.listenCount   !== undefined) listenCount   = m.listenCount;
+      if (Array.isArray(m.families)) families = m.families;
+      if (Array.isArray(m.topics)) {
+        const defs = ['general','travel','food','business','tech','daily'];
+        topics = [
+          ...topics.filter(t => defs.includes(t.key)),
+          ...m.topics.filter(t => !defs.includes(t.key))
+        ];
+      }
+    } catch(e) { console.error('[SB] meta parse error:', e); }
+  }
+
+  // ── Ghi vào localStorage ──
+  LS.set('lingo_words',        words);
+  LS.set('lingo_sents',        sentences);
+  LS.set('lingo_topics',       topics);
+  LS.set('lingo_families',     families);
+  LS.set('lingo_xp',           xp);
+  LS.set('lingo_streak',       streak);
+  LS.set('lingo_correct',      totalCorrect);
+  LS.set('lingo_answered',     totalAnswered);
+  LS.set('lingo_listen_count', listenCount);
+  LS.set('lingo_learned_log',  learnedLog);
+  LS.set('lingo_learned_ever', [...learnedEver]);
+  LS.set('lingo_hard_words',   [...hardWordIds]);
+  LS.set('lingo_goal',         goal);
+
+  populateTopicSelects();
+  populateTopicFilters();
+  updateCounters();
+  updateSBStatus(true);
+  markSynced();
+
+  const nW = words.length, nS = sentences.length;
+  if (nW > 0) {
+    const msg = '✓ Đã tải: ' + nW + ' từ · ' + nS + ' câu';
+    if (statusEl) statusEl.textContent = msg;
+    toast('✓ Đã tải ' + nW + ' từ về thiết bị này!', 'good');
+  } else {
+    const msg = '⚠ Supabase chưa có từ vựng — hãy "↑ Lưu lên cloud" từ thiết bị có data trước';
+    if (statusEl) statusEl.textContent = msg;
+    toast('⚠ Chưa có data trên Supabase', 'bad');
+  }
+
+  renderDailyWord();
+  renderWB();
+  renderWordStats();
+  renderGoalBanner();
+}
+
+// ── Từ tab Supabase ──
+async function syncAllToSB() {
+  if (!sbUrl || !sbKey) { toast('Kết nối Supabase trước!', 'bad'); return; }
+  const res = document.getElementById('sync-result');
+  if (res) res.textContent = 'Đang đồng bộ...';
+  await fullUploadToSB();
+}
+
+// ── Ghi từ mới lên SB (sau addWord) ──
+async function saveWordToSB(w) {
+  if (!sbUrl || !sbKey) return;
+  const ins = await sbReq('POST', 'words',
+    { word:w.word||'', phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
+      meaning:w.meaning||'', example:w.example||'', topic:w.topic||'general', level:w.level||3 },
+    'return=representation'
+  );
+  if (ins.ok && Array.isArray(ins.data) && ins.data[0]?.id) {
+    const idx = words.findIndex(x => x.id === w.id);
+    if (idx !== -1) { words[idx].id = ins.data[0].id; saveState(); }
+  }
+}
+
+// ── Cập nhật từ trên SB ──
+async function updateWordOnSB(w) {
+  if (!sbUrl || !sbKey || !w.id) return;
+  await sbReq('PATCH', 'words?id=eq.' + w.id,
+    { word:w.word, phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
+      meaning:w.meaning, example:w.example||'', topic:w.topic||'general', level:w.level||3 },
+    'return=minimal'
+  );
+}
+
+// ── Xóa từ khỏi SB ──
+async function deleteWordFromSB(id) {
+  if (!sbUrl || !sbKey) return;
+  await sbReq('DELETE', 'words?id=eq.' + id);
+}
+
+// ── sbGet: legacy alias ──
+async function sbGet(table, query) {
+  const q = query ? query.replace(/^[?&]/,'') : '';
+  const r = await sbReq('GET', table + (q ? '?' + q : ''));
+  return r.ok && Array.isArray(r.data) ? r.data : null;
+}
+
+// ── Legacy ──
+async function sbPost(table, body, prefer) { return sbReq('POST', table, body, prefer); }
+async function sbPatch(t, id, body)        { return sbReq('PATCH', t+'?id=eq.'+id, body, 'return=minimal'); }
+async function sbDelete(t, id)             { return sbReq('DELETE', t+'?id=eq.'+id); }
+
+function copySQL(){
+  navigator.clipboard.writeText(document.getElementById('sql-block').textContent)
+    .then(()=>toast('✓ Đã sao chép SQL','good'));
+}
+
+/* ════════════════════════════════════════════
+   STREAK CHECK
+════════════════════════════════════════════ */
+function checkStreak(){
+  const lastDate=LS.get('lingo_last_date',null);
+  const t=today();
+  if(lastDate===t) return;
+  const yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yd=yesterday.toISOString().split('T')[0];
+  if(lastDate===yd) streak++;
+  else if(!lastDate||lastDate<yd) streak=1;
+  LS.set('lingo_last_date',t); saveState();
+}
+
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+async function init(){
+  // Detect iOS standalone
+  const isStandalone = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+  if (isStandalone) document.body.classList.add('standalone');
+
+  checkStreak();
+  const t=today();
+  const endD=new Date(); endD.setDate(endD.getDate()+29);
+  const gs=document.getElementById('g-start'); if(gs&&!gs.value) gs.value=t;
+  const ge=document.getElementById('g-end');   if(ge&&!ge.value) ge.value=endD.toISOString().split('T')[0];
+
+  populateTopicSelects();
+  populateTopicFilters();
+  buildHeatmap('hmap',10);
+  updateCounters();
+
+  if (sbUrl && sbKey) {
+    // Có Supabase → pull data từ SB (source of truth), bỏ qua localStorage
+    const su=document.getElementById('sb-url'); if(su) su.value=sbUrl;
+    const sk=document.getElementById('sb-key'); if(sk) sk.value=sbKey;
+    updateSBStatus(true);
+    toast('Đang đồng bộ Supabase...','');
+    try {
+      await loadAllFromSB();
+    } catch(e) {
+      console.warn('Auto-sync failed, dùng localStorage:', e);
+    }
+  }
+  // Render sau khi đã có data (từ SB hoặc localStorage)
+  renderDailyWord();
+  renderGoalBanner();
+  renderWordStats();
+  startFC();
+  renderRankBadge();
+
+  // Show sync banner if SB is connected
+  const banner = document.getElementById('sync-banner');
+  if (banner) banner.style.display = (sbUrl&&sbKey) ? 'block' : 'none';
+  updateSyncTimeDisplay();
+}
+document.addEventListener('DOMContentLoaded',init);
+
+function toggleMoreMenu() {
+  const menu = document.getElementById('more-menu');
+  const overlay = document.getElementById('more-overlay');
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+  overlay.style.display = isOpen ? 'none' : 'block';
+  const btn = document.getElementById('bn-more');
+  if (btn) btn.classList.toggle('active', !isOpen);
+}
+function closeMoreMenu() {
+  const menu = document.getElementById('more-menu');
+  const overlay = document.getElementById('more-overlay');
+  if (menu) menu.style.display = 'none';
+  if (overlay) overlay.style.display = 'none';
+  const btn = document.getElementById('bn-more');
+  if (btn) btn.classList.remove('active');
+}
+</script>
+</body>
+</html
+
 function renderRankBadge() {
   const r    = getCurrentRank();
   const stars = '★'.repeat(r.star) + '☆'.repeat(3 - r.star);
@@ -3537,56 +4158,9 @@ function renderRank() {
         </div>
       </div>`;
   }
-
-  // Rank table
-  const listEl = document.getElementById('rank-list');
-  if (listEl) {
-    const rows = RANK_DEFS.map((def,idx) => {
-      const thresh = rankThresholds[def.id]||DEFAULT_THRESHOLDS[def.id];
-      let earned=0; thresh.forEach((t,s)=>{ if(xp>=t) earned=s+1; });
-      const isCur  = def.id===r.piece;
-      const isLock = idx>rIdx;
-      const stars  = [0,1,2].map(s=>`<span class="${s<earned?'on':''}">${s<earned?'★':'☆'}</span>`).join('');
-      const piece  = `<div style="color:${def.color};width:30px;height:30px;">${PIECE_SVG[def.piece]||PIECE_SVG.pawn}</div>`;
-      return `<tr class="${isCur?'cur-row':''} ${isLock?'lock-row':''}">
-        <td><div class="rpc">${piece}<div>
-          <div class="rpn">${def.name}${isCur?'<span class="rcb">now</span>':''}</div>
-          <span class="rps">${def.sub}</span>
-        </div></div></td>
-        <td><div class="rss">${stars}</div></td>
-        <td>${thresh[0].toLocaleString()}</td>
-        <td>${thresh[1].toLocaleString()}</td>
-        <td>${thresh[2].toLocaleString()}</td>
-      </tr>`;
-    }).join('');
-    listEl.innerHTML = `<table class="rank-table">
-      <thead><tr>
-        <th>Rank</th><th>Sao</th>
-        <th style="text-align:right;">★¹1 XP</th>
-        <th style="text-align:right;">★¹2 XP</th>
-        <th style="text-align:right;">★¹3 XP</th>
-      </tr></thead>
-      <tbody>${rows}</tbody></table>`;
-  }
-
-  // XP editor table
-  const editorEl = document.getElementById('xp-editor-grid');
-  if (editorEl) {
-    const rows2 = RANK_DEFS.map(def => {
-      const thresh = rankThresholds[def.id]||DEFAULT_THRESHOLDS[def.id];
-      return `<tr class="${def.id===r.piece?'xp-cur':''}">
-        <td>${def.name}</td>
-        ${thresh.map((t,s)=>`<td><input type="number" class="xp-thresh-input" min="1" max="9999999" data-rank="${def.id}" data-star="${s}" value="${t}"></td>`).join('')}
-      </tr>`;
-    }).join('');
-    editorEl.innerHTML = `<table class="xp-table">
-      <thead><tr><th>Rank</th><th>★¹1</th><th>★¹2</th><th>★¹3</th></tr></thead>
-      <tbody>${rows2}</tbody></table>`;
-  }
   renderRankBadge();
 }
-
-function renderAch(){
+{
   const tl=totalLearnedCount();
   const achs=[
     {n:'First Step',  d:'Học từ đầu tiên',       i:'⭐', ok:tl>=1},
