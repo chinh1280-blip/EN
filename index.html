@@ -554,6 +554,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
       <button class="nav-btn"        data-tab="wordbank"  onclick="go('wordbank',this)"><span class="nav-icon">▦</span> Kho từ vựng</button>
       <button class="nav-btn"        data-tab="families"  onclick="go('families',this)"><span class="nav-icon">◈</span> Word Family</button>
       <button class="nav-btn"        data-tab="topics"    onclick="go('topics',this)"><span class="nav-icon">◉</span> Chủ đề</button>
+      <button class="nav-btn"        data-tab="rank"      onclick="go('rank',this)"><span class="nav-icon">♛</span> Cấp bậc</button>
       <button class="nav-btn"        data-tab="stats"     onclick="go('stats',this)"><span class="nav-icon">▣</span> Thành tích</button>
       <button class="nav-btn"        data-tab="setup"     onclick="go('setup',this)"><span class="nav-icon">⊡</span> Supabase</button>
       <button class="nav-btn"        data-tab="github"    onclick="go('github',this)"><span class="nav-icon">◬</span> GitHub / Deploy</button>
@@ -587,6 +588,10 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         <div class="greeting-block">
           <h1>Xin chào,<br>hôm nay học gì?</h1>
           <p>Streak <strong id="home-streak">0</strong> ngày · <span id="home-xp">0</span> XP</p>
+          <div id="home-rank-badge" onclick="go('rank')" style="margin-top:6px;display:inline-flex;align-items:center;gap:7px;padding:4px 12px;background:var(--white);border:1px solid var(--rule);border-radius:20px;cursor:pointer;">
+            <span id="home-rank-icon" style="font-size:16px;">♟</span>
+            <span id="home-rank-name" style="font-size:12px;font-weight:600;color:var(--ink);">Tốt (Pawn) ☆☆☆</span>
+          </div>
         </div>
 
         <!-- SYNC BANNER -->
@@ -882,6 +887,21 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         </div>
         <div id="wb-count" style="font-size:13px;color:var(--muted);margin-bottom:10px;"></div>
         <div class="words-list" id="wb-list"></div>
+      </section>
+
+      <!-- ══ RANK ══ -->
+      <section class="screen" id="sc-rank">
+        <div class="page-title">Hệ thống Cấp bậc</div>
+        <div class="page-sub">Quân cờ vua · 6 cấp · 3 sao/cấp · tự đặt mốc XP</div>
+        <div class="rank-hero" id="rank-hero"></div>
+        <div class="section-title" style="margin-bottom:10px;">Tất cả cấp bậc</div>
+        <div class="rank-list" id="rank-list"></div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="section-title" style="margin-bottom:4px;">Tùy chỉnh mốc XP ⚙</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Nhập mốc XP để lên từng sao của từng cấp.</div>
+          <div class="xp-editor-grid" id="xp-editor-grid"></div>
+          <button class="btn btn-primary" style="margin-top:12px;width:100%;" onclick="saveRankThresholds()">Lưu mốc XP</button>
+        </div>
       </section>
 
       <!-- ══ STATS ══ -->
@@ -1451,6 +1471,7 @@ function go(tab, sideBtn, bnId) {
   if (tab==='listen')    startListen();
   if (tab==='sentences') { renderSentences(); setTimeout(loadSentVoices,100); }
   if (tab==='wordbank')  { populateTopicFilters(); renderWB(); }
+  if (tab==='rank')     { renderRank(); }
   if (tab==='stats')     renderStats();
   if (tab==='goal')      renderGoal();
   if (tab==='home')      {
@@ -1489,7 +1510,13 @@ function speak(word, rate) {
   speechSynthesis.speak(u);
 }
 function addXP(n, mult=1) {
-  const e=Math.round(n*mult); xp+=e; saveState(); return e;
+  const e=Math.round(n*mult);
+  const oldRank=getCurrentRank();
+  xp+=e; saveState();
+  const newRank=getCurrentRank();
+  if(newRank.piece!==oldRank.piece||newRank.star!==oldRank.star) showRankUp(newRank,oldRank);
+  renderRankBadge();
+  return e;
 }
 function triggerCombo() {
   const el=document.getElementById('combo-pop');
@@ -2558,6 +2585,239 @@ function renderStats(){
   document.getElementById('st-acc-sub').textContent=totalAnswered>0?`${totalCorrect}/${totalAnswered} câu đúng`:'Chưa có dữ liệu';
   renderAch();
 }
+
+/* ════════════════════════════════════════════
+   CHESS RANK SYSTEM
+   8 quân cờ · mỗi cấp 3 sao · 3 vũ khí/cấp
+   Tự đặt mốc XP
+════════════════════════════════════════════ */
+
+// SVG paths cho từng quân cờ (simplified chess piece silhouettes)
+const PIECE_SVG = {
+  pawn: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="22" r="14" fill="currentColor"/>
+    <path d="M35 40 Q50 52 65 40 L70 75 Q50 80 30 75Z" fill="currentColor"/>
+    <rect x="25" y="75" width="50" height="10" rx="5" fill="currentColor"/>
+  </svg>`,
+  knight: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M30 85 L30 60 Q28 45 38 30 Q42 18 55 15 Q68 13 72 25 Q65 22 60 30 Q75 35 72 55 L70 85Z" fill="currentColor"/>
+    <rect x="22" y="82" width="56" height="10" rx="5" fill="currentColor"/>
+  </svg>`,
+  bishop: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="18" r="10" fill="currentColor"/>
+    <path d="M50 26 L35 68 Q50 74 65 68Z" fill="currentColor"/>
+    <ellipse cx="50" cy="70" rx="22" ry="8" fill="currentColor"/>
+    <rect x="26" y="78" width="48" height="9" rx="4" fill="currentColor"/>
+  </svg>`,
+  rook: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect x="28" y="10" width="13" height="18" rx="2" fill="currentColor"/>
+    <rect x="44" y="10" width="13" height="18" rx="2" fill="currentColor"/>
+    <rect x="60" y="10" width="13" height="18" rx="2" fill="currentColor"/>
+    <rect x="30" y="26" width="41" height="46" rx="3" fill="currentColor"/>
+    <rect x="24" y="72" width="53" height="10" rx="4" fill="currentColor"/>
+    <rect x="20" y="82" width="61" height="9" rx="4" fill="currentColor"/>
+  </svg>`,
+  queen: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="12" r="8" fill="currentColor"/>
+    <circle cx="25" cy="20" r="7" fill="currentColor"/>
+    <circle cx="75" cy="20" r="7" fill="currentColor"/>
+    <path d="M18 28 L30 65 L50 55 L70 65 L82 28 Q60 38 50 30 Q40 38 18 28Z" fill="currentColor"/>
+    <rect x="26" y="65" width="49" height="10" rx="4" fill="currentColor"/>
+    <rect x="22" y="75" width="57" height="9" rx="4" fill="currentColor"/>
+  </svg>`,
+  king: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect x="44" y="6" width="12" height="28" rx="4" fill="currentColor"/>
+    <rect x="34" y="14" width="32" height="12" rx="4" fill="currentColor"/>
+    <path d="M28 38 Q50 48 72 38 L68 72 Q50 78 32 72Z" fill="currentColor"/>
+    <rect x="24" y="72" width="52" height="10" rx="4" fill="currentColor"/>
+    <rect x="20" y="82" width="60" height="9" rx="4" fill="currentColor"/>
+  </svg>`,
+};
+PIECE_SVG.pawn2  = PIECE_SVG.pawn;
+PIECE_SVG.knight2= PIECE_SVG.knight;
+
+// Rank definitions — 8 quân cờ, mỗi cấp 3 sao
+// weapons: 3 vũ khí đặc biệt mỗi cấp (unlock ở sao 1, 2, 3)
+const RANK_DEFS = [
+  { id:'pawn',    name:'Tốt',   nameEn:'Pawn',    color:'#7a7a7a', piece:'pawn',
+    weapons:['📖 Từ điển nhỏ','🗂 Thẻ nhớ cơ bản','⏱ Timer 5 phút'],
+    desc:'Khởi đầu hành trình. Mỗi bước đều có giá trị.' },
+  { id:'knight',  name:'Mã',    nameEn:'Knight',  color:'#5a7a3a', piece:'knight',
+    weapons:['🐴 Nhảy vọt (skip 1 từ/ngày)','🎯 Bonus Quiz ×1.2','🔁 Ôn lại từ khó'],
+    desc:'Di chuyển linh hoạt, học theo cách riêng của mình.' },
+  { id:'bishop',  name:'Tượng', nameEn:'Bishop',  color:'#3a6a9a', piece:'bishop',
+    weapons:['💡 Gợi ý nghĩa','🎧 Chế độ nghe nâng cao','📝 Ghi chú không giới hạn'],
+    desc:'Nhìn xa, hiểu sâu. Tư duy theo đường chéo.' },
+  { id:'rook',    name:'Xe',    nameEn:'Rook',    color:'#8a4a2a', piece:'rook',
+    weapons:['🏰 Bảo vệ streak (1 lần/tuần)','📊 Thống kê chi tiết','🔓 Mở chủ đề đặc biệt'],
+    desc:'Vững chắc như thành trì. Kiên trì mới thắng.' },
+  { id:'queen',   name:'Hậu',   nameEn:'Queen',   color:'#7a3a8a', piece:'queen',
+    weapons:['👑 XP ×1.5 mọi hoạt động','🌟 Từ vàng (highlight đặc biệt)','⚡ Nạp streak khẩn cấp'],
+    desc:'Mạnh nhất trên bàn cờ. Làm chủ ngôn ngữ.' },
+  { id:'king',    name:'Vua',   nameEn:'King',    color:'#1a1a1a', piece:'king',
+    weapons:['♛ Danh hiệu Grand Master','🎖 Huy hiệu vàng','🏆 Hall of Fame'],
+    desc:'Đỉnh cao của hành trình. Vua không bao giờ đầu hàng.' },
+];
+
+// Default XP thresholds — tổng XP để đạt toàn bộ sao của cấp đó
+// Mỗi cấp có 3 sao, threshold[rank][star] = XP tổng cần có
+const DEFAULT_THRESHOLDS = {
+  pawn:   [100,  200,  400],
+  knight: [700,  1100, 1600],
+  bishop: [2200, 3000, 4000],
+  rook:   [5200, 6600, 8200],
+  queen:  [10000,13000,16500],
+  king:   [20000,25000,30000],
+};
+
+// Load user-customized thresholds
+let rankThresholds = LS.get('rank_thresholds', null) || DEFAULT_THRESHOLDS;
+
+function saveRankThresholds() {
+  const inputs = document.querySelectorAll('.xp-thresh-input');
+  inputs.forEach(inp => {
+    const rank = inp.dataset.rank, star = parseInt(inp.dataset.star);
+    const val  = parseInt(inp.value) || 0;
+    if (!rankThresholds[rank]) rankThresholds[rank] = [...DEFAULT_THRESHOLDS[rank]];
+    rankThresholds[rank][star] = val;
+  });
+  LS.set('rank_thresholds', rankThresholds);
+  toast('✓ Đã lưu mốc XP tùy chỉnh', 'good');
+  renderRank();
+}
+
+// Calculate current rank + star from xp
+function getCurrentRank() {
+  let curPiece = RANK_DEFS[0].id, curStar = 0;
+  for (const def of RANK_DEFS) {
+    const thresh = rankThresholds[def.id] || DEFAULT_THRESHOLDS[def.id];
+    let earned = 0;
+    for (let s = 0; s < 3; s++) {
+      if (xp >= thresh[s]) earned = s + 1;
+    }
+    if (earned > 0) { curPiece = def.id; curStar = earned; }
+    if (earned < 3) break;
+  }
+  const def = RANK_DEFS.find(d => d.id === curPiece) || RANK_DEFS[0];
+  const thresh = rankThresholds[curPiece] || DEFAULT_THRESHOLDS[curPiece];
+  // XP needed for next star
+  const nextThresh = curStar < 3 ? thresh[curStar] : (RANK_DEFS.indexOf(def) < RANK_DEFS.length-1
+    ? (rankThresholds[RANK_DEFS[RANK_DEFS.indexOf(def)+1].id]||DEFAULT_THRESHOLDS[RANK_DEFS[RANK_DEFS.indexOf(def)+1].id])[0]
+    : thresh[2]);
+  const prevThresh = curStar > 0 ? thresh[curStar-1] : 0;
+  return { piece:curPiece, star:curStar, def, thresh, nextThresh, prevThresh };
+}
+
+function showRankUp(newRank, oldRank) {
+  const msg = newRank.def.name !== oldRank.def.name
+    ? `🎉 Thăng cấp! ${oldRank.def.name} → ${newRank.def.name}`
+    : `⭐ Đạt sao ${newRank.star}! ${newRank.def.name}`;
+  // Show a special toast
+  const t = document.getElementById('toast');
+  if (t) {
+    t.textContent = msg;
+    t.className = 'show good rankup';
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.className = '', 3500);
+  }
+}
+
+function renderRankBadge() {
+  const r = getCurrentRank();
+  const stars = '★'.repeat(r.star) + '☆'.repeat(3-r.star);
+  const icon = document.getElementById('home-rank-icon');
+  const name = document.getElementById('home-rank-name');
+  if (icon) icon.textContent = r.star>=3 ? '♛' : r.star>=2 ? '♜' : r.star>=1 ? '♝' : '♟';
+  if (name) name.textContent = `${r.def.name} (${r.def.nameEn}) ${stars}`;
+}
+
+function renderRank() {
+  const r = getCurrentRank();
+  const rankIdx = RANK_DEFS.findIndex(d => d.id === r.piece);
+  const pct = r.nextThresh > r.prevThresh
+    ? Math.min(100, Math.round((xp - r.prevThresh) / (r.nextThresh - r.prevThresh) * 100))
+    : 100;
+
+  // ── Hero card ──
+  const heroEl = document.getElementById('rank-hero');
+  if (heroEl) {
+    const starsHtml = [0,1,2].map(s => {
+      const earned = s < r.star;
+      const weapon = r.def.weapons[s];
+      return `<div style="text-align:center;">
+        <div class="rank-star ${earned?'earned':''}">
+          ${earned ? '★' : '☆'}
+        </div>
+        <div class="rank-star-label">
+          <div class="weapon-badge ${earned?'earned':'locked'}">
+            ${weapon}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    heroEl.innerHTML = `
+      <div class="rank-piece-svg" style="color:${r.def.color}">
+        ${PIECE_SVG[r.def.piece]||PIECE_SVG.pawn}
+      </div>
+      <div class="rank-title">${r.def.name} <span style="font-size:16px;color:var(--muted);">(${r.def.nameEn})</span></div>
+      <div class="rank-sub">${r.def.desc}</div>
+      <div class="rank-stars" style="margin-bottom:4px;">${starsHtml}</div>
+      <div class="rank-xp-bar-wrap">
+        <div class="rank-xp-label">
+          <span>${r.prevThresh.toLocaleString()} XP</span>
+          <span style="color:var(--accent);font-weight:700;">${xp.toLocaleString()} XP hiện tại</span>
+          <span>${r.nextThresh.toLocaleString()} XP</span>
+        </div>
+        <div class="rank-xp-track"><div class="rank-xp-fill" style="width:${pct}%"></div></div>
+        <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:4px;">
+          Còn ${Math.max(0,r.nextThresh-xp).toLocaleString()} XP để đạt ${r.star<3?'★'.repeat(r.star+1):RANK_DEFS[Math.min(rankIdx+1,RANK_DEFS.length-1)].name}
+        </div>
+      </div>`;
+  }
+
+  // ── Rank list ──
+  const listEl = document.getElementById('rank-list');
+  if (listEl) {
+    listEl.innerHTML = RANK_DEFS.map((def, idx) => {
+      const thresh = rankThresholds[def.id] || DEFAULT_THRESHOLDS[def.id];
+      let earnedStars = 0;
+      thresh.forEach((t,s) => { if(xp>=t) earnedStars=s+1; });
+      const isCurrent = def.id === r.piece;
+      const isLocked  = idx > rankIdx;
+      const starsRow  = [0,1,2].map(s =>
+        `<span class="rank-row-star ${s<earnedStars?'on':''}">${s<earnedStars?'★':'☆'}</span>`
+      ).join('');
+      const minXP = thresh[0].toLocaleString();
+      return `<div class="rank-row ${isCurrent?'current':''} ${isLocked?'locked-row':''}">
+        <div class="rank-row-icon" style="color:${def.color}">${PIECE_SVG[def.piece]||PIECE_SVG.pawn}</div>
+        <div class="rank-row-info">
+          <div class="rank-row-name">${def.name} <span style="font-size:11px;color:var(--muted);">(${def.nameEn})</span></div>
+          <div class="rank-row-req">Từ ${minXP} XP · ${def.desc.slice(0,30)}...</div>
+          <div class="rank-row-stars" style="margin-top:4px;">${starsRow}</div>
+        </div>
+        ${isCurrent ? '<span class="rank-current-badge">Đang ở đây</span>' : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // ── XP Editor ──
+  const editorEl = document.getElementById('xp-editor-grid');
+  if (editorEl) {
+    editorEl.innerHTML = RANK_DEFS.map(def => {
+      const thresh = rankThresholds[def.id] || DEFAULT_THRESHOLDS[def.id];
+      return thresh.map((t,s) => `
+        <div class="xp-editor-row">
+          <label>${def.name} ★${s+1}</label>
+          <input type="number" class="xp-thresh-input" min="1" max="9999999"
+            data-rank="${def.id}" data-star="${s}" value="${t}">
+        </div>`).join('');
+    }).join('');
+  }
+
+  renderRankBadge();
+}
+
 function renderAch(){
   const tl=totalLearnedCount();
   const achs=[
@@ -3137,6 +3397,7 @@ async function init(){
   renderGoalBanner();
   renderWordStats();
   startFC();
+  renderRankBadge();
 
   // Show sync banner if SB is connected
   const banner = document.getElementById('sync-banner');
