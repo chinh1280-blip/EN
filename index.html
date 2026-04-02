@@ -508,7 +508,8 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
   background:var(--accent-lt);border:1px solid var(--accent-md);
   border-radius:var(--r2);padding:20px 16px;margin-bottom:20px;
 }
-.xp-tbl{width:100%;border-collapse:separate;border-spacing:0;background:var(--white);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+.xp-tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px;}
+.xp-tbl{width:100%;min-width:360px;border-collapse:separate;border-spacing:0;background:var(--white);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
 .xp-tbl thead tr{background:var(--paper);}
 .xp-tbl thead th{padding:10px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--rule2);text-align:center;}
 .xp-tbl thead th:first-child{text-align:left;}
@@ -517,7 +518,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 .xp-tbl tbody tr.xp-cur-row{background:var(--accent-lt);}
 .xp-tbl td{padding:10px 12px;border-bottom:1px solid var(--rule);}
 .xp-tbl td:first-child{font-weight:700;font-size:13px;color:var(--ink);text-align:left;}
-.xp-tbl input[type=number]{width:84px;background:var(--paper);border:none;border-radius:8px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--ink);text-align:right;font-family:var(--sans);}
+.xp-tbl input[type=number]{width:76px;background:var(--paper);border:none;border-radius:8px;padding:5px 6px;font-size:13px;font-weight:700;color:var(--ink);text-align:right;font-family:var(--sans);}@media(max-width:480px){.xp-tbl input[type=number]{width:68px;font-size:12px;}}
 .xp-tbl input[type=number]:focus{outline:none;box-shadow:0 0 0 2px var(--accent-md);}
 .xp-save-btn{display:flex;align-items:center;gap:8px;padding:11px 24px;border-radius:10px;background:var(--ink);color:#fff;font-weight:700;font-size:14px;cursor:pointer;border:none;margin-top:14px;margin-left:auto;transition:opacity .15s;}
 .xp-save-btn:hover{opacity:.85;}
@@ -3164,7 +3165,7 @@ function pieceImg(piece, size) {
   const fsz = Math.round(size * 0.62);
   return '<span style="display:inline-flex;align-items:center;justify-content:center;width:' + size + 'px;height:' + size + 'px;">'
     + '<img src="' + url + '" alt="' + piece + '" width="' + size + '" height="' + size + '"'
-    + ' style="object-fit:contain;filter:brightness(0.88) contrast(1.12);"'
+    + ' style="object-fit:contain;filter:brightness(0.85) contrast(1.2) saturate(0);"'
     + ' onerror="this.style.display=\'none\';this.nextSibling.style.display=\'inline\';">'
     + '<span style="display:none;font-size:' + fsz + 'px;color:#444;line-height:1;">' + sym + '</span>'
     + '</span>';
@@ -3223,7 +3224,9 @@ function saveRankThresholds() {
     rankThresholds[rank][star] = val;
   });
   LS.set('rank_thresholds', rankThresholds);
-  toast('✓ Đã lưu mốc XP tùy chỉnh', 'good');
+  // Sync to Supabase immediately
+  if (typeof sbPushAllMeta === 'function') pushMetaToSB();
+  toast('✓ Đã lưu mốc XP · Đang đồng bộ...', 'good');
   renderRank();
 }
 
@@ -3352,7 +3355,7 @@ function renderRank() {
       </tr>`;
     }).join('');
     editorEl.innerHTML =
-      `<table class="xp-tbl">
+      `<div class="xp-tbl-scroll"><table class="xp-tbl">
         <thead><tr>
           <th>Rank</th><th>★</th><th>★★</th><th>★★★</th>
         </tr></thead>
@@ -3472,6 +3475,7 @@ async function sbPushAllMeta() {
     hardWordIds:  [...hardWordIds],
     goal, xp, streak, totalCorrect, totalAnswered, listenCount,
     families,
+    rankThresholds,
     topics: topics.filter(t => !['general','travel','food','business','tech','daily'].includes(t.key))
   });
   const r = await sbReq(
@@ -3800,6 +3804,10 @@ async function loadAllFromSB() {
       if (m.totalAnswered !== undefined) totalAnswered = m.totalAnswered;
       if (m.listenCount   !== undefined) listenCount   = m.listenCount;
       if (Array.isArray(m.families)) families = m.families;
+      if (m.rankThresholds && typeof m.rankThresholds === 'object') {
+        rankThresholds = m.rankThresholds;
+        LS.set('rank_thresholds', rankThresholds);
+      }
       if (Array.isArray(m.topics)) {
         const defs = ['general','travel','food','business','tech','daily'];
         topics = [
