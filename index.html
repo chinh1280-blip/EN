@@ -541,6 +541,64 @@ input::placeholder{color:var(--muted)}
 }
 .battle-btn:hover{color:#c8a84a;}
 
+
+/* ── FC Battle Bar (compact, above flashcard) ── */
+.fc-battle{
+  position:relative;overflow:hidden;
+  background:#1a1a0f;border:2px solid #4a4228;
+  border-radius:10px;padding:10px 12px 8px;
+  margin-bottom:14px;
+  box-shadow:0 4px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.fc-battle::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+  border-radius:inherit;opacity:.5;z-index:0;
+}
+.fc-battle-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:6px;position:relative;z-index:1;
+}
+.fc-battle-title{font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8a7a4a;font-family:var(--mono);}
+.fc-battle-score{font-size:10px;font-weight:700;color:#c8a84a;font-family:var(--mono);}
+/* Compact field — taller than home to give room for number label */
+.fc-battle-field{
+  position:relative;height:64px;
+  background:#0d0d08;border:1px solid #2a2516;border-radius:6px;
+  overflow:hidden;z-index:1;
+}
+.fc-battle-field::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 4px);
+}
+.fc-battle-ground{
+  position:absolute;bottom:12px;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,#3a3220 20%,#4a4228 50%,#3a3220 80%,transparent);
+}
+/* Mob number badge — shows on "active" (frontline) mob */
+.mob-count-badge{
+  position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  background:#8a2020;color:#ffeecc;
+  font-size:9px;font-weight:700;font-family:var(--mono);
+  padding:1px 5px;border-radius:3px;white-space:nowrap;
+  border:1px solid #aa4040;
+  animation:badge-bob 2s ease-in-out infinite;
+}
+@keyframes badge-bob{
+  0%,100%{transform:translateX(-50%) translateY(0)}
+  50%{transform:translateX(-50%) translateY(-2px)}
+}
+/* Mob stack indicator (behind crowd) */
+.mob-crowd-indicator{
+  position:absolute;bottom:13px;
+  display:flex;align-items:flex-end;gap:-4px;
+  pointer-events:none;
+}
+.fc-battle-hint{
+  font-size:9px;color:#5a5234;font-family:var(--mono);
+  margin-top:5px;position:relative;z-index:1;text-align:center;
+}
+
 /* combo */
 #combo-pop{position:fixed;top:68px;right:16px;z-index:150;font-family:var(--serif);font-size:14px;background:var(--ink);color:white;padding:7px 14px;border-radius:22px;opacity:0;transform:scale(.85);transition:all .25s;pointer-events:none}
 #combo-pop.show{opacity:1;transform:scale(1)}
@@ -1354,6 +1412,19 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
           </div>
         </div>
         <div class="prog-track" style="margin-bottom:18px;"><div class="prog-fill prog-fill-green" id="fc-prog" style="width:0%"></div></div>
+        <!-- FC Battle Bar -->
+        <div class="fc-battle" id="fc-battle" style="display:none;">
+          <div class="fc-battle-header">
+            <span class="fc-battle-title">⚔ Today's Battle</span>
+            <span class="fc-battle-score" id="fc-battle-score">0 / 0</span>
+          </div>
+          <div class="fc-battle-field" id="fc-battle-field">
+            <div class="fc-battle-ground"></div>
+            <!-- rendered by renderFCBattle() -->
+          </div>
+          <div class="fc-battle-hint" id="fc-battle-hint">Học từ mới để tiêu diệt quái!</div>
+        </div>
+
         <div id="fc-zone">
           <div class="fc-card-scene" onclick="flipFC()">
             <div class="fc-card-3d" id="fc-card">
@@ -2606,6 +2677,199 @@ function battleSlashEffect(wordCount) {
   }, 500);
 }
 
+
+/* ════════════════════════════════════════════
+   FC BATTLE BAR — Flashcard mini battlefield
+   "Active" mob stands out front with count label
+   Rest of the horde waits behind
+════════════════════════════════════════════ */
+
+function renderFCBattle() {
+  if (!goal) return;
+  const t = today();
+  if (t < goal.start || t > goal.end) return;
+
+  const plan = computeGoalPlan();
+  const todayPlan = plan.find(d => d.date === t);
+  if (!todayPlan) return;
+
+  const battleEl = document.getElementById('fc-battle');
+  const field    = document.getElementById('fc-battle-field');
+  const scoreEl  = document.getElementById('fc-battle-score');
+  const hintEl   = document.getElementById('fc-battle-hint');
+  if (!battleEl || !field) return;
+
+  battleEl.style.display = 'block';
+
+  const done     = todayPlan.done;
+  const required = todayPlan.required;
+  const remaining = required - done;
+  const onTrack   = done >= required;
+
+  if (scoreEl) scoreEl.textContent = done + ' / ' + required;
+
+  if (onTrack) {
+    if (hintEl) hintEl.textContent = '⚔ Đã tiêu diệt hết quái hôm nay! Victory!';
+  } else {
+    if (hintEl) hintEl.textContent = remaining + ' quái còn lại · Học từ mới để chém!';
+  }
+
+  // ── Build field content ──
+  // Warrior: left 6%
+  const warriorHTML = `<div class="battle-warrior" id="fc-warrior" style="left:6%;bottom:13px;position:absolute;z-index:5;filter:drop-shadow(0 0 4px rgba(200,168,74,.5));">
+    <svg viewBox="0 0 24 34" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" style="width:22px;height:30px;animation:warrior-breathe 2.4s ease-in-out infinite;">
+      <rect x="7" y="1" width="10" height="2" fill="#7a6a3a"/>
+      <rect x="6" y="3" width="12" height="2" fill="#9a8a4a"/>
+      <rect x="5" y="5" width="14" height="1" fill="#7a6a3a"/>
+      <rect x="6" y="6" width="12" height="7" fill="#c8a87a"/>
+      <rect x="8" y="8" width="2" height="2" fill="#2a1a0a"/>
+      <rect x="14" y="8" width="2" height="2" fill="#2a1a0a"/>
+      <rect x="9" y="11" width="6" height="1" fill="#8a6a4a"/>
+      <rect x="5" y="6" width="1" height="5" fill="#7a6a3a"/>
+      <rect x="18" y="6" width="1" height="5" fill="#7a6a3a"/>
+      <rect x="5" y="13" width="14" height="10" fill="#3a4a2a"/>
+      <rect x="7" y="14" width="10" height="2" fill="#4a5a3a"/>
+      <rect x="6" y="17" width="12" height="1" fill="#2a3a1a"/>
+      <rect x="7" y="19" width="10" height="2" fill="#4a5a3a"/>
+      <rect x="3" y="13" width="3" height="4" fill="#6a5a2a"/>
+      <rect x="18" y="13" width="3" height="4" fill="#6a5a2a"/>
+      <rect x="6" y="23" width="5" height="8" fill="#2a3420"/>
+      <rect x="13" y="23" width="5" height="8" fill="#2a3420"/>
+      <rect x="5" y="29" width="7" height="3" fill="#1a1a10"/>
+      <rect x="12" y="29" width="7" height="3" fill="#1a1a10"/>
+      <rect x="18" y="14" width="2" height="14" fill="#8a8a6a" class="sword-glow"/>
+      <rect x="17" y="14" width="4" height="2" fill="#6a6a4a" class="sword-glow"/>
+      <rect x="19" y="10" width="2" height="6" fill="#c8c8a0" class="sword-glow"/>
+      <rect x="18" y="9" width="4" height="2" fill="#a8a880" class="sword-glow"/>
+    </svg>
+  </div>`;
+
+  // Mob colors
+  const mobColors = [
+    ['#3a6a2a','#4a8a3a'],['#2a3a6a','#3a5a8a'],
+    ['#6a3a2a','#8a5a3a'],['#4a2a6a','#6a4a8a'],['#5a5a2a','#7a7a3a']
+  ];
+
+  let mobsHTML = '';
+
+  if (remaining <= 0) {
+    // Victory state — no mobs
+    mobsHTML = `<div style="position:absolute;right:8%;bottom:18px;font-size:10px;font-weight:700;color:#c8a84a;font-family:var(--mono);letter-spacing:.5px;animation:victory-flash .4s ease 3;">CLEARED!</div>`;
+  } else {
+    // ── Active mob (frontline) — stands out at ~38%, has count badge ──
+    const activeColorIdx = done % mobColors.length;
+    const [dark, light] = mobColors[activeColorIdx];
+    const isLastMob = (remaining === 1);
+    const activeSize = isLastMob ? 26 : 22; // boss-ish if last
+
+    mobsHTML += `
+      <div id="fc-mob-active" style="position:absolute;left:38%;bottom:13px;z-index:4;transition:all .3s;">
+        <div class="mob-count-badge">${remaining}</div>
+        <svg viewBox="0 0 20 26" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"
+             style="width:${activeSize}px;height:${activeSize+6}px;animation:mob-idle 3s ease-in-out infinite;${isLastMob?'filter:drop-shadow(0 0 4px rgba(200,60,40,.6));':''}">
+          <rect x="4" y="2" width="12" height="2" fill="${light}"/>
+          <rect x="2" y="4" width="16" height="12" fill="${light}"/>
+          <rect x="1" y="6" width="18" height="8" fill="${light}"/>
+          <rect x="5" y="6" width="2" height="3" fill="#ffeecc"/>
+          <rect x="13" y="6" width="2" height="3" fill="#ffeecc"/>
+          <rect x="5" y="7" width="1" height="1" fill="#1a0a0a"/>
+          <rect x="14" y="7" width="1" height="1" fill="#1a0a0a"/>
+          <rect x="7" y="12" width="6" height="1" fill="${dark}"/>
+          <rect x="2" y="16" width="4" height="6" fill="${dark}"/>
+          <rect x="14" y="16" width="4" height="6" fill="${dark}"/>
+          <rect x="6" y="16" width="8" height="8" fill="${dark}"/>
+          ${isLastMob ? `<rect x="8" y="0" width="2" height="3" fill="#c8a84a"/><rect x="11" y="0" width="2" height="3" fill="#c8a84a"/>` : ''}
+        </svg>
+      </div>`;
+
+    // ── Horde behind (remaining-1 mobs, stacked toward right) ──
+    // Show up to 5 silhouettes, overlapping, getting smaller toward right
+    const hordeCount = Math.min(remaining - 1, 5);
+    const hordeExtra = remaining - 1 - 5; // if more than 5
+
+    for (let hi = 0; hi < hordeCount; hi++) {
+      const ci = (activeColorIdx + hi + 1) % mobColors.length;
+      const [hd, hl] = mobColors[ci];
+      const leftPct = 52 + hi * 6;
+      const sz = Math.max(14, 20 - hi * 1.2);
+      const opacity = Math.max(0.3, 0.9 - hi * 0.12);
+      mobsHTML += `
+        <div style="position:absolute;left:${leftPct}%;bottom:13px;z-index:${3-Math.floor(hi/2)};opacity:${opacity};">
+          <svg viewBox="0 0 20 26" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"
+               style="width:${sz}px;height:${sz+4}px;">
+            <rect x="4" y="2" width="12" height="2" fill="${hl}"/>
+            <rect x="2" y="4" width="16" height="12" fill="${hl}"/>
+            <rect x="1" y="6" width="18" height="8" fill="${hl}"/>
+            <rect x="2" y="16" width="4" height="6" fill="${hd}"/>
+            <rect x="14" y="16" width="4" height="6" fill="${hd}"/>
+            <rect x="6" y="16" width="8" height="8" fill="${hd}"/>
+          </svg>
+        </div>`;
+    }
+
+    // If horde > 5, show +N label on rightmost
+    if (hordeExtra > 0) {
+      mobsHTML += `<div style="position:absolute;left:86%;bottom:18px;font-size:9px;font-weight:700;color:#6a5a2a;font-family:var(--mono);">+${hordeExtra}</div>`;
+    }
+  }
+
+  // Ground FX: dead mob marks (×) for slain
+  let deadMarks = '';
+  for (let di = 0; di < Math.min(done, 8); di++) {
+    const xPos = 20 + di * 2.2;
+    deadMarks += `<div style="position:absolute;left:${xPos}%;bottom:5px;font-size:7px;color:#3a3220;font-family:var(--mono);opacity:.7;">×</div>`;
+  }
+  if (done > 8) {
+    deadMarks += `<div style="position:absolute;left:20%;bottom:3px;font-size:7px;color:#4a4228;font-family:var(--mono);">×${done}</div>`;
+  }
+
+  // Compose field
+  // Keep ground, add warrior, mobs, dead marks
+  field.innerHTML = `
+    <div class="fc-battle-ground"></div>
+    ${deadMarks}
+    ${mobsHTML}
+    ${warriorHTML}
+  `;
+}
+
+function fcBattleSlash() {
+  // Trigger slash on fc-battle-field active mob
+  const field   = document.getElementById('fc-battle-field');
+  const mobEl   = document.getElementById('fc-mob-active');
+  if (!field || !mobEl) return;
+
+  const fieldRect = field.getBoundingClientRect();
+  const mobRect   = mobEl.getBoundingClientRect();
+  const slashL    = mobRect.left - fieldRect.left - 4;
+  const slashT    = mobRect.top  - fieldRect.top  - 6;
+
+  // Slash
+  const slash = document.createElement('div');
+  slash.className = 'battle-slash';
+  slash.style.cssText = `left:${slashL}px;top:${slashT}px;position:absolute;z-index:8;`;
+  slash.innerHTML = svgSlash();
+  field.appendChild(slash);
+
+  // XP float
+  const xp = document.createElement('div');
+  xp.className = 'battle-xp-float';
+  xp.style.cssText = `left:${slashL+4}px;top:${slashT-4}px;`;
+  xp.textContent = '+50XP';
+  field.appendChild(xp);
+
+  // Kill active mob animation
+  mobEl.style.transition = 'transform .3s,opacity .3s';
+  mobEl.style.transform  = 'scale(0) translateY(8px)';
+  mobEl.style.opacity    = '0';
+
+  setTimeout(() => {
+    slash.remove();
+    xp.remove();
+    renderFCBattle(); // re-render with next mob as active
+  }, 450);
+}
+
 /* ════════════════════════════════════════════
    GOAL — uses learnedLog (unique words only)
 ════════════════════════════════════════════ */
@@ -2774,6 +3038,7 @@ function startFC(){
   document.getElementById('fc-zone').style.display='block';
   document.getElementById('fc-done').style.display='none';
   document.getElementById('fc-hard-panel').style.display='none';
+  renderFCBattle();
   showFC();
 }
 function showFC(){
@@ -2838,7 +3103,10 @@ function rateFC(r){
     }
     triggerCombo();
     saveState(); pushMetaToSB();
-    if(isNew) setTimeout(()=>battleSlashEffect(done),100);
+    if(isNew) {
+      setTimeout(()=>battleSlashEffect(done), 100);
+      setTimeout(()=>fcBattleSlash(), 80);
+    }
   } else if(r==='hard'){
     combo=Math.max(0,combo-1); addXP(5);
     // Mark as hard — persistent across sessions
