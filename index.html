@@ -395,6 +395,152 @@ input::placeholder{color:var(--muted)}
 .status-wait{background:var(--amber-lt);color:var(--amber)}
 .status-wait .status-dot{background:var(--amber)}
 
+
+/* ══════════════════════════════════════════
+   BATTLE PROGRESS BAR — Vintage Pixel RPG
+══════════════════════════════════════════ */
+.battle-banner{
+  position:relative;overflow:hidden;
+  background:#1a1a0f;border:2px solid #4a4228;
+  border-radius:var(--r2);padding:14px 16px 12px;
+  margin-bottom:20px;
+  box-shadow:0 4px 20px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06);
+}
+/* Grain/noise overlay */
+.battle-banner::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+  border-radius:inherit;opacity:.5;z-index:0;
+}
+.battle-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;position:relative;z-index:1;
+}
+.battle-title{
+  font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:#8a7a4a;font-family:var(--mono);
+}
+.battle-score{
+  font-size:11px;font-weight:700;color:#c8a84a;font-family:var(--mono);
+  letter-spacing:.5px;
+}
+/* The battlefield line */
+.battle-field{
+  position:relative;height:56px;
+  background:#0d0d08;border:1px solid #2a2516;border-radius:6px;
+  overflow:hidden;z-index:1;
+}
+/* Scanline effect */
+.battle-field::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 4px);
+}
+/* Ground line */
+.battle-ground{
+  position:absolute;bottom:10px;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,#3a3220 20%,#4a4228 50%,#3a3220 80%,transparent);
+}
+/* Warrior character */
+.battle-warrior{
+  position:absolute;bottom:11px;
+  width:24px;height:34px;
+  transition:left .6s cubic-bezier(.4,0,.2,1);
+  z-index:5;
+  filter:drop-shadow(0 0 4px rgba(200,168,74,.5));
+}
+.battle-warrior svg{
+  width:24px;height:34px;
+  animation:warrior-breathe 2.4s ease-in-out infinite;
+}
+@keyframes warrior-breathe{
+  0%,100%{transform:translateY(0) scaleY(1)}
+  50%{transform:translateY(-1px) scaleY(1.02)}
+}
+/* Sword glow */
+.sword-glow{
+  animation:sword-pulse 1.8s ease-in-out infinite;
+}
+@keyframes sword-pulse{
+  0%,100%{opacity:.8;filter:brightness(1)}
+  50%{opacity:1;filter:brightness(1.6) drop-shadow(0 0 3px #c8a84a)}
+}
+/* Monster */
+.battle-mob{
+  position:absolute;bottom:11px;
+  width:20px;height:26px;
+  transition:opacity .3s;
+  z-index:4;
+}
+.battle-mob svg{
+  width:20px;height:26px;
+  animation:mob-idle 3s ease-in-out infinite;
+}
+@keyframes mob-idle{
+  0%,100%{transform:translateY(0)}
+  33%{transform:translateY(-1px)}
+  66%{transform:translateY(0)}
+}
+.battle-mob.dead{
+  opacity:0;pointer-events:none;
+  animation:mob-die .4s ease-out forwards;
+}
+@keyframes mob-die{
+  0%{opacity:1;transform:scaleX(1) translateY(0)}
+  50%{opacity:.6;transform:scaleX(1.3) translateY(-4px)}
+  100%{opacity:0;transform:scaleX(0) translateY(8px)}
+}
+/* Slash effect */
+.battle-slash{
+  position:absolute;bottom:18px;z-index:6;
+  width:28px;height:28px;
+  animation:slash-anim .35s ease-out forwards;
+  pointer-events:none;
+}
+@keyframes slash-anim{
+  0%{opacity:1;transform:scale(.5) rotate(-20deg)}
+  60%{opacity:1;transform:scale(1.2) rotate(10deg)}
+  100%{opacity:0;transform:scale(1.5) rotate(20deg)}
+}
+/* XP float */
+.battle-xp-float{
+  position:absolute;z-index:7;
+  font-size:10px;font-weight:700;color:#c8a84a;font-family:var(--mono);
+  animation:xp-float .8s ease-out forwards;
+  pointer-events:none;white-space:nowrap;
+}
+@keyframes xp-float{
+  0%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(-24px)}
+}
+/* Boss monster (larger) */
+.battle-mob.boss svg{
+  width:28px;height:34px;
+  filter:drop-shadow(0 0 4px rgba(200,60,40,.6));
+  animation:boss-idle 1.5s ease-in-out infinite;
+}
+@keyframes boss-idle{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.05)}
+}
+/* Complete flash */
+@keyframes victory-flash{
+  0%,100%{opacity:1}
+  50%{opacity:.6;filter:brightness(1.5)}
+}
+.battle-complete{animation:victory-flash .4s ease 3}
+/* Footer info */
+.battle-info{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:8px;position:relative;z-index:1;
+}
+.battle-hint{font-size:10px;color:#5a5234;font-family:var(--mono);}
+.battle-btn{
+  font-size:10px;font-weight:600;color:#6b5a2a;font-family:var(--mono);
+  background:none;border:none;cursor:pointer;letter-spacing:.5px;
+  transition:color .15s;
+}
+.battle-btn:hover{color:#c8a84a;}
+
 /* combo */
 #combo-pop{position:fixed;top:68px;right:16px;z-index:150;font-family:var(--serif);font-size:14px;background:var(--ink);color:white;padding:7px 14px;border-radius:22px;opacity:0;transform:scale(.85);transition:all .25s;pointer-events:none}
 #combo-pop.show{opacity:1;transform:scale(1)}
@@ -2045,7 +2191,7 @@ function go(tab, sideBtn, bnId) {
   if (tab==='stats')     renderStats();
   if (tab==='goal')      renderGoal();
   if (tab==='home')      {
-    renderDailyWord(); renderGoalBanner(); renderWordStats();
+    renderDailyWord(); renderGoalBattle(); renderWordStats();
     // Show/hide sync banner based on SB connection
     const banner = document.getElementById('sync-banner');
     if (banner) banner.style.display = (sbUrl&&sbKey) ? 'block' : 'none';
@@ -2244,6 +2390,220 @@ function buildHeatmap(id, weeks) {
     d.title=key+': '+count+' từ mới';
     el.appendChild(d);
   }
+}
+
+
+/* ════════════════════════════════════════════
+   BATTLE PROGRESS BAR
+════════════════════════════════════════════ */
+let battleSlashing = false;
+
+// ── SVG: Pixel warrior (SVG-based, vintage style)
+function svgWarrior() {
+  return `<svg viewBox="0 0 24 34" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <!-- helmet -->
+    <rect x="7" y="1" width="10" height="2" fill="#7a6a3a"/>
+    <rect x="6" y="3" width="12" height="2" fill="#9a8a4a"/>
+    <rect x="5" y="5" width="14" height="1" fill="#7a6a3a"/>
+    <!-- face -->
+    <rect x="6" y="6" width="12" height="7" fill="#c8a87a"/>
+    <rect x="8" y="8" width="2" height="2" fill="#2a1a0a"/>
+    <rect x="14" y="8" width="2" height="2" fill="#2a1a0a"/>
+    <rect x="9" y="11" width="6" height="1" fill="#8a6a4a"/>
+    <!-- visor -->
+    <rect x="5" y="6" width="1" height="5" fill="#7a6a3a"/>
+    <rect x="18" y="6" width="1" height="5" fill="#7a6a3a"/>
+    <!-- body armor -->
+    <rect x="5" y="13" width="14" height="10" fill="#3a4a2a"/>
+    <rect x="7" y="14" width="10" height="2" fill="#4a5a3a"/>
+    <rect x="6" y="17" width="12" height="1" fill="#2a3a1a"/>
+    <rect x="7" y="19" width="10" height="2" fill="#4a5a3a"/>
+    <!-- pauldrons -->
+    <rect x="3" y="13" width="3" height="4" fill="#6a5a2a"/>
+    <rect x="18" y="13" width="3" height="4" fill="#6a5a2a"/>
+    <!-- legs -->
+    <rect x="6" y="23" width="5" height="8" fill="#2a3420"/>
+    <rect x="13" y="23" width="5" height="8" fill="#2a3420"/>
+    <!-- boots -->
+    <rect x="5" y="29" width="7" height="3" fill="#1a1a10"/>
+    <rect x="12" y="29" width="7" height="3" fill="#1a1a10"/>
+    <!-- sword (right arm extended) -->
+    <rect x="18" y="14" width="2" height="14" fill="#8a8a6a" class="sword-glow"/>
+    <rect x="17" y="14" width="4" height="2" fill="#6a6a4a" class="sword-glow"/>
+    <rect x="19" y="10" width="2" height="6" fill="#c8c8a0" class="sword-glow"/>
+    <rect x="18" y="9" width="4" height="2" fill="#a8a880" class="sword-glow"/>
+  </svg>`;
+}
+
+// ── SVG: Slime monster (small, pixel)
+function svgMob(type) {
+  if (type === 'boss') {
+    return `<svg viewBox="0 0 28 34" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+      <rect x="6" y="2" width="16" height="2" fill="#8a2020"/>
+      <rect x="4" y="4" width="20" height="2" fill="#aa3030"/>
+      <rect x="2" y="6" width="24" height="14" fill="#aa3030"/>
+      <rect x="4" y="8" width="4" height="4" fill="#ff6a40"/>
+      <rect x="20" y="8" width="4" height="4" fill="#ff6a40"/>
+      <rect x="6" y="8" width="2" height="2" fill="#ffeecc"/>
+      <rect x="22" y="8" width="2" height="2" fill="#ffeecc"/>
+      <rect x="8" y="15" width="12" height="2" fill="#8a2020"/>
+      <rect x="2" y="20" width="6" height="6" fill="#8a2020"/>
+      <rect x="20" y="20" width="6" height="6" fill="#8a2020"/>
+      <rect x="8" y="20" width="12" height="8" fill="#8a2020"/>
+      <rect x="0" y="10" width="4" height="6" fill="#8a2020"/>
+      <rect x="24" y="10" width="4" height="6" fill="#8a2020"/>
+      <!-- crown spikes -->
+      <rect x="8" y="0" width="2" height="4" fill="#c8a84a"/>
+      <rect x="13" y="0" width="2" height="4" fill="#c8a84a"/>
+      <rect x="18" y="0" width="2" height="4" fill="#c8a84a"/>
+    </svg>`;
+  }
+  // Regular slime - vary by index
+  const colors = [['#3a6a2a','#4a8a3a'],['#2a3a6a','#3a5a8a'],['#6a3a2a','#8a5a3a'],['#4a2a6a','#6a4a8a']];
+  const [dark, light] = colors[type % colors.length];
+  return `<svg viewBox="0 0 20 26" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="4" y="2" width="12" height="2" fill="${light}"/>
+    <rect x="2" y="4" width="16" height="12" fill="${light}"/>
+    <rect x="1" y="6" width="18" height="8" fill="${light}"/>
+    <rect x="5" y="6" width="2" height="3" fill="#ffeecc"/>
+    <rect x="13" y="6" width="2" height="3" fill="#ffeecc"/>
+    <rect x="5" y="7" width="1" height="1" fill="#1a0a0a"/>
+    <rect x="14" y="7" width="1" height="1" fill="#1a0a0a"/>
+    <rect x="7" y="12" width="6" height="1" fill="${dark}"/>
+    <rect x="2" y="16" width="4" height="6" fill="${dark}"/>
+    <rect x="14" y="16" width="4" height="6" fill="${dark}"/>
+    <rect x="6" y="16" width="8" height="8" fill="${dark}"/>
+  </svg>`;
+}
+
+// ── SVG: Slash effect
+function svgSlash() {
+  return `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+    <line x1="4" y1="24" x2="24" y2="4" stroke="#ffe066" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+    <line x1="8" y1="24" x2="20" y2="8" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>
+    <line x1="14" y1="26" x2="26" y2="10" stroke="#ffa040" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+  </svg>`;
+}
+
+function renderGoalBattle() {
+  const banner = document.getElementById('goal-banner');
+  if (!banner) return;
+  if (!goal) { banner.style.display = 'none'; return; }
+  const t = today();
+  if (t < goal.start || t > goal.end) { banner.style.display = 'none'; return; }
+  const plan = computeGoalPlan();
+  const todayPlan = plan.find(d => d.date === t);
+  if (!todayPlan) { banner.style.display = 'none'; return; }
+  banner.style.display = 'block';
+
+  const done     = todayPlan.done;
+  const required = todayPlan.required;
+  const onTrack  = done >= required;
+  const co       = todayPlan.required - goal.daily;
+
+  // Build mob positions — spread across the field
+  const fieldW = 100; // percent
+  const mobSlots = required;
+  const mobs = Array.from({ length: mobSlots }, (_, i) => {
+    const killed = i < done;
+    const isBoss = i === mobSlots - 1; // last mob = boss
+    // Space mobs evenly from 30% to 90%
+    const pct = 30 + (i / Math.max(mobSlots - 1, 1)) * 60;
+    return { i, killed, isBoss, pct };
+  });
+
+  // Warrior position: just before next target (or 20% if none done yet)
+  const nextTarget = mobs.find(m => !m.killed);
+  const warriorPct = nextTarget
+    ? Math.max(10, nextTarget.pct - 8)
+    : (onTrack ? 95 : 10);
+
+  const mobsHtml = mobs.map(m =>
+    `<div class="battle-mob${m.killed ? ' dead' : ''}${m.isBoss ? ' boss' : ''}"
+          id="bmob-${m.i}"
+          style="left:calc(${m.pct}% - ${m.isBoss ? 14 : 10}px);">
+       ${svgMob(m.isBoss ? 'boss' : m.i)}
+     </div>`
+  ).join('');
+
+  const statusText = onTrack
+    ? '⚔ CHIẾN THẮNG!'
+    : nextTarget
+      ? `${required - done} quái còn lại`
+      : '⚔ Tiêu diệt hết!';
+
+  banner.className = 'battle-banner' + (onTrack ? ' battle-complete' : '');
+  banner.innerHTML = `
+    <div class="battle-header">
+      <span class="battle-title">⚔ Battle Progress</span>
+      <span class="battle-score">${done} / ${required} ${co > 0 ? '(+' + co + ' carryover)' : ''}</span>
+    </div>
+    <div class="battle-field" id="battle-field">
+      <div class="battle-ground"></div>
+      ${mobsHtml}
+      <div class="battle-warrior" id="battle-warrior"
+           style="left:calc(${warriorPct}% - 12px);">
+        ${svgWarrior()}
+      </div>
+    </div>
+    <div class="battle-info">
+      <span class="battle-hint">${statusText}</span>
+      <button class="battle-btn" onclick="go('goal')">Chi tiết ›</button>
+    </div>
+  `;
+}
+
+function battleSlashEffect(wordCount) {
+  // Called right after markLearned for new words
+  if (battleSlashing) return;
+  battleSlashing = true;
+
+  const field = document.getElementById('battle-field');
+  const warrior = document.getElementById('battle-warrior');
+  if (!field || !warrior) { battleSlashing = false; return; }
+
+  // Find next living mob
+  const plan = computeGoalPlan();
+  const t = today();
+  const todayPlan = plan.find(d => d.date === t);
+  if (!todayPlan) { battleSlashing = false; return; }
+
+  const done = todayPlan.done; // already incremented
+  const targetIdx = done - 1;  // the mob we just killed (0-indexed)
+  const mobEl = document.getElementById('bmob-' + targetIdx);
+  if (!mobEl) { battleSlashing = false; renderGoalBanner(); return; }
+
+  // Get mob position
+  const fieldRect  = field.getBoundingClientRect();
+  const mobRect    = mobEl.getBoundingClientRect();
+  const slashLeft  = mobRect.left - fieldRect.left - 4;
+  const slashTop   = mobRect.top  - fieldRect.top  - 6;
+
+  // Slash FX
+  const slash = document.createElement('div');
+  slash.className = 'battle-slash';
+  slash.style.left  = slashLeft + 'px';
+  slash.style.top   = slashTop  + 'px';
+  slash.innerHTML   = svgSlash();
+  field.appendChild(slash);
+
+  // XP float
+  const xpFloat = document.createElement('div');
+  xpFloat.className = 'battle-xp-float';
+  xpFloat.style.left = (slashLeft + 4) + 'px';
+  xpFloat.style.top  = (slashTop - 4) + 'px';
+  xpFloat.textContent = '+50XP';
+  field.appendChild(xpFloat);
+
+  // Kill mob
+  mobEl.classList.add('dead');
+
+  setTimeout(() => {
+    slash.remove();
+    xpFloat.remove();
+    renderGoalBanner(); // full re-render with warrior moved
+    battleSlashing = false;
+  }, 500);
 }
 
 /* ════════════════════════════════════════════
@@ -2478,6 +2838,7 @@ function rateFC(r){
     }
     triggerCombo();
     saveState(); pushMetaToSB();
+    if(isNew) setTimeout(()=>battleSlashEffect(done),100);
   } else if(r==='hard'){
     combo=Math.max(0,combo-1); addXP(5);
     // Mark as hard — persistent across sessions
@@ -3803,7 +4164,7 @@ async function homeDownload() {
   if (btn) { btn.textContent = '↓ Đang tải...'; btn.disabled = true; }
   try {
     await loadAllFromSB();
-    startFC(); renderGoalBanner(); renderWordStats();
+    startFC(); renderGoalBattle(); renderWordStats();
     populateTopicSelects(); populateTopicFilters();
   } finally {
     if (btn) { btn.textContent = '↓ Tải về máy này'; btn.disabled = false; }
@@ -4023,7 +4384,7 @@ async function init(){
   }
   // Render sau khi đã có data (từ SB hoặc localStorage)
   renderDailyWord();
-  renderGoalBanner();
+  renderGoalBattle();
   renderWordStats();
   startFC();
   renderRankBadge();
