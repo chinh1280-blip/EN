@@ -511,7 +511,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
 .xp-tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px;}
 .xp-tbl{width:100%;min-width:360px;border-collapse:separate;border-spacing:0;background:var(--white);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
 .xp-tbl thead tr{background:var(--paper);}
-.xp-tbl thead th{padding:10px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--rule2);text-align:center;}
+.xp-tbl thead th{padding:10px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--rule2);text-align:center;width:90px;}.xp-tbl thead th:first-child{text-align:left;width:auto;}
 .xp-tbl thead th:first-child{text-align:left;}
 .xp-tbl tbody tr{border-bottom:1px solid var(--rule);}
 .xp-tbl tbody tr:hover{background:var(--paper);}
@@ -1954,6 +1954,7 @@ let learnedEverArr = LS.get('lingo_learned_ever', []);
 let learnedEver    = new Set(learnedEverArr);
 // hardWordIds: words ever rated "Khó" — persisted, shown with ★
 let hardWordIds = new Set(LS.get('lingo_hard_words', []));
+let reviewLog = LS.get('lingo_review_log', {});
 let goal        = LS.get('lingo_goal', null);
 
 let combo=0, comboTimer=null;
@@ -1981,6 +1982,7 @@ function saveState() {
   LS.set('lingo_learned_log', learnedLog);
   LS.set('lingo_learned_ever',[...learnedEver]);
   LS.set('lingo_hard_words',  [...hardWordIds]);
+  LS.set('lingo_review_log',  reviewLog);
   LS.set('lingo_goal',        goal);
   updateCounters();
 }
@@ -2000,6 +2002,19 @@ function markLearned(wordId) {
   if (!learnedLog[d]) learnedLog[d] = [];
   if (!learnedLog[d].includes(wordId)) learnedLog[d].push(wordId);
   return true;
+}
+
+function trackReview(wordId) {
+  const d = today();
+  if (!reviewLog[d]) reviewLog[d] = {};
+  reviewLog[d][wordId] = (reviewLog[d][wordId] || 0) + 1;
+}
+function todayReviewedWords() {
+  const d = today();
+  const log = reviewLog[d] || {};
+  return Object.entries(log)
+    .map(([id, cnt]) => ({ word: words.find(w => w.id == id), count: cnt }))
+    .filter(x => x.word);
 }
 
 // Get word objects learned on a specific date
@@ -2148,22 +2163,34 @@ function toggleTodayDrawer(forceOpen) {
 }
 function renderTodayWords() {
   const grid = document.getElementById('today-words-grid');
-  const learned = learnedWordsOnDate(today());
-  if (learned.length === 0) {
+  const learned  = learnedWordsOnDate(today());
+  const reviewed = todayReviewedWords();
+  if (learned.length === 0 && reviewed.length === 0) {
     grid.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:4px 0;">Chưa có từ nào được học hôm nay. Vào Flashcard và bấm "Nhớ rồi ✓"!</div>';
     return;
   }
-  grid.innerHTML = learned.map(w => `
-    <div class="tw-pill" onclick="speak('${w.word.replace(/'/g,"\\'")}')">
-      <span>${w.word}</span>
-      <span class="tw-viet">${w.meaning}</span>
-    </div>
-  `).join('');
+  let html = '';
+  if (learned.length > 0) {
+    html += '<div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;width:100%;">🆕 Từ mới hôm nay (' + learned.length + ')</div>';
+    html += learned.map(w =>
+      '<div class="tw-pill" onclick="speak(\'' + w.word.replace(/'/g, "\\'") + '\')">'
+      + '<span>' + w.word + '</span>'
+      + '<span class="tw-viet">' + w.meaning + '</span>'
+      + '</div>'
+    ).join('');
+  }
+  if (reviewed.length > 0) {
+    html += '<div style="font-size:10px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px;width:100%;">🔁 Ôn lại hôm nay (' + reviewed.length + ')</div>';
+    html += reviewed.map(({word:w, count:c}) =>
+      '<div class="tw-pill" onclick="speak(\'' + w.word.replace(/'/g, "\\'") + '\')">'
+      + '<span>' + w.word + '</span>'
+      + '<span class="tw-viet">×' + c + ' lần</span>'
+      + '</div>'
+    ).join('');
+  }
+  grid.innerHTML = html;
 }
 
-/* ════════════════════════════════════════════
-   DAILY WORD — random từ khó hoặc random tất cả, đổi mỗi ngày
-════════════════════════════════════════════ */
 function renderDailyWord() {
   if (!words || words.length === 0) return;
 
@@ -2440,12 +2467,14 @@ function rateFC(r){
       sbPushHardWord(w.id, false);
     }
     const isNew = markLearned(w.id);
-    const e=addXP(10, combo>=3?2:1);
+    const baseXP = isNew ? 50 : 10;
+    const e = addXP(baseXP, combo>=3 ? 2 : 1);
     if(isNew){
-      toast(combo>=3?`🔥 Combo ×${combo}! +${e} XP · Từ mới ✓`:`+10 XP · Từ mới ✓`,'good');
+      toast(combo>=3?`🔥 Combo ×${combo}! +${e} XP · Từ mới 🆕`:`+50 XP · Từ mới 🆕`,'good');
       fcNewThisSession.add(w.id);
     } else {
-      toast(combo>=3?`🔥 Combo ×${combo}! +${e} XP (ôn lại)`:`+10 XP (ôn lại)`,'good');
+      trackReview(w.id);
+      toast(combo>=3?`🔥 Combo ×${combo}! +${e} XP · Ôn lại ✓`:`+10 XP · Ôn lại ✓`,'good');
     }
     triggerCombo();
     saveState(); pushMetaToSB();
@@ -3075,6 +3104,31 @@ function deleteFamily(id) {
   saveState(); pushMetaToSB(); renderFamilies();
   toast('Đã xóa nhóm','');
 }
+function removeFamilyWord(familyId, wordId) {
+  const fi = families.findIndex(f => f.id === familyId);
+  if (fi === -1) return;
+  families[fi].wordIds = families[fi].wordIds.filter(id => id !== wordId);
+  if (families[fi].wordIds.length === 0) {
+    families.splice(fi, 1);
+    toast('Đã xóa nhóm (không còn từ nào)', '');
+  } else {
+    toast('Đã bỏ từ khỏi nhóm', '');
+  }
+  saveState(); pushMetaToSB(); renderFamilies();
+}
+function openEditFamily(familyId) {
+  const f = families.find(x => x.id === familyId);
+  if (!f) return;
+  // Pre-fill form with existing family data
+  document.getElementById('wf-root').value = f.root;
+  wfSelected = [...f.wordIds];
+  // Remove old family to replace with edited version
+  families = families.filter(x => x.id !== familyId);
+  saveState();
+  renderWFSearch(); renderWFSelected();
+  document.getElementById('wf-root').scrollIntoView({ behavior: 'smooth' });
+  toast('Đang chỉnh sửa nhóm "' + f.root + '" — thêm/bớt từ rồi nhấn Lưu nhóm', '');
+}
 function renderFamilies() {
   const el = document.getElementById('families-list'); if(!el) return;
   if(families.length===0){
@@ -3092,6 +3146,7 @@ function renderFamilies() {
           </div>
           <div style="display:flex;gap:6px;">
             <button class="btn btn-sm btn-ghost" onclick="toggleFamilyDetail('fd-${f.id}')">Xem từ ▾</button>
+            <button class="btn btn-sm btn-ghost" style="color:var(--blue);border-color:var(--blue);" onclick="openEditFamily(${f.id})">✎ Sửa</button>
             <button class="wr-btn" onclick="deleteFamily(${f.id})">×</button>
           </div>
         </div>
@@ -3099,7 +3154,7 @@ function renderFamilies() {
           ${wObjs.map(w=>`
             <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);">
               <div style="flex:1;">
-                <div style="display:flex;align-items:center;gap:6px;">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                   <span style="font-weight:600;font-size:14px;">${w.word}</span>
                   ${w.partOfSpeech?`<span style="font-size:10px;background:var(--blue-lt);color:var(--blue);padding:1px 6px;border-radius:8px;font-weight:600;">${w.partOfSpeech}</span>`:''}
                   <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${w.phonetic}</span>
@@ -3107,14 +3162,21 @@ function renderFamilies() {
                 <div style="font-size:13px;color:var(--mid);margin-top:2px;">${w.meaning}</div>
                 ${w.example?`<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:2px;">"${w.example}"</div>`:''}
               </div>
-              <button class="btn btn-sm btn-ghost" onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
+              <div style="display:flex;gap:4px;flex-shrink:0;">
+                <button class="btn btn-sm btn-ghost" onclick="speak('${w.word.replace(/'/g,"\'")}')">🔊</button>
+                <button class="wr-btn" style="color:var(--red);" onclick="removeFamilyWord(${f.id},${w.id})" title="Bỏ khỏi nhóm">−</button>
+              </div>
             </div>
           `).join('')}
+          <div style="margin-top:10px;">
+            <button class="btn btn-sm btn-ghost" onclick="openEditFamily(${f.id})">+ Thêm từ vào nhóm</button>
+          </div>
         </div>
       </div>
     `;
   }).join('');
 }
+
 function toggleFamilyDetail(id) {
   const el = document.getElementById(id); if(!el) return;
   el.style.display = el.style.display==='block' ? 'none' : 'block';
@@ -3473,7 +3535,7 @@ async function sbPushAllMeta() {
     learnedLog,
     learnedEver:  [...learnedEver],
     hardWordIds:  [...hardWordIds],
-    goal, xp, streak, totalCorrect, totalAnswered, listenCount,
+    goal, xp, streak, totalCorrect, totalAnswered, listenCount, reviewLog,
     families,
     rankThresholds,
     topics: topics.filter(t => !['general','travel','food','business','tech','daily'].includes(t.key))
@@ -3804,6 +3866,7 @@ async function loadAllFromSB() {
       if (m.totalAnswered !== undefined) totalAnswered = m.totalAnswered;
       if (m.listenCount   !== undefined) listenCount   = m.listenCount;
       if (Array.isArray(m.families)) families = m.families;
+      if (m.reviewLog && typeof m.reviewLog === 'object') reviewLog = m.reviewLog;
       if (m.rankThresholds && typeof m.rankThresholds === 'object') {
         rankThresholds = m.rankThresholds;
         LS.set('rank_thresholds', rankThresholds);
@@ -3831,6 +3894,7 @@ async function loadAllFromSB() {
   LS.set('lingo_learned_log',  learnedLog);
   LS.set('lingo_learned_ever', [...learnedEver]);
   LS.set('lingo_hard_words',   [...hardWordIds]);
+  LS.set('lingo_review_log',   reviewLog);
   LS.set('lingo_goal',         goal);
 
   populateTopicSelects();
