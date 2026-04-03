@@ -542,6 +542,62 @@ input::placeholder{color:var(--muted)}
 .battle-btn:hover{color:#c8a84a;}
 
 
+
+/* ══ BATTLE PROJECTILE EFFECTS ══ */
+.proj{
+  position:absolute;pointer-events:none;z-index:10;
+  transform-origin:center center;
+}
+/* Fireball */
+@keyframes fireball-fly{
+  0%  {transform:translateX(0)   scale(.7) rotate(0deg);   opacity:1}
+  80% {transform:translateX(var(--dx)) translateY(var(--dy)) scale(1.1) rotate(20deg); opacity:1}
+  100%{transform:translateX(var(--dx)) translateY(var(--dy)) scale(2)   rotate(30deg); opacity:0}
+}
+/* Ice shard */
+@keyframes ice-fly{
+  0%  {transform:translate(0,0)       scale(.8) rotate(-10deg);opacity:1}
+  80% {transform:translate(var(--dx),var(--dy)) scale(1.1) rotate(10deg); opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) scale(0)   rotate(30deg); opacity:0}
+}
+/* Lightning */
+@keyframes lightning-fly{
+  0%  {transform:translate(0,0)       scaleX(.1);opacity:1}
+  30% {transform:translate(calc(var(--dx)*.3),calc(var(--dy)*.3)) scaleX(.5);opacity:1}
+  70% {transform:translate(calc(var(--dx)*.7),calc(var(--dy)*.7)) scaleX(1);opacity:.9}
+  100%{transform:translate(var(--dx),var(--dy)) scaleX(1);opacity:0}
+}
+/* Shockwave ring */
+@keyframes shockwave-expand{
+  0%  {transform:translate(var(--dx),var(--dy)) scale(.2);opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) scale(2);opacity:0}
+}
+/* Enemy counter-attack (from right) */
+@keyframes enemy-proj-fly{
+  0%  {transform:translate(0,0)       scale(.8);opacity:1}
+  100%{transform:translate(var(--ex),var(--ey)) scale(1.5);opacity:0}
+}
+/* Impact burst */
+@keyframes impact-burst{
+  0%  {transform:scale(.3);opacity:1}
+  60% {transform:scale(1.4);opacity:.8}
+  100%{transform:scale(2);opacity:0}
+}
+/* Mob hit flash */
+@keyframes mob-hit-flash{
+  0%,100%{filter:brightness(1)}
+  30%{filter:brightness(3) saturate(0)}
+  60%{filter:brightness(2)}
+}
+/* Warrior hit (enemy attacks) */
+@keyframes warrior-hit{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-4px)}
+  40%{transform:translateX(2px)}
+  60%{transform:translateX(-2px)}
+  80%{transform:translateX(1px)}
+}
+
 /* ── FC Battle Bar (compact, above flashcard) ── */
 .fc-battle{
   position:relative;overflow:hidden;
@@ -1435,7 +1491,8 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
                 </div>
                 <div class="fc-eng"  id="fc-word">Serendipity</div>
                 <div class="fc-phon" id="fc-phon">/ˌser.ənˈdɪp.ɪ.ti/</div>
-                <div class="fc-tap-hint">Nhấn để xem nghĩa · nhấn lại để lật về ↺</div>
+                <div class="fc-eg-front" id="fc-eg-front" style="font-size:12px;color:rgba(0,0,0,.35);font-style:italic;margin-top:6px;padding:0 8px;max-width:100%;text-align:center;line-height:1.5;"></div>
+                <div class="fc-tap-hint" style="margin-top:8px;">Nhấn để xem nghĩa · nhấn lại để lật về ↺</div>
               </div>
               <div class="fc-face fc-back">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;justify-content:center;">
@@ -2834,41 +2891,237 @@ function renderFCBattle() {
 }
 
 function fcBattleSlash() {
-  // Trigger slash on fc-battle-field active mob
+  // Full projectile attack: warrior → mob (new word = kill)
   const field   = document.getElementById('fc-battle-field');
+  const warrior = document.getElementById('fc-warrior');
   const mobEl   = document.getElementById('fc-mob-active');
   if (!field || !mobEl) return;
 
-  const fieldRect = field.getBoundingClientRect();
-  const mobRect   = mobEl.getBoundingClientRect();
-  const slashL    = mobRect.left - fieldRect.left - 4;
-  const slashT    = mobRect.top  - fieldRect.top  - 6;
+  const fR  = field.getBoundingClientRect();
+  const wR  = warrior ? warrior.getBoundingClientRect() : {left:fR.left+20, top:fR.top+20, width:22, height:30};
+  const mR  = mobEl.getBoundingClientRect();
 
-  // Slash
-  const slash = document.createElement('div');
-  slash.className = 'battle-slash';
-  slash.style.cssText = `left:${slashL}px;top:${slashT}px;position:absolute;z-index:8;`;
-  slash.innerHTML = svgSlash();
-  field.appendChild(slash);
+  // Start: warrior tip (right side)
+  const sx = wR.right  - fR.left  + 2;
+  const sy = wR.top    - fR.top   + wR.height * 0.3;
+  // End: mob center
+  const ex = mR.left   - fR.left  + mR.width  * 0.5;
+  const ey = mR.top    - fR.top   + mR.height * 0.5;
 
-  // XP float
-  const xp = document.createElement('div');
-  xp.className = 'battle-xp-float';
-  xp.style.cssText = `left:${slashL+4}px;top:${slashT-4}px;`;
-  xp.textContent = '+50XP';
-  field.appendChild(xp);
+  const dx = ex - sx;
+  const dy = ey - sy;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-  // Kill active mob animation
-  mobEl.style.transition = 'transform .3s,opacity .3s';
-  mobEl.style.transform  = 'scale(0) translateY(8px)';
-  mobEl.style.opacity    = '0';
+  // Pick random effect
+  const effects = ['fireball','ice','lightning','shockwave'];
+  const eff = effects[Math.floor(Math.random() * effects.length)];
 
-  setTimeout(() => {
-    slash.remove();
-    xp.remove();
-    renderFCBattle(); // re-render with next mob as active
-  }, 450);
+  launchProjectile(field, sx, sy, dx, dy, angle, dist, eff, () => {
+    // On hit: flash mob, kill it
+    mobEl.style.animation = 'mob-hit-flash .4s ease';
+
+    // Impact burst at mob
+    const burst = document.createElement('div');
+    burst.className = 'proj';
+    burst.style.cssText = `left:${ex-16}px;top:${ey-16}px;width:32px;height:32px;animation:impact-burst .4s ease forwards;`;
+    burst.innerHTML = svgImpact(eff);
+    field.appendChild(burst);
+
+    // XP float
+    const xpF = document.createElement('div');
+    xpF.className = 'battle-xp-float';
+    xpF.style.cssText = `left:${ex-8}px;top:${ey-14}px;`;
+    xpF.textContent = '+50XP';
+    field.appendChild(xpF);
+
+    setTimeout(() => {
+      burst.remove(); xpF.remove();
+      // Kill mob
+      mobEl.style.transition = 'transform .3s,opacity .3s';
+      mobEl.style.transform  = 'scale(0) translateY(8px)';
+      mobEl.style.opacity    = '0';
+      setTimeout(() => renderFCBattle(), 320);
+    }, 200);
+  });
 }
+
+function fcBattleReview() {
+  // Ôn lại: both sides shoot but nobody dies
+  const field   = document.getElementById('fc-battle-field');
+  const warrior = document.getElementById('fc-warrior');
+  const mobEl   = document.getElementById('fc-mob-active');
+  if (!field || !mobEl) return;
+
+  const fR = field.getBoundingClientRect();
+  const wR = warrior ? warrior.getBoundingClientRect() : {left:fR.left+20,top:fR.top+20,width:22,height:30};
+  const mR = mobEl.getBoundingClientRect();
+
+  const wsx = wR.right  - fR.left + 2,  wsy = wR.top - fR.top + wR.height*.3;
+  const msx = mR.left   - fR.left - 2,  msy = mR.top - fR.top + mR.height*.5;
+  const ex  = mR.left   - fR.left + mR.width*.5,  ey  = mR.top - fR.top + mR.height*.5;
+  const wx  = wR.left   - fR.left + wR.width*.5,  wy  = wR.top - fR.top + wR.height*.5;
+
+  // Warrior shoots small proj toward mob (stops short)
+  const wdx = ex - wsx, wdy = ey - wsy;
+  const review_effs = ['ice','lightning'];
+  launchProjectile(field, wsx, wsy, wdx*.7, wdy*.7, Math.atan2(wdy,wdx)*180/Math.PI, 0, review_effs[Math.floor(Math.random()*2)], () => {
+    // small flash near mob
+    const b = document.createElement('div');
+    b.className='proj';
+    b.style.cssText=`left:${wsx+wdx*.7-8}px;top:${wsy+wdy*.7-8}px;width:16px;height:16px;animation:impact-burst .3s ease forwards;`;
+    b.innerHTML=svgImpact('ice');
+    field.appendChild(b);
+    setTimeout(()=>b.remove(),350);
+  });
+
+  // Mob shoots back toward warrior (smaller, different color)
+  setTimeout(() => {
+    const mdx = wx - msx, mdy = wy - msy;
+    launchEnemyProjectile(field, msx, msy, mdx*.7, mdy*.7, () => {
+      // warrior wobble
+      if (warrior) warrior.style.animation = 'warrior-hit .35s ease';
+      setTimeout(() => { if(warrior) warrior.style.animation = 'warrior-breathe 2.4s ease-in-out infinite'; }, 400);
+    });
+  }, 150);
+}
+
+function fcBattleMonsterAttack() {
+  // Học lại: only monster attacks warrior
+  const field   = document.getElementById('fc-battle-field');
+  const warrior = document.getElementById('fc-warrior');
+  const mobEl   = document.getElementById('fc-mob-active');
+  if (!field || !mobEl) return;
+
+  const fR = field.getBoundingClientRect();
+  const wR = warrior ? warrior.getBoundingClientRect() : {left:fR.left+20,top:fR.top+20,width:22,height:30};
+  const mR = mobEl.getBoundingClientRect();
+
+  const msx = mR.left - fR.left - 2,  msy = mR.top - fR.top + mR.height*.5;
+  const wx  = wR.left - fR.left + wR.width*.5, wy = wR.top - fR.top + wR.height*.5;
+  const mdx = wx - msx, mdy = wy - msy;
+
+  launchEnemyProjectile(field, msx, msy, mdx, mdy, () => {
+    if (warrior) { warrior.style.animation = 'warrior-hit .4s ease'; }
+    // Impact on warrior
+    const burst = document.createElement('div');
+    burst.className = 'proj';
+    burst.style.cssText = `left:${wx-14}px;top:${wy-14}px;width:28px;height:28px;animation:impact-burst .4s ease forwards;`;
+    burst.innerHTML = svgImpact('enemy');
+    field.appendChild(burst);
+    setTimeout(() => {
+      burst.remove();
+      if(warrior) warrior.style.animation = 'warrior-breathe 2.4s ease-in-out infinite';
+    }, 450);
+  });
+}
+
+function launchProjectile(field, sx, sy, dx, dy, angle, dist, type, onHit) {
+  const el = document.createElement('div');
+  el.className = 'proj';
+  const dur = Math.max(0.25, Math.min(0.55, dist / 200));
+
+  el.style.cssText = `
+    left:${sx}px; top:${sy}px;
+    --dx:${dx}px; --dy:${dy}px;
+    width:28px; height:28px;
+    margin-left:-14px; margin-top:-14px;
+    animation: ${type==='lightning' ? 'lightning-fly' : type==='shockwave' ? 'fireball-fly' : type==='ice' ? 'ice-fly' : 'fireball-fly'} ${dur}s ease-out forwards;
+  `;
+  el.innerHTML = type === 'fireball'   ? svgFireball()
+               : type === 'ice'        ? svgIceShard()
+               : type === 'lightning'  ? svgLightning()
+               : svgShockwave();
+
+  field.appendChild(el);
+  setTimeout(() => { el.remove(); if(onHit) onHit(); }, dur * 1000);
+}
+
+function launchEnemyProjectile(field, sx, sy, dx, dy, onHit) {
+  const el = document.createElement('div');
+  el.className = 'proj';
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  const dur  = Math.max(0.2, dist/200);
+  el.style.cssText = `
+    left:${sx}px; top:${sy}px;
+    --ex:${dx}px; --ey:${dy}px;
+    width:22px; height:22px;
+    margin-left:-11px; margin-top:-11px;
+    animation:enemy-proj-fly ${dur}s ease-in forwards;
+  `;
+  el.innerHTML = svgEnemyBlob();
+  field.appendChild(el);
+  setTimeout(() => { el.remove(); if(onHit) onHit(); }, dur*1000);
+}
+
+/* ── Projectile SVGs ── */
+function svgFireball() {
+  return `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="14" r="7" fill="#ff6a00" opacity=".95"/>
+    <circle cx="16" cy="14" r="4" fill="#ffe066"/>
+    <ellipse cx="8" cy="14" rx="8" ry="3" fill="#ff3a00" opacity=".7"/>
+    <ellipse cx="5" cy="14" rx="5" ry="2" fill="#ff6a00" opacity=".5"/>
+    <path d="M22 9 Q26 7 24 12" stroke="#ffe066" stroke-width="1.5" fill="none" opacity=".8"/>
+    <path d="M22 19 Q26 21 24 16" stroke="#ffa040" stroke-width="1.2" fill="none" opacity=".7"/>
+  </svg>`;
+}
+function svgIceShard() {
+  return `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="14,2 17,11 26,11 19,17 22,26 14,20 6,26 9,17 2,11 11,11" fill="#60c8ff" opacity=".85"/>
+    <polygon points="14,6 16,12 22,12 17,16 19,22 14,17 9,22 11,16 6,12 12,12" fill="#aeeeff"/>
+    <circle cx="14" cy="14" r="3" fill="white" opacity=".9"/>
+  </svg>`;
+}
+function svgLightning() {
+  return `<svg viewBox="0 0 28 14" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 7 L8 2 L12 6 L20 1 L28 7" stroke="#ffe066" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M0 7 L8 2 L12 6 L20 1 L28 7" stroke="white" stroke-width="1" fill="none" opacity=".7"/>
+    <path d="M4 10 L10 6 L14 9 L22 4" stroke="#ffa040" stroke-width="1.5" fill="none" opacity=".6" stroke-linecap="round"/>
+  </svg>`;
+}
+function svgShockwave() {
+  return `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="14" cy="14" r="11" fill="none" stroke="#ff8c00" stroke-width="2" opacity=".9"/>
+    <circle cx="14" cy="14" r="6"  fill="none" stroke="#ffe066" stroke-width="1.5" opacity=".8"/>
+    <line x1="14" y1="2"  x2="14" y2="6"  stroke="#ffe066" stroke-width="1.5"/>
+    <line x1="14" y1="22" x2="14" y2="26" stroke="#ffe066" stroke-width="1.5"/>
+    <line x1="2"  y1="14" x2="6"  y2="14" stroke="#ffe066" stroke-width="1.5"/>
+    <line x1="22" y1="14" x2="26" y2="14" stroke="#ffe066" stroke-width="1.5"/>
+  </svg>`;
+}
+function svgEnemyBlob() {
+  return `<svg viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="11" cy="11" r="8" fill="#8a2020" opacity=".9"/>
+    <circle cx="11" cy="11" r="4" fill="#cc4040" opacity=".8"/>
+    <path d="M4 6 Q2 3 5 2" stroke="#ff6060" stroke-width="1.5" fill="none"/>
+    <path d="M18 6 Q20 3 17 2" stroke="#ff6060" stroke-width="1.5" fill="none"/>
+  </svg>`;
+}
+function svgImpact(type) {
+  if (type === 'enemy') return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="10" fill="#8a1010" opacity=".6"/>
+    <line x1="6"  y1="6"  x2="26" y2="26" stroke="#ff4040" stroke-width="2" stroke-linecap="round"/>
+    <line x1="26" y1="6"  x2="6"  y2="26" stroke="#ff6060" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="16" cy="16" r="4" fill="#ff8080" opacity=".9"/>
+  </svg>`;
+  if (type === 'ice') return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="8" fill="#40aaff" opacity=".4"/>
+    <line x1="8" y1="8" x2="24" y2="24" stroke="#aaeeff" stroke-width="1.5"/>
+    <line x1="24" y1="8" x2="8" y2="24" stroke="#aaeeff" stroke-width="1.5"/>
+    <line x1="16" y1="6" x2="16" y2="26" stroke="white" stroke-width="1.5"/>
+    <line x1="6" y1="16" x2="26" y2="16" stroke="white" stroke-width="1.5"/>
+    <circle cx="16" cy="16" r="3" fill="white" opacity=".9"/>
+  </svg>`;
+  return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="10" fill="#ff6a00" opacity=".4"/>
+    <line x1="4"  y1="16" x2="28" y2="16" stroke="#ffe066" stroke-width="2"/>
+    <line x1="16" y1="4"  x2="16" y2="28" stroke="#ffe066" stroke-width="2"/>
+    <line x1="7"  y1="7"  x2="25" y2="25" stroke="#ffa040" stroke-width="1.5"/>
+    <line x1="25" y1="7"  x2="7"  y2="25" stroke="#ffa040" stroke-width="1.5"/>
+    <circle cx="16" cy="16" r="4" fill="#ffe066" opacity=".9"/>
+  </svg>`;
+}
+
 
 /* ════════════════════════════════════════════
    GOAL — uses learnedLog (unique words only)
@@ -3047,6 +3300,8 @@ function showFC(){
   document.getElementById('fc-phon').textContent=w.phonetic;
   document.getElementById('fc-viet').textContent=w.meaning;
   document.getElementById('fc-eg').textContent='"'+w.example+'"';
+  const egFront = document.getElementById('fc-eg-front');
+  if (egFront) egFront.textContent = w.example ? '"' + w.example + '"' : '';
   document.getElementById('fc-topic-chip').textContent=topicLabel(w.topic)||w.topic;
   document.getElementById('fc-counter').textContent=`Thẻ ${fcIdx+1} / ${fcQueue.length}`;
   document.getElementById('fc-known').textContent='✓ '+fcKnown+' nhớ';
@@ -3100,6 +3355,7 @@ function rateFC(r){
     } else {
       trackReview(w.id);
       toast(combo>=3?`🔥 Combo ×${combo}! +${e} XP · Ôn lại ✓`:`+10 XP · Ôn lại ✓`,'good');
+      setTimeout(()=>fcBattleReview(), 80);
     }
     triggerCombo();
     saveState(); pushMetaToSB();
@@ -3116,6 +3372,7 @@ function rateFC(r){
     renderHardWords();
     // push hard flag to Supabase immediately
     sbPushHardWord(w.id, true);
+    setTimeout(()=>fcBattleMonsterAttack(), 80);
   } else {
     fcUnknown++; combo=0;
     fcQueue.push(fcQueue[fcIdx]);
