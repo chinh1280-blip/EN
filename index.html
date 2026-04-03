@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232d5a27'/><text y='.9em' font-size='72' x='12'>📚</text></svg>">
 <title>Lingo — Học Tiếng Anh</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -550,22 +551,25 @@ input::placeholder{color:var(--muted)}
 }
 /* Fireball */
 @keyframes fireball-fly{
-  0%  {transform:translateX(0)   scale(.7) rotate(0deg);   opacity:1}
-  80% {transform:translateX(var(--dx)) translateY(var(--dy)) scale(1.1) rotate(20deg); opacity:1}
-  100%{transform:translateX(var(--dx)) translateY(var(--dy)) scale(2)   rotate(30deg); opacity:0}
+  0%  {transform:translate(0,0)       scale(.5) rotate(0deg);    opacity:1}
+  20% {transform:translate(calc(var(--dx)*.2),calc(var(--dy)*.2)) scale(1.3) rotate(10deg);  opacity:1}
+  75% {transform:translate(calc(var(--dx)*.75),calc(var(--dy)*.75)) scale(1.1) rotate(20deg); opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) scale(2.5) rotate(35deg); opacity:0}
 }
 /* Ice shard */
 @keyframes ice-fly{
-  0%  {transform:translate(0,0)       scale(.8) rotate(-10deg);opacity:1}
-  80% {transform:translate(var(--dx),var(--dy)) scale(1.1) rotate(10deg); opacity:1}
-  100%{transform:translate(var(--dx),var(--dy)) scale(0)   rotate(30deg); opacity:0}
+  0%  {transform:translate(0,0)       scale(.5) rotate(-20deg); opacity:1}
+  15% {transform:translate(calc(var(--dx)*.15),calc(var(--dy)*.15)) scale(1.4) rotate(5deg); opacity:1}
+  75% {transform:translate(calc(var(--dx)*.75),calc(var(--dy)*.75)) scale(1.2) rotate(15deg); opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) scale(0.2) rotate(45deg); opacity:0}
 }
 /* Lightning */
 @keyframes lightning-fly{
-  0%  {transform:translate(0,0)       scaleX(.1);opacity:1}
-  30% {transform:translate(calc(var(--dx)*.3),calc(var(--dy)*.3)) scaleX(.5);opacity:1}
-  70% {transform:translate(calc(var(--dx)*.7),calc(var(--dy)*.7)) scaleX(1);opacity:.9}
-  100%{transform:translate(var(--dx),var(--dy)) scaleX(1);opacity:0}
+  0%  {transform:translate(0,0) scaleX(.05) scaleY(1.5); opacity:1}
+  10% {transform:translate(calc(var(--dx)*.1),calc(var(--dy)*.1)) scaleX(.8) scaleY(1.2); opacity:1}
+  50% {transform:translate(calc(var(--dx)*.5),calc(var(--dy)*.5)) scaleX(1.1) scaleY(.9); opacity:1}
+  85% {transform:translate(calc(var(--dx)*.85),calc(var(--dy)*.85)) scaleX(1) scaleY(1); opacity:.9}
+  100%{transform:translate(var(--dx),var(--dy)) scaleX(1.2) scaleY(.7); opacity:0}
 }
 /* Shockwave ring */
 @keyframes shockwave-expand{
@@ -597,6 +601,110 @@ input::placeholder{color:var(--muted)}
   60%{transform:translateX(-2px)}
   80%{transform:translateX(1px)}
 }
+
+
+/* ══ FC TIMER + HP SYSTEM ══ */
+.fc-combat-hud{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:10px;padding:8px 12px;
+  background:#1a1a0f;border:1px solid #4a4228;border-radius:8px;
+  position:relative;overflow:hidden;
+}
+.fc-combat-hud::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);
+}
+/* HP section */
+.fc-hp-section{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.fc-hp-icon{font-size:14px;line-height:1;}
+.fc-hp-pips{display:flex;gap:2px;}
+.fc-hp-pip{
+  width:9px;height:9px;border-radius:1px;
+  background:#c8a84a;border:1px solid #8a6a2a;
+  transition:all .3s;
+}
+.fc-hp-pip.dead{background:#2a2010;border-color:#3a3020;}
+.fc-hp-pip.flash{animation:hp-flash .5s ease;}
+@keyframes hp-flash{
+  0%,100%{background:#c8a84a}
+  50%{background:#ff4040;box-shadow:0 0 6px #ff4040;}
+}
+/* Timer section */
+.fc-timer-section{flex:1;position:relative;z-index:1;}
+.fc-timer-bar-track{
+  height:6px;background:#0d0d08;border-radius:3px;
+  border:1px solid #2a2516;overflow:hidden;
+}
+.fc-timer-bar-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,#4a8a3a,#c8a84a,#c84a3a);
+  transition:width .1s linear, background-color .5s;
+  transform-origin:left;
+}
+.fc-timer-bar-fill.urgent{
+  background:linear-gradient(90deg,#8a2020,#ff4040);
+  animation:timer-urgent-pulse .4s ease-in-out infinite;
+}
+@keyframes timer-urgent-pulse{
+  0%,100%{opacity:1} 50%{opacity:.6}
+}
+.fc-timer-label{
+  font-size:9px;font-family:var(--mono);color:#6a5a2a;
+  margin-top:2px;text-align:right;letter-spacing:.3px;
+}
+/* Timer setting */
+.fc-timer-setting{
+  display:flex;align-items:center;gap:4px;
+  font-size:9px;color:#5a4a2a;font-family:var(--mono);flex-shrink:0;
+}
+.fc-timer-setting input{
+  width:32px;background:#0d0d08;border:1px solid #3a3220;
+  border-radius:3px;color:#c8a84a;font-size:9px;font-family:var(--mono);
+  text-align:center;padding:2px 3px;
+}
+/* Defend area */
+.fc-defend-zone{
+  margin-top:10px;padding:10px 12px;
+  background:#f5f3ee;border:1px dashed var(--rule2);border-radius:8px;
+  display:none;
+}
+.fc-defend-zone.active{
+  display:block;
+  border-color:var(--accent-md);background:var(--accent-lt);
+}
+.fc-defend-input{
+  width:100%;box-sizing:border-box;
+  background:white;border:1.5px solid var(--rule2);border-radius:6px;
+  padding:8px 10px;font-size:13px;font-family:var(--sans);
+  color:var(--ink);margin-bottom:8px;resize:none;
+  transition:border-color .15s;
+}
+.fc-defend-input:focus{
+  outline:none;border-color:var(--accent);
+}
+.fc-defend-btn{
+  width:100%;padding:10px;
+  background:#1a1a0f;color:#c8a84a;
+  border:1.5px solid #4a4228;border-radius:6px;
+  font-size:13px;font-weight:700;font-family:var(--mono);
+  cursor:pointer;letter-spacing:.5px;
+  transition:all .15s;
+}
+.fc-defend-btn:hover{background:#2a2a1a;border-color:#c8a84a;}
+.fc-defend-btn:active{transform:scale(.98);}
+/* HP damage shake */
+@keyframes hp-damage-shake{
+  0%,100%{transform:translateX(0)}
+  15%{transform:translateX(-6px)}
+  30%{transform:translateX(5px)}
+  45%{transform:translateX(-4px)}
+  60%{transform:translateX(3px)}
+  75%{transform:translateX(-2px)}
+  90%{transform:translateX(1px)}
+}
+.hp-damage{animation:hp-damage-shake .5s ease;}
+/* Timer off mode */
+.fc-timer-off .fc-combat-hud{display:none;}
 
 /* ── FC Battle Bar (compact, above flashcard) ── */
 .fc-battle{
@@ -1468,6 +1576,26 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
           </div>
         </div>
         <div class="prog-track" style="margin-bottom:18px;"><div class="prog-fill prog-fill-green" id="fc-prog" style="width:0%"></div></div>
+        <!-- FC Combat HUD (Timer + HP) -->
+        <div class="fc-combat-hud" id="fc-combat-hud" style="display:none;">
+          <div class="fc-hp-section">
+            <span class="fc-hp-icon">♥</span>
+            <div class="fc-hp-pips" id="fc-hp-pips"></div>
+          </div>
+          <div class="fc-timer-section">
+            <div class="fc-timer-bar-track">
+              <div class="fc-timer-bar-fill" id="fc-timer-bar" style="width:100%"></div>
+            </div>
+            <div class="fc-timer-label" id="fc-timer-label">30s</div>
+          </div>
+          <div class="fc-timer-setting">
+            <span>⏱</span>
+            <input type="number" id="fc-timer-input" value="30" min="5" max="120"
+              onchange="fcTimerDuration=Math.max(5,Math.min(120,parseInt(this.value)||30));this.value=fcTimerDuration;">
+            <span>s</span>
+          </div>
+        </div>
+
         <!-- FC Battle Bar -->
         <div class="fc-battle" id="fc-battle" style="display:none;">
           <div class="fc-battle-header">
@@ -1510,6 +1638,12 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
           </div>
           <div class="fc-rate-note">
             ★ Chỉ "Nhớ rồi ✓" mới tính vào mục tiêu &amp; thống kê · Lặp lại không tính thêm
+          </div>
+          <!-- Defend zone: active when timer running -->
+          <div class="fc-defend-zone" id="fc-defend-zone">
+            <textarea class="fc-defend-input" id="fc-defend-input" rows="2"
+              placeholder="Tự đặt câu ví dụ với từ này... rồi nhấn Phòng thủ ↓"></textarea>
+            <button class="fc-defend-btn" onclick="fcDefend()">🛡 Phòng thủ — Ngưng đếm giây</button>
           </div>
         </div>
         <div class="fc-done-box" id="fc-done" style="display:none;">
@@ -1673,7 +1807,12 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
       <section class="screen" id="sc-wordbank">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;gap:12px;flex-wrap:wrap;">
           <div><div class="page-title">Kho từ vựng</div><div class="page-sub" style="margin-bottom:0;">Toàn bộ từ của bạn</div></div>
-          <button class="btn btn-primary" style="flex-shrink:0;" onclick="openModal('addModal');populateTopicSelects()">+ Thêm từ</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;">
+            <button class="btn btn-ghost btn-sm" onclick="exportWordsXLSX()" title="Tải toàn bộ kho từ ra file Excel">↓ Excel</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('wb-xlsx-input').click()" title="Import từ file Excel">↑ Excel</button>
+            <input type="file" id="wb-xlsx-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="importWordsXLSX(this)">
+            <button class="btn btn-primary" onclick="openModal('addModal');populateTopicSelects()">+ Thêm từ</button>
+          </div>
         </div>
         <div class="wb-toolbar" style="margin-top:18px;">
           <input type="text" placeholder="Tìm từ vựng..." id="wb-s" oninput="renderWB()" style="flex:1;min-width:140px;">
@@ -2924,7 +3063,7 @@ function fcBattleSlash() {
     // Impact burst at mob
     const burst = document.createElement('div');
     burst.className = 'proj';
-    burst.style.cssText = `left:${ex-16}px;top:${ey-16}px;width:32px;height:32px;animation:impact-burst .4s ease forwards;`;
+    burst.style.cssText = `left:${ex-16}px;top:${ey-16}px;width:32px;height:32px;animation:impact-burst .7s ease forwards;`;
     burst.innerHTML = svgImpact(eff);
     field.appendChild(burst);
 
@@ -2969,7 +3108,7 @@ function fcBattleReview() {
     // small flash near mob
     const b = document.createElement('div');
     b.className='proj';
-    b.style.cssText=`left:${wsx+wdx*.7-8}px;top:${wsy+wdy*.7-8}px;width:16px;height:16px;animation:impact-burst .3s ease forwards;`;
+    b.style.cssText=`left:${wsx+wdx*.7-8}px;top:${wsy+wdy*.7-8}px;width:16px;height:16px;animation:impact-burst .5s ease forwards;`;
     b.innerHTML=svgImpact('ice');
     field.appendChild(b);
     setTimeout(()=>b.remove(),350);
@@ -3006,7 +3145,7 @@ function fcBattleMonsterAttack() {
     // Impact on warrior
     const burst = document.createElement('div');
     burst.className = 'proj';
-    burst.style.cssText = `left:${wx-14}px;top:${wy-14}px;width:28px;height:28px;animation:impact-burst .4s ease forwards;`;
+    burst.style.cssText = `left:${wx-14}px;top:${wy-14}px;width:28px;height:28px;animation:impact-burst .7s ease forwards;`;
     burst.innerHTML = svgImpact('enemy');
     field.appendChild(burst);
     setTimeout(() => {
@@ -3019,7 +3158,7 @@ function fcBattleMonsterAttack() {
 function launchProjectile(field, sx, sy, dx, dy, angle, dist, type, onHit) {
   const el = document.createElement('div');
   el.className = 'proj';
-  const dur = Math.max(0.25, Math.min(0.55, dist / 200));
+  const dur = Math.max(0.55, Math.min(1.1, dist / 100));
 
   el.style.cssText = `
     left:${sx}px; top:${sy}px;
@@ -3041,7 +3180,7 @@ function launchEnemyProjectile(field, sx, sy, dx, dy, onHit) {
   const el = document.createElement('div');
   el.className = 'proj';
   const dist = Math.sqrt(dx*dx+dy*dy);
-  const dur  = Math.max(0.2, dist/200);
+  const dur  = Math.max(0.45, dist/120);
   el.style.cssText = `
     left:${sx}px; top:${sy}px;
     --ex:${dx}px; --ey:${dy}px;
@@ -3270,6 +3409,138 @@ function renderGoalBanner() {
   `;
 }
 
+
+/* ════════════════════════════════════════════
+   FC TIMER + HP SYSTEM
+════════════════════════════════════════════ */
+let fcHP            = 10;       // current hearts
+let fcTimerDuration = 30;       // seconds per word (editable)
+let fcTimerInterval = null;     // setInterval ref
+let fcTimerLeft     = 30;       // seconds remaining
+let fcTimerRunning  = false;
+let fcTimerEnabled  = true;     // user can toggle off
+
+function fcRenderHP() {
+  const pips = document.getElementById('fc-hp-pips');
+  if (!pips) return;
+  pips.innerHTML = Array.from({length:10}, (_,i) =>
+    `<div class="fc-hp-pip${i >= fcHP ? ' dead' : ''}" id="hp-pip-${i}"></div>`
+  ).join('');
+}
+
+function fcStartTimer() {
+  fcStopTimer();
+  if (!fcTimerEnabled) return;
+  const hud = document.getElementById('fc-combat-hud');
+  if (hud) hud.style.display = 'flex';
+  fcRenderHP();
+
+  fcTimerLeft = fcTimerDuration;
+  fcUpdateTimerUI(fcTimerLeft);
+  fcTimerRunning = true;
+
+  // Show defend zone
+  const dz = document.getElementById('fc-defend-zone');
+  if (dz) { dz.classList.add('active'); }
+  const di = document.getElementById('fc-defend-input');
+  if (di) { di.value = ''; }
+
+  fcTimerInterval = setInterval(() => {
+    fcTimerLeft = Math.max(0, fcTimerLeft - 0.1);
+    fcUpdateTimerUI(fcTimerLeft);
+    if (fcTimerLeft <= 0) {
+      fcStopTimer();
+      fcTimerExpired();
+    }
+  }, 100);
+}
+
+function fcStopTimer() {
+  if (fcTimerInterval) { clearInterval(fcTimerInterval); fcTimerInterval = null; }
+  fcTimerRunning = false;
+  const dz = document.getElementById('fc-defend-zone');
+  if (dz) dz.classList.remove('active');
+}
+
+function fcUpdateTimerUI(sec) {
+  const bar   = document.getElementById('fc-timer-bar');
+  const label = document.getElementById('fc-timer-label');
+  if (!bar || !label) return;
+  const pct = (sec / fcTimerDuration) * 100;
+  bar.style.width = pct + '%';
+  if (sec <= 8)  bar.classList.add('urgent');
+  else           bar.classList.remove('urgent');
+  label.textContent = Math.ceil(sec) + 's';
+}
+
+function fcDefend() {
+  if (!fcTimerRunning) return;
+  const input = document.getElementById('fc-defend-input');
+  const val   = (input ? input.value : '').trim();
+  if (!val) { toast('Nhập câu ví dụ trước khi phòng thủ!', 'bad'); return; }
+  fcStopTimer();
+  toast('🛡 Phòng thủ thành công! Tiếp tục đánh giá từ.', 'good');
+  // Flash the defend zone green briefly
+  const dz = document.getElementById('fc-defend-zone');
+  if (dz) {
+    dz.style.background = 'var(--accent-lt)';
+    dz.style.borderColor = 'var(--accent)';
+    setTimeout(() => {
+      if (dz) { dz.style.background = ''; dz.style.borderColor = ''; }
+    }, 600);
+  }
+}
+
+function fcTimerExpired() {
+  // Time's up: lose 1 HP, mark word as hard, advance
+  fcHP = Math.max(0, fcHP - 1);
+  fcRenderHP();
+
+  // Flash the lost pip red
+  const pip = document.getElementById('hp-pip-' + fcHP);
+  if (pip) { pip.classList.add('flash'); }
+
+  // Shake the HUD
+  const hud = document.getElementById('fc-combat-hud');
+  if (hud) {
+    hud.classList.add('hp-damage');
+    setTimeout(() => hud.classList.remove('hp-damage'), 600);
+  }
+
+  // Monster attack animation on battle field
+  fcBattleMonsterAttack();
+
+  // Find current word and mark as hard
+  const w = fcQueue[fcIdx];
+  if (w) {
+    hardWordIds.add(w.id);
+    if (!fcHardWords.find(x => x.id === w.id)) fcHardWords.push(w);
+    fcQueue.push(w); // add to end for review
+    saveState();
+    renderHardWords();
+    sbPushHardWord(w.id, true);
+  }
+
+  toast('⏰ Hết giờ! −1 HP · Từ chuyển vào danh sách khó', 'bad');
+
+  // Check dead
+  if (fcHP <= 0) {
+    setTimeout(() => {
+      toast('💀 Mất tất cả máu! Kết thúc phiên.', 'bad');
+      fcStopTimer();
+      fcHP = 10; // reset for next session
+      setTimeout(() => doneFC(), 800);
+    }, 400);
+    return;
+  }
+
+  // Advance to next word
+  fcIdx++;
+  document.getElementById('fc-card').classList.remove('flipped');
+  fcFlipped = false;
+  setTimeout(() => showFC(), 400);
+}
+
 /* ════════════════════════════════════════════
    FLASHCARD
    Only "easy" (Nhớ rồi ✓) marks a word as learned.
@@ -3288,6 +3559,7 @@ function startFC(){
   fcIdx=0; fcKnown=0; fcUnknown=0; fcFlipped=false;
   fcHardWords=[];
   fcNewThisSession=new Set();
+  fcHP=10; fcStopTimer();
   document.getElementById('fc-zone').style.display='block';
   document.getElementById('fc-done').style.display='none';
   document.getElementById('fc-hard-panel').style.display='none';
@@ -3322,6 +3594,8 @@ function showFC(){
   card.classList.remove('flipped');
   fcFlipped=false;
   requestAnimationFrame(()=>{ card.style.transition=''; });
+  // Start defend timer for this word
+  setTimeout(()=>fcStartTimer(), 50);
 }
 function flipFC(){
   const card=document.getElementById('fc-card');
@@ -3336,6 +3610,7 @@ function flipFC(){
 }
 function rateFC(r){
   if(!fcFlipped){flipFC();return;}
+  fcStopTimer(); // stop timer on any rating
   const w=fcQueue[fcIdx];
   if(r==='easy'){
     fcKnown++;
@@ -3384,6 +3659,7 @@ function rateFC(r){
   showFC();
 }
 function doneFC(){
+  fcStopTimer();
   document.getElementById('fc-zone').style.display='none';
   document.getElementById('fc-done').style.display='block';
   const pct=fcKnown+fcUnknown>0?Math.round(fcKnown/(fcKnown+fcUnknown)*100):0;
@@ -3767,6 +4043,85 @@ function renderWB(){
     </div>
   `).join('');
 }
+
+/* ════════════════════════════════════════════
+   EXCEL EXPORT / IMPORT
+════════════════════════════════════════════ */
+function exportWordsXLSX() {
+  if (typeof XLSX === 'undefined') { toast('Đang tải thư viện...', ''); return; }
+  const header = ['word','meaning','phonetic','partOfSpeech','example','topic','level'];
+  const rows = words.map(w => [
+    w.word||'', w.meaning||'', w.phonetic||'',
+    w.partOfSpeech||'', w.example||'', w.topic||'general', w.level||3
+  ]);
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  // Column widths
+  ws['!cols'] = [{wch:20},{wch:30},{wch:16},{wch:10},{wch:40},{wch:12},{wch:6}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Từ vựng');
+  XLSX.writeFile(wb, 'lingo-words.xlsx');
+  toast('✓ Đã tải ' + words.length + ' từ ra Excel', 'good');
+}
+
+function importWordsXLSX(input) {
+  const file = input.files[0]; if (!file) return;
+  if (typeof XLSX === 'undefined') { toast('Đang tải thư viện Excel...', 'bad'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb   = XLSX.read(e.target.result, { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+      if (!rows || rows.length < 2) { toast('File không có dữ liệu!', 'bad'); return; }
+
+      // Find header row (flexible: first row with 'word' column)
+      let headerRow = 0;
+      const possibleHeader = rows[0].map(c => String(c).toLowerCase().trim());
+      const wordCol    = possibleHeader.indexOf('word');
+      const meaningCol = possibleHeader.indexOf('meaning');
+      if (wordCol === -1 || meaningCol === -1) {
+        toast('⚠ Không tìm thấy cột "word" hoặc "meaning"', 'bad'); return;
+      }
+      const phoneticCol    = possibleHeader.indexOf('phonetic');
+      const posCol         = possibleHeader.findIndex(h => h.includes('pos') || h.includes('part'));
+      const exampleCol     = possibleHeader.indexOf('example');
+      const topicCol       = possibleHeader.indexOf('topic');
+      const levelCol       = possibleHeader.indexOf('level');
+
+      let added = 0, skipped = 0, errors = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const word    = String(row[wordCol]   || '').trim();
+        const meaning = String(row[meaningCol] || '').trim();
+        if (!word || !meaning) { if (word || meaning) errors++; continue; }
+        // Skip duplicates (case-insensitive)
+        if (words.find(w => w.word.toLowerCase() === word.toLowerCase())) { skipped++; continue; }
+
+        const nw = {
+          id:           Date.now() + added,
+          word,
+          meaning,
+          phonetic:     phoneticCol >= 0 ? String(row[phoneticCol]||'').trim() : '',
+          partOfSpeech: posCol      >= 0 ? String(row[posCol]     ||'').trim() : '',
+          example:      exampleCol  >= 0 ? String(row[exampleCol] ||'').trim() : '',
+          topic:        topicCol    >= 0 ? (String(row[topicCol]  ||'general').trim()||'general') : 'general',
+          level:        levelCol    >= 0 ? (parseInt(row[levelCol])||3) : 3,
+        };
+        words.unshift(nw);
+        if (sbUrl && sbKey) saveWordToSB(nw);
+        added++;
+      }
+      saveState(); renderWB(); renderWordStats();
+      toast(`✓ Import: ${added} từ mới · ${skipped} trùng · ${errors} lỗi`, added > 0 ? 'good' : '');
+    } catch(err) {
+      console.error('XLSX import error:', err);
+      toast('⚠ Lỗi đọc file: ' + err.message, 'bad');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  input.value = '';
+}
+
 function importWordsFile(input){
   const file=input.files[0]; if(!file) return;
   const reader=new FileReader();
