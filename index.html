@@ -618,49 +618,77 @@ input::placeholder{color:var(--muted)}
 .fc-hp-section{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .fc-hp-icon{font-size:14px;line-height:1;}
 .fc-hp-pips{display:flex;gap:2px;}
+.fc-hp-pips{display:flex;gap:2px;align-items:center;}
 .fc-hp-pip{
-  width:9px;height:9px;border-radius:1px;
-  background:#c8a84a;border:1px solid #8a6a2a;
-  transition:all .3s;
+  width:12px;height:11px;flex-shrink:0;
+  transition:all .3s;filter:drop-shadow(0 0 2px rgba(200,60,60,.5));
 }
-.fc-hp-pip.dead{background:#2a2010;border-color:#3a3020;}
+.fc-hp-pip svg{width:12px;height:11px;}
+.fc-hp-pip.dead{opacity:.2;filter:none;}
 .fc-hp-pip.flash{animation:hp-flash .5s ease;}
 @keyframes hp-flash{
-  0%,100%{background:#c8a84a}
-  50%{background:#ff4040;box-shadow:0 0 6px #ff4040;}
+  0%,100%{filter:drop-shadow(0 0 2px rgba(200,60,60,.5))}
+  50%{filter:drop-shadow(0 0 8px rgba(255,60,60,1)) brightness(2)}
 }
 /* Timer section */
 .fc-timer-section{flex:1;position:relative;z-index:1;}
 .fc-timer-bar-track{
-  height:6px;background:#0d0d08;border-radius:3px;
+  height:8px;background:#0d0d08;border-radius:4px;
   border:1px solid #2a2516;overflow:hidden;
+  position:relative;
 }
 .fc-timer-bar-fill{
-  height:100%;border-radius:3px;
-  background:linear-gradient(90deg,#4a8a3a,#c8a84a,#c84a3a);
-  transition:width .1s linear, background-color .5s;
+  height:100%;border-radius:4px;
+  background:linear-gradient(90deg,#2a6a20 0%,#4aaa3a 30%,#c8a84a 65%,#c84a3a 100%);
+  transition:width .1s linear;
   transform-origin:left;
+  position:relative;overflow:hidden;
+}
+/* Moving shimmer sweep on the fill */
+.fc-timer-bar-fill::after{
+  content:'';position:absolute;top:0;left:-60%;width:50%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+  animation:timer-shimmer 1.2s linear infinite;
+}
+@keyframes timer-shimmer{
+  0%{left:-60%} 100%{left:120%}
+}
+/* Glow dot at the leading edge */
+.fc-timer-bar-fill::before{
+  content:'';position:absolute;right:-3px;top:50%;
+  width:6px;height:6px;border-radius:50%;
+  transform:translateY(-50%);
+  background:white;opacity:.9;
+  box-shadow:0 0 6px 2px rgba(255,220,100,.8);
 }
 .fc-timer-bar-fill.urgent{
-  background:linear-gradient(90deg,#8a2020,#ff4040);
-  animation:timer-urgent-pulse .4s ease-in-out infinite;
+  background:linear-gradient(90deg,#6a1010,#cc2020,#ff5040);
+  animation:timer-urgent-pulse .35s ease-in-out infinite;
+}
+.fc-timer-bar-fill.urgent::after{
+  background:linear-gradient(90deg,transparent,rgba(255,120,80,.5),transparent);
+}
+.fc-timer-bar-fill.urgent::before{
+  background:#ff8080;box-shadow:0 0 8px 3px rgba(255,60,40,.9);
 }
 @keyframes timer-urgent-pulse{
-  0%,100%{opacity:1} 50%{opacity:.6}
+  0%,100%{opacity:1;filter:brightness(1)}
+  50%{opacity:.75;filter:brightness(1.3)}
 }
 .fc-timer-label{
-  font-size:9px;font-family:var(--mono);color:#6a5a2a;
-  margin-top:2px;text-align:right;letter-spacing:.3px;
+  font-size:11px;font-weight:700;font-family:var(--mono);color:#c8a84a;
+  margin-top:3px;text-align:right;letter-spacing:.5px;
+  text-shadow:0 0 8px rgba(200,168,74,.6);
 }
 /* Timer setting */
 .fc-timer-setting{
   display:flex;align-items:center;gap:4px;
-  font-size:9px;color:#5a4a2a;font-family:var(--mono);flex-shrink:0;
+  font-size:10px;font-weight:700;color:#8a7a4a;font-family:var(--mono);flex-shrink:0;
 }
 .fc-timer-setting input{
-  width:32px;background:#0d0d08;border:1px solid #3a3220;
-  border-radius:3px;color:#c8a84a;font-size:9px;font-family:var(--mono);
-  text-align:center;padding:2px 3px;
+  width:34px;background:#0d0d08;border:1px solid #3a3220;
+  border-radius:3px;color:#c8a84a;font-size:10px;font-weight:700;font-family:var(--mono);
+  text-align:center;padding:2px 4px;
 }
 /* Defend area */
 .fc-defend-zone{
@@ -3420,11 +3448,34 @@ let fcTimerLeft     = 30;       // seconds remaining
 let fcTimerRunning  = false;
 let fcTimerEnabled  = true;     // user can toggle off
 
+function svgHeart() {
+  return `<svg viewBox="0 0 12 11" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="1" y="0" width="2" height="1" fill="#8a2020"/>
+    <rect x="5" y="0" width="2" height="1" fill="#8a2020"/>
+    <rect x="9" y="0" width="2" height="1" fill="#8a2020"/>
+    <rect x="0" y="1" width="4" height="1" fill="#cc3030"/>
+    <rect x="4" y="1" width="1" height="1" fill="#8a2020"/>
+    <rect x="5" y="1" width="2" height="1" fill="#cc3030"/>
+    <rect x="7" y="1" width="1" height="1" fill="#8a2020"/>
+    <rect x="8" y="1" width="4" height="1" fill="#cc3030"/>
+    <rect x="0" y="2" width="5" height="1" fill="#ee4444"/>
+    <rect x="5" y="2" width="2" height="1" fill="#cc3030"/>
+    <rect x="7" y="2" width="5" height="1" fill="#ee4444"/>
+    <rect x="0" y="3" width="12" height="1" fill="#ee4444"/>
+    <rect x="0" y="4" width="12" height="1" fill="#cc3030"/>
+    <rect x="1" y="5" width="10" height="1" fill="#cc3030"/>
+    <rect x="1" y="6" width="10" height="1" fill="#aa2828"/>
+    <rect x="2" y="7" width="8"  height="1" fill="#aa2828"/>
+    <rect x="3" y="8" width="6"  height="1" fill="#882020"/>
+    <rect x="4" y="9" width="4"  height="1" fill="#882020"/>
+    <rect x="5" y="10" width="2" height="1" fill="#661818"/>
+  </svg>`;
+}
 function fcRenderHP() {
   const pips = document.getElementById('fc-hp-pips');
   if (!pips) return;
   pips.innerHTML = Array.from({length:10}, (_,i) =>
-    `<div class="fc-hp-pip${i >= fcHP ? ' dead' : ''}" id="hp-pip-${i}"></div>`
+    `<div class="fc-hp-pip${i >= fcHP ? ' dead' : ''}" id="hp-pip-${i}">${svgHeart()}</div>`
   ).join('');
 }
 
@@ -3439,11 +3490,20 @@ function fcStartTimer() {
   fcUpdateTimerUI(fcTimerLeft);
   fcTimerRunning = true;
 
-  // Show defend zone
+  // Reset and show defend zone
   const dz = document.getElementById('fc-defend-zone');
-  if (dz) { dz.classList.add('active'); }
+  if (dz) {
+    dz.classList.add('active');
+    dz.style.background  = '';
+    dz.style.borderColor = '';
+    dz.style.borderStyle = '';
+  }
   const di = document.getElementById('fc-defend-input');
-  if (di) { di.value = ''; }
+  if (di) { di.value = ''; di.disabled = false; }
+  const btn = dz ? dz.querySelector('.fc-defend-btn') : null;
+  if (btn) btn.style.display = '';
+  const badge = document.getElementById('fc-defend-badge');
+  if (badge) badge.remove();
 
   fcTimerInterval = setInterval(() => {
     fcTimerLeft = Math.max(0, fcTimerLeft - 0.1);
@@ -3458,19 +3518,58 @@ function fcStartTimer() {
 function fcStopTimer() {
   if (fcTimerInterval) { clearInterval(fcTimerInterval); fcTimerInterval = null; }
   fcTimerRunning = false;
-  const dz = document.getElementById('fc-defend-zone');
-  if (dz) dz.classList.remove('active');
+  // Restore timer input to duration (not live countdown)
+  const inp = document.getElementById('fc-timer-input');
+  if (inp) inp.value = fcTimerDuration;
+  const label = document.getElementById('fc-timer-label');
+  if (label) { label.style.color = '#c8a84a'; label.style.textShadow = ''; }
+  const bar = document.getElementById('fc-timer-bar');
+  if (bar) bar.classList.remove('urgent');
 }
 
 function fcUpdateTimerUI(sec) {
   const bar   = document.getElementById('fc-timer-bar');
   const label = document.getElementById('fc-timer-label');
+  const inp   = document.getElementById('fc-timer-input');
   if (!bar || !label) return;
   const pct = (sec / fcTimerDuration) * 100;
   bar.style.width = pct + '%';
-  if (sec <= 8)  bar.classList.add('urgent');
-  else           bar.classList.remove('urgent');
-  label.textContent = Math.ceil(sec) + 's';
+  const urgent = sec <= 8;
+  if (urgent) bar.classList.add('urgent');
+  else        bar.classList.remove('urgent');
+  const display = Math.ceil(sec) + 's';
+  label.textContent = display;
+  // Show live countdown in the input box too
+  if (inp && fcTimerRunning) inp.value = Math.ceil(sec);
+  // Label color changes with urgency
+  if (label) {
+    label.style.color = sec <= 5  ? '#ff6060'
+                      : sec <= 10 ? '#ffa040'
+                      : '#c8a84a';
+    label.style.textShadow = urgent
+      ? '0 0 10px rgba(255,80,40,.8)'
+      : '0 0 8px rgba(200,168,74,.6)';
+  }
+}
+
+function svgShieldPixel() {
+  return `<svg viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="4"  y="0"  width="20" height="2"  fill="#8a5a3a"/>
+    <rect x="2"  y="2"  width="24" height="2"  fill="#aa7a4a"/>
+    <rect x="0"  y="4"  width="28" height="2"  fill="#aa7a4a"/>
+    <rect x="0"  y="6"  width="28" height="10" fill="#cc9a5a"/>
+    <rect x="0"  y="16" width="28" height="6"  fill="#aa7a4a"/>
+    <rect x="2"  y="22" width="24" height="4"  fill="#8a5a3a"/>
+    <rect x="4"  y="26" width="20" height="3"  fill="#6a3a1a"/>
+    <rect x="8"  y="29" width="12" height="2"  fill="#4a2a10"/>
+    <rect x="11" y="31" width="6"  height="1"  fill="#2a1a08"/>
+    <!-- shine panel -->
+    <rect x="2"  y="6"  width="10" height="10" fill="#ddbb7a" opacity=".55"/>
+    <rect x="2"  y="16" width="10" height="5"  fill="#bbaa6a" opacity=".4"/>
+    <!-- divider -->
+    <rect x="0"  y="15" width="28" height="2"  fill="#6a3a1a"/>
+    <rect x="13" y="4"  width="2"  height="22" fill="#6a3a1a"/>
+  </svg>`;
 }
 
 function fcDefend() {
@@ -3479,16 +3578,78 @@ function fcDefend() {
   const val   = (input ? input.value : '').trim();
   if (!val) { toast('Nhập câu ví dụ trước khi phòng thủ!', 'bad'); return; }
   fcStopTimer();
-  toast('🛡 Phòng thủ thành công! Tiếp tục đánh giá từ.', 'good');
-  // Flash the defend zone green briefly
+
+  // Keep defend zone visible with "defended" state — show sentence, hide button
   const dz = document.getElementById('fc-defend-zone');
   if (dz) {
-    dz.style.background = 'var(--accent-lt)';
-    dz.style.borderColor = 'var(--accent)';
-    setTimeout(() => {
-      if (dz) { dz.style.background = ''; dz.style.borderColor = ''; }
-    }, 600);
+    dz.style.background  = '#0d1a0a';
+    dz.style.borderColor = '#3a6a2a';
+    dz.style.borderStyle = 'solid';
   }
+  // Replace button with result label
+  const btn = dz ? dz.querySelector('.fc-defend-btn') : null;
+  if (btn) {
+    btn.style.display = 'none';
+  }
+  // Show defended badge
+  let badge = document.getElementById('fc-defend-badge');
+  if (!badge && dz) {
+    badge = document.createElement('div');
+    badge.id = 'fc-defend-badge';
+    badge.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:4px;';
+    dz.appendChild(badge);
+  }
+  if (badge) {
+    badge.innerHTML = `<span style="font-size:9px;font-weight:700;font-family:var(--mono);color:#4aaa3a;letter-spacing:.5px;">🛡 DEFENDED — Đánh giá câu của bạn rồi chọn mức độ</span>`;
+  }
+
+  toast('🛡 Phòng thủ thành công! Đánh giá câu rồi bấm Nhớ rồi / Khó.', 'good');
+
+  // Shield block animation on fc-battle-field
+  fcShieldBlock();
+}
+
+function fcShieldBlock() {
+  const field = document.getElementById('fc-battle-field');
+  const mobEl = document.getElementById('fc-mob-active');
+  if (!field || !mobEl) return;
+
+  const fR  = field.getBoundingClientRect();
+  const mR  = mobEl.getBoundingClientRect();
+  const wEl = document.getElementById('fc-warrior');
+  const wR  = wEl ? wEl.getBoundingClientRect() : { left: fR.left+20, top: fR.top+10, width:22, height:30 };
+
+  // Shield appears midway between mob and warrior
+  const midX = ((mR.left + fR.left + mR.width/2) + (wR.right))/2 - fR.left - 14;
+  const midY = wR.top - fR.top + 4;
+
+  // Enemy proj from mob → warrior first
+  const msx = mR.left - fR.left + mR.width/2;
+  const msy = mR.top  - fR.top  + mR.height/2;
+  const wdx = (wR.left + wR.width/2) - fR.left - msx;
+  const wdy = (wR.top  + wR.height/2) - fR.top  - msy;
+  launchEnemyProjectile(field, msx, msy, wdx, wdy, null);
+
+  // Shield SVG appears where projectile would hit
+  setTimeout(() => {
+    const shield = document.createElement('div');
+    shield.style.cssText = `position:absolute;left:${midX}px;top:${midY}px;z-index:9;
+      animation:shield-appear .6s ease forwards;pointer-events:none;`;
+    shield.innerHTML = svgShieldPixel();
+    field.appendChild(shield);
+
+    // Shield flash
+    const style = document.createElement('style');
+    style.textContent = `@keyframes shield-appear{
+      0%{opacity:0;transform:scale(.3) rotate(-15deg)}
+      40%{opacity:1;transform:scale(1.3) rotate(5deg)}
+      70%{transform:scale(1) rotate(0)}
+      100%{opacity:0;transform:scale(.8)}
+    }`;
+    document.head.appendChild(style);
+
+    setTimeout(() => { shield.remove(); style.remove(); }, 900);
+  }, 350);
 }
 
 function fcTimerExpired() {
