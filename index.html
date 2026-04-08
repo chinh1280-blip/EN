@@ -544,6 +544,85 @@ input::placeholder{color:var(--muted)}
 
 
 
+/* ── Battle field animations ── */
+@keyframes warrior-breathe{
+  0%,100%{transform:translateY(0) scaleY(1)}
+  50%{transform:translateY(-1px) scaleY(1.01)}
+}
+@keyframes warrior-hit{
+  0%{transform:translateX(0)}
+  20%{transform:translateX(3px)}
+  40%{transform:translateX(-5px)}
+  60%{transform:translateX(3px)}
+  80%{transform:translateX(-2px)}
+  100%{transform:translateX(0)}
+}
+@keyframes mob-idle{
+  0%,100%{transform:translateY(0) scaleX(1)}
+  25%{transform:translateY(-2px) scaleX(1.04)}
+  50%{transform:translateY(0) scaleX(.98)}
+  75%{transform:translateY(-1px) scaleX(1.02)}
+}
+@keyframes mob-hit-flash{
+  0%{filter:brightness(1)}
+  30%{filter:brightness(3) saturate(0)}
+  100%{filter:brightness(1)}
+}
+@keyframes crystal-float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-2px)}
+}
+@keyframes crystal-trail{
+  0%,100%{opacity:.6;transform:scaleX(1)}
+  50%{opacity:.9;transform:scaleX(1.05)}
+}
+@keyframes victory-flash{
+  0%,100%{opacity:1}
+  50%{opacity:.5}
+}
+@keyframes battle-xp-float-up{
+  0%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(-20px)}
+}
+.battle-xp-float{
+  position:absolute;font-size:10px;font-weight:700;
+  font-family:var(--mono);color:#f0d060;
+  pointer-events:none;z-index:30;
+  animation:battle-xp-float-up .9s ease forwards;
+  text-shadow:0 0 6px rgba(240,200,60,.8);
+}
+.battle-slash{
+  position:absolute;pointer-events:none;z-index:28;
+  animation:battle-xp-float-up .5s ease forwards;
+}
+.proj{position:absolute;pointer-events:none;z-index:26;}
+@keyframes fireball-fly{
+  0%{transform:translate(0,0)}
+  100%{transform:translate(var(--dx),var(--dy))}
+}
+@keyframes ice-fly{
+  0%{transform:translate(0,0) rotate(0)}
+  100%{transform:translate(var(--dx),var(--dy)) rotate(360deg)}
+}
+@keyframes lightning-fly{
+  0%{transform:translate(0,0);opacity:1}
+  100%{transform:translate(var(--dx),var(--dy));opacity:.2}
+}
+@keyframes enemy-proj-fly{
+  0%{transform:translate(0,0)}
+  100%{transform:translate(var(--ex),var(--ey))}
+}
+@keyframes impact-burst{
+  0%{transform:scale(.5);opacity:1}
+  60%{transform:scale(1.4);opacity:.8}
+  100%{transform:scale(1.8);opacity:0}
+}
+@keyframes sword-glow-anim{
+  0%,100%{filter:drop-shadow(0 0 2px rgba(180,200,255,.6))}
+  50%{filter:drop-shadow(0 0 6px rgba(180,200,255,1)) brightness(1.3)}
+}
+.sword-glow{animation:sword-glow-anim 1.6s ease-in-out infinite;}
+
 /* ══ BATTLE PROJECTILE EFFECTS ══ */
 .proj{
   position:absolute;pointer-events:none;z-index:10;
@@ -603,170 +682,197 @@ input::placeholder{color:var(--muted)}
 }
 
 
-/* ══ FC TIMER + HP SYSTEM — REDESIGNED ══ */
+/* ══ FC TIMER + HP SYSTEM — PREMIUM DUNGEON STYLE ══ */
+
+/* ── HUD Panel ── */
 .fc-combat-hud{
-  display:flex;align-items:center;gap:12px;
-  margin-bottom:10px;padding:10px 14px;
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:10px;padding:9px 13px;
   background:
-    radial-gradient(ellipse at 20% 50%,rgba(80,40,10,.3),transparent 60%),
-    linear-gradient(180deg,#2a1e10 0%,#1a1208 50%,#221810 100%);
-  border:2px solid #6a4a20;
+    linear-gradient(180deg,#221810 0%,#1a1008 40%,#1e1408 80%,#221808 100%);
   border-radius:10px;
+  border:2px solid transparent;
+  border-image:linear-gradient(135deg,#c8a030 0%,#6a4010 30%,#c8a030 50%,#6a4010 70%,#c8a030 100%) 1;
+  border-image-slice:1;
   position:relative;overflow:hidden;
-  box-shadow:0 4px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,200,100,.08);
+  box-shadow:
+    0 4px 20px rgba(0,0,0,.7),
+    inset 0 1px 0 rgba(255,200,80,.12),
+    inset 0 -1px 0 rgba(0,0,0,.5);
 }
-/* Stone texture overlay */
+/* Polished metal bevel top */
 .fc-combat-hud::before{
-  content:'';position:absolute;inset:0;pointer-events:none;
-  background-image:
-    repeating-linear-gradient(0deg,transparent,transparent 4px,rgba(0,0,0,.04) 4px,rgba(0,0,0,.04) 5px),
-    repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(255,255,255,.01) 8px,rgba(255,255,255,.01) 9px);
-  border-radius:inherit;
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(255,210,100,.2),rgba(255,230,150,.5),rgba(255,210,100,.2),transparent);
+  pointer-events:none;
 }
-/* Inner glow */
+/* Subtle inner vignette */
 .fc-combat-hud::after{
   content:'';position:absolute;inset:0;pointer-events:none;
-  box-shadow:inset 0 0 20px rgba(200,120,30,.12);
-  border-radius:inherit;
+  background:
+    radial-gradient(ellipse at 0% 50%,rgba(200,120,30,.08),transparent 40%),
+    radial-gradient(ellipse at 100% 50%,rgba(200,120,30,.06),transparent 40%);
+  border-radius:8px;
 }
-/* HP section */
-.fc-hp-section{display:flex;align-items:center;gap:6px;flex-shrink:0;}
-.fc-hp-icon{font-size:14px;line-height:1;}
-.fc-hp-pips{display:flex;gap:2px;}
-.fc-hp-pips{display:flex;gap:3px;align-items:center;}
+
+/* ── HP Section ── */
+.fc-hp-section{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.fc-hp-pips{display:flex;gap:2px;align-items:center;}
 .fc-hp-pip{
-  width:16px;height:15px;flex-shrink:0;
+  width:15px;height:14px;flex-shrink:0;
   transition:all .3s;
-  filter:drop-shadow(0 1px 3px rgba(180,40,40,.7));
+  filter:drop-shadow(0 0 3px rgba(220,60,60,.8)) drop-shadow(0 1px 1px rgba(0,0,0,.6));
 }
-.fc-hp-pip svg{width:16px;height:15px;display:block;}
+.fc-hp-pip svg{width:15px;height:14px;display:block;}
 .fc-hp-pip.dead{
-  opacity:.15;
-  filter:drop-shadow(0 0 1px rgba(60,30,30,.4)) grayscale(1);
+  opacity:.12;filter:grayscale(1) brightness(.4);
 }
-.fc-hp-pip.flash{animation:hp-flash .5s ease;}
+.fc-hp-pip.flash{animation:hp-flash .4s ease;}
 @keyframes hp-flash{
-  0%,100%{filter:drop-shadow(0 1px 3px rgba(180,40,40,.7))}
-  50%{filter:drop-shadow(0 0 10px rgba(255,80,80,1)) brightness(1.8)}
+  0%,100%{filter:drop-shadow(0 0 3px rgba(220,60,60,.8))}
+  50%{filter:drop-shadow(0 0 12px rgba(255,100,100,1)) brightness(2)}
 }
-/* Timer section */
-.fc-timer-section{flex:1;position:relative;z-index:1;}
+
+/* ── Timer Section ── */
+.fc-timer-section{flex:1;position:relative;z-index:1;overflow:visible;}
 .fc-timer-bar-track{
   height:14px;
-  background:linear-gradient(180deg,#0d0808 0%,#1a1005 100%);
+  background:linear-gradient(180deg,#0a0805 0%,#120c04 50%,#0e0a04 100%);
   border-radius:7px;
-  border:1.5px solid #5a3a15;
-  overflow:hidden; /* clip shimmer inside track */
+  border:1.5px solid #6a4a18;
+  overflow:hidden;
   position:relative;
-  margin-right:20px; /* space for fire orb that sits OUTSIDE fill via absolute positioning on section */
-  box-shadow:inset 0 2px 4px rgba(0,0,0,.6), 0 1px 0 rgba(255,200,100,.1);
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,.8),
+    inset 0 -1px 0 rgba(255,180,60,.06),
+    0 0 0 1px rgba(0,0,0,.4);
 }
-/* ── Timer bar fill — fire trail style ── */
+
+/* ── Magma river bar fill ── */
 .fc-timer-bar-fill{
-  height:100%;border-radius:6px;
+  height:100%;
+  border-radius:6px;
+  position:relative;
+  overflow:hidden;
   background:linear-gradient(90deg,
-    #1a2a05 0%,
-    #2a5008 15%,
-    #4a8a10 40%,
-    #8ac020 65%,
-    #d4e020 82%,
-    #ffe040 92%,
-    #ff8800 100%
+    #1a0800 0%,
+    #6a1800 15%,
+    #cc4800 35%,
+    #ff8800 55%,
+    #ffcc00 75%,
+    #ffe840 90%,
+    #fff0a0 100%
   );
+  box-shadow:
+    0 0 8px rgba(255,140,0,.6),
+    inset 0 1px 0 rgba(255,240,180,.3);
   transition:width .1s linear;
-  position:relative;overflow:visible;
-  box-shadow:inset 0 1px 0 rgba(255,255,200,.2);
 }
-/* Shimmer sweep */
+/* Lava flow shimmer — stays INSIDE overflow:hidden track */
+.fc-timer-bar-fill::before{
+  content:'';position:absolute;top:0;left:-200%;
+  width:120%;height:100%;
+  background:linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,255,200,.0) 30%,
+    rgba(255,255,220,.5) 50%,
+    rgba(255,255,200,.0) 70%,
+    transparent 100%
+  );
+  animation:magma-flow 1.8s linear infinite;
+}
+@keyframes magma-flow{0%{left:-120%}100%{left:120%}}
+/* Magma bubble texture */
 .fc-timer-bar-fill::after{
-  content:'';position:absolute;top:0;left:-100%;
-  width:60%;height:100%;
-  background:linear-gradient(90deg,transparent,rgba(255,255,200,.3),transparent);
-  animation:bar-shimmer 1.4s linear infinite;
-  border-radius:inherit;
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 20% 60%,rgba(255,60,0,.3) 0%,transparent 25%),
+    radial-gradient(circle at 50% 40%,rgba(255,200,0,.2) 0%,transparent 20%),
+    radial-gradient(circle at 80% 65%,rgba(255,80,0,.25) 0%,transparent 20%);
+  animation:magma-bubble 2.4s ease-in-out infinite;
 }
-@keyframes bar-shimmer{0%{left:-60%}100%{left:120%}}
-/* Fire orb is rendered via JS in fcUpdateTimerUI, not CSS ::before */
-/* Phase 2 — Orange-red (30-60%) */
+@keyframes magma-bubble{
+  0%,100%{opacity:.6;transform:scaleX(1)}
+  50%{opacity:1;transform:scaleX(1.01)}
+}
+
+/* Phase 2 orange-red (30-60%) */
 .fc-timer-bar-fill.phase2{
   background:linear-gradient(90deg,
-    #2a1005 0%,#6a2808 20%,#b05010 50%,#e07820 70%,#ff9020 85%,#ff5010 100%
+    #1a0000 0%,#7a0a00 20%,#cc2200 45%,#ff5500 70%,#ff8800 90%,#ffaa00 100%
   );
+  animation:timer-pulse2 .5s ease-in-out infinite;
 }
+@keyframes timer-pulse2{0%,100%{box-shadow:0 0 8px rgba(255,80,0,.6)}50%{box-shadow:0 0 16px rgba(255,80,0,1)}}
 
-/* Phase 3 — Red critical (<30%) */
+/* Phase 3 critical red (<30%) */
 .fc-timer-bar-fill.urgent,.fc-timer-bar-fill.phase3{
   background:linear-gradient(90deg,
-    #1a0000 0%,#4a0808 15%,#8a1010 40%,#cc2020 70%,#ff3010 90%,#ff0000 100%
+    #080000 0%,#3a0000 15%,#880000 40%,#cc0000 70%,#ff1000 90%,#ff4020 100%
   );
-  animation:timer-urgent-pulse .3s ease-in-out infinite;
+  animation:timer-crit .25s ease-in-out infinite;
+}
+@keyframes timer-crit{
+  0%,100%{box-shadow:0 0 10px rgba(255,0,0,.8);filter:brightness(1)}
+  50%{box-shadow:0 0 20px rgba(255,0,0,1);filter:brightness(1.3)}
 }
 
-@keyframes skull-shake{
-  0%,100%{transform:translateY(-50%) rotate(-8deg) scale(1)}
-  50%{transform:translateY(calc(-50% - 3px)) rotate(8deg) scale(1.1)}
-}
-@keyframes fireball-bob{
-  0%{transform:translateY(-50%) scale(1)}
-  100%{transform:translateY(calc(-50% - 3px)) scale(1.2)}
-}
-/* Fire orb — separate element positioned outside track */
+/* ── Fire orb element (positioned via JS, sits outside overflow:hidden track) ── */
 .fc-timer-orb{
-  position:absolute;right:-10px;top:50%;
-  transform:translateY(-50%);
-  font-size:20px;line-height:1;
-  pointer-events:none;z-index:5;
-  filter:drop-shadow(0 0 6px rgba(255,160,0,.9));
-  animation:fireball-bob 0.5s ease-in-out infinite alternate;
-  transition:filter .3s;
+  position:absolute;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:22px;height:22px;
+  pointer-events:none;z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0;line-height:1;
 }
-.fc-timer-orb.phase2{
-  filter:drop-shadow(0 0 8px rgba(255,80,0,1));
-  animation:fireball-bob .4s ease-in-out infinite alternate;
+/* Pixel flame SVG rendered via JS — see fcUpdateTimerUI */
+.fc-timer-orb::before{
+  content:'';
+  position:absolute;inset:-4px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,200,60,.5) 0%,rgba(255,100,0,.3) 40%,transparent 70%);
+  animation:orb-glow .5s ease-in-out infinite alternate;
 }
-.fc-timer-orb.phase3,.fc-timer-orb.urgent{
-  filter:drop-shadow(0 0 10px rgba(255,0,0,1)) drop-shadow(0 0 20px rgba(255,0,0,.6));
-  animation:fireball-bob .2s ease-in-out infinite alternate, skull-shake .25s ease-in-out infinite;
+@keyframes orb-glow{
+  0%{transform:scale(.9);opacity:.7}
+  100%{transform:scale(1.1);opacity:1}
 }
-@keyframes timer-urgent-pulse{
-  0%,100%{opacity:1;filter:brightness(1)}
-  50%{opacity:.75;filter:brightness(1.5)}
-}
-/* Ember glow */
-@keyframes ember-glow{
-  0%{opacity:.5;transform:scaleX(1)}
-  100%{opacity:1;transform:scaleX(1.03)}
-}
+
+/* ── Timer countdown label ── */
 .fc-timer-label{
-  font-size:13px;font-weight:700;font-family:var(--mono);color:#e8c860;
-  margin-top:4px;text-align:right;letter-spacing:.8px;
-  text-shadow:0 0 10px rgba(220,180,60,.8),0 1px 0 rgba(0,0,0,.5);
+  font-size:11px;font-weight:700;font-family:var(--mono);
+  color:#e8c060;
+  margin-top:3px;text-align:right;letter-spacing:.8px;
+  text-shadow:0 0 8px rgba(220,170,50,.8),0 1px 0 rgba(0,0,0,.6);
 }
-/* Timer setting */
+
+/* ── Timer setting input (big number display) ── */
 .fc-timer-setting{
-  display:flex;align-items:center;gap:5px;
-  flex-shrink:0;
+  display:flex;align-items:center;gap:4px;flex-shrink:0;
 }
-/* The large number box inspired by reference image */
 .fc-timer-setting input{
-  width:48px;min-width:48px;
-  background:linear-gradient(180deg,#1a1205 0%,#0a0a05 100%);
-  border:2px solid #8a6a20;
+  width:46px;min-width:46px;
+  background:linear-gradient(180deg,#1e1408 0%,#0e0a04 100%);
+  border:2px solid #8a6020;
   border-radius:6px;
   color:#f0d060 !important;-webkit-text-fill-color:#f0d060;
   font-size:20px;font-weight:700;font-family:var(--mono);
-  text-align:center;padding:2px 2px;
-  box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 0 8px rgba(200,160,40,.2);
-  -moz-appearance:textfield;
-  line-height:1;
+  text-align:center;padding:1px 2px;
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,.7),
+    0 0 8px rgba(200,160,40,.25),
+    0 0 0 1px rgba(0,0,0,.5);
+  -moz-appearance:textfield;line-height:1;
 }
 .fc-timer-setting input::-webkit-inner-spin-button,
 .fc-timer-setting input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
 .fc-timer-setting-unit{
-  font-size:11px;font-weight:700;color:#8a7a4a;font-family:var(--mono);
-  line-height:1;
+  font-size:11px;font-weight:700;color:#7a6a30;font-family:var(--mono);line-height:1;
 }
-/* Defend area */
+
+/* ── Defend area ── */
 .fc-defend-zone{
   margin-top:10px;padding:10px 12px;
   background:#f5f3ee;border:1px dashed var(--rule2);border-radius:8px;
@@ -780,23 +886,18 @@ input::placeholder{color:var(--muted)}
   width:100%;box-sizing:border-box;
   background:white;border:1.5px solid var(--rule2);border-radius:6px;
   padding:8px 10px;font-size:13px;font-family:var(--sans);
-  color:var(--ink);margin-bottom:8px;resize:none;
-  transition:border-color .15s;
+  color:var(--ink);margin-bottom:8px;resize:none;transition:border-color .15s;
 }
-.fc-defend-input:focus{
-  outline:none;border-color:var(--accent);
-}
+.fc-defend-input:focus{outline:none;border-color:var(--accent);}
 .fc-defend-btn{
   width:100%;padding:10px;
   background:#1a1a0f;color:#c8a84a;
   border:1.5px solid #4a4228;border-radius:6px;
   font-size:13px;font-weight:700;font-family:var(--mono);
-  cursor:pointer;letter-spacing:.5px;
-  transition:all .15s;
+  cursor:pointer;letter-spacing:.5px;transition:all .15s;
 }
 .fc-defend-btn:hover{background:#2a2a1a;border-color:#c8a84a;}
 .fc-defend-btn:active{transform:scale(.98);}
-/* HP damage shake */
 @keyframes hp-damage-shake{
   0%,100%{transform:translateX(0)}
   15%{transform:translateX(-6px)}
@@ -807,102 +908,113 @@ input::placeholder{color:var(--muted)}
   90%{transform:translateX(1px)}
 }
 .hp-damage{animation:hp-damage-shake .5s ease;}
-/* Timer off mode */
 .fc-timer-off .fc-combat-hud{display:none;}
 
-/* ── FC Battle Bar (compact, above flashcard) ── */
+/* ── FC Battle Bar — Ancient Dungeon Stone Premium ── */
 .fc-battle{
-  position:relative;overflow:hidden;
-  border-radius:12px;padding:10px 12px 8px;
-  margin-bottom:14px;
-  background:linear-gradient(180deg,#1e160a 0%,#150f06 60%,#1a1208 100%);
-  border:2px solid #6a4a18;
+  position:relative;
+  border-radius:12px;padding:9px 12px 7px;
+  margin-bottom:14px;overflow:hidden;
+  background:
+    linear-gradient(180deg,#1c1408 0%,#120e06 50%,#181208 100%);
+  border:2px solid transparent;
+  border-image:linear-gradient(135deg,#b89030 0%,#5a3808 35%,#b89030 50%,#5a3808 65%,#b89030 100%) 1;
+  border-image-slice:1;
   box-shadow:
-    0 6px 24px rgba(0,0,0,.6),
-    inset 0 1px 0 rgba(255,200,100,.08),
-    inset 0 -1px 0 rgba(0,0,0,.3);
+    0 6px 28px rgba(0,0,0,.7),
+    inset 0 1px 0 rgba(255,200,80,.1),
+    inset 0 -1px 0 rgba(0,0,0,.4);
 }
-/* Stone brick texture */
+/* Stone block texture */
 .fc-battle::before{
   content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
   background-image:
-    repeating-linear-gradient(0deg,transparent,transparent 9px,rgba(0,0,0,.08) 9px,rgba(0,0,0,.08) 10px),
-    repeating-linear-gradient(90deg,transparent,transparent 14px,rgba(0,0,0,.05) 14px,rgba(0,0,0,.05) 15px);
-  border-radius:inherit;
+    repeating-linear-gradient(0deg,transparent,transparent 11px,rgba(0,0,0,.09) 11px,rgba(0,0,0,.09) 12px),
+    repeating-linear-gradient(90deg,transparent,transparent 18px,rgba(255,255,255,.015) 18px,rgba(255,255,255,.015) 19px);
+  border-radius:10px;
 }
-/* Ambient light glow */
+/* Torch ambient glow from top */
 .fc-battle::after{
-  content:'';position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 100%,rgba(100,70,20,.25),transparent 70%);
-  border-radius:inherit;
+  content:'';position:absolute;top:0;left:0;right:0;height:30px;
+  background:linear-gradient(180deg,rgba(200,120,30,.1),transparent);
+  pointer-events:none;z-index:0;
 }
 .fc-battle-header{
   display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:7px;position:relative;z-index:1;
+  margin-bottom:7px;position:relative;z-index:2;
 }
 .fc-battle-title{
-  font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
-  color:#a08040;font-family:var(--mono);
-  text-shadow:0 0 8px rgba(180,120,40,.5);
+  font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:#c8a040;font-family:var(--mono);
+  text-shadow:0 0 10px rgba(200,160,40,.7),0 1px 0 rgba(0,0,0,.8);
 }
 .fc-battle-score{
-  font-size:11px;font-weight:700;color:#e0c060;font-family:var(--mono);
-  text-shadow:0 0 6px rgba(220,180,60,.5);
+  font-size:11px;font-weight:700;color:#f0d060;font-family:var(--mono);
+  text-shadow:0 0 8px rgba(240,200,80,.6);
 }
-/* Battle field — taller, stone floor */
+
+/* ── Battle field — stone dungeon floor ── */
 .fc-battle-field{
-  position:relative;height:80px;
+  position:relative;height:84px;
   border-radius:8px;
-  overflow:hidden;z-index:1;
-  background:linear-gradient(180deg,#0e0b06 0%,#120d07 40%,#1a1208 70%,#201810 100%);
-  border:1.5px solid #4a3410;
-  box-shadow:inset 0 0 20px rgba(0,0,0,.5);
+  overflow:visible;
+  z-index:2;
+  background:
+    linear-gradient(180deg,#0a0806 0%,#0e0b06 30%,#140e07 60%,#1c1408 100%);
+  border:1.5px solid #4a3412;
+  box-shadow:
+    inset 0 2px 12px rgba(0,0,0,.7),
+    inset 0 -2px 8px rgba(0,0,0,.5),
+    0 0 0 1px rgba(0,0,0,.6);
 }
-/* Scanline */
+/* Scanline overlay */
 .fc-battle-field::after{
-  content:'';position:absolute;inset:0;pointer-events:none;z-index:20;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:30;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 3px);
+  border-radius:7px;
 }
-/* Stone floor */
+/* Stone floor line */
 .fc-battle-ground{
   position:absolute;bottom:14px;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,#5a3a18 15%,#8a5a28 35%,#aa7a3a 50%,#8a5a28 65%,#5a3a18 85%,transparent);
-  box-shadow:0 1px 4px rgba(0,0,0,.4);
+  background:linear-gradient(90deg,transparent 0%,#6a4820 12%,#aa7830 30%,#c89040 45%,#d8a850 50%,#c89040 55%,#aa7830 70%,#6a4820 88%,transparent 100%);
+  box-shadow:0 1px 6px rgba(180,120,40,.4);
 }
-/* Floor shadow */
-.fc-battle-field:before{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:16px;
-  background:linear-gradient(180deg,transparent,rgba(0,0,0,.4));
-  z-index:1;pointer-events:none;
+/* Floor depth shadow */
+.fc-battle-field::before{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:18px;z-index:1;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.5));
+  pointer-events:none;border-radius:0 0 7px 7px;
 }
-/* Mob number badge — shows on "active" (frontline) mob */
+
+/* ── Mob count badge ── */
 .mob-count-badge{
   position:absolute;top:-18px;left:50%;transform:translateX(-50%);
-  background:linear-gradient(180deg,#aa2020 0%,#7a1010 100%);
-  color:#ffe8a0;
+  background:linear-gradient(180deg,#c02020 0%,#801010 100%);
+  color:#ffeea0;
   font-size:10px;font-weight:700;font-family:var(--mono);
-  padding:2px 6px;border-radius:4px;white-space:nowrap;
-  border:1.5px solid #cc4040;
-  box-shadow:0 2px 6px rgba(0,0,0,.5),0 0 8px rgba(180,40,40,.4);
-  animation:badge-bob 2s ease-in-out infinite;
-  letter-spacing:.5px;
-  text-shadow:0 1px 2px rgba(0,0,0,.5);
+  padding:2px 7px;border-radius:4px;white-space:nowrap;
+  border:1px solid #e04040;
+  box-shadow:0 2px 8px rgba(0,0,0,.6),0 0 10px rgba(220,40,40,.4);
+  animation:badge-bob 1.8s ease-in-out infinite;
+  letter-spacing:.6px;
+  text-shadow:0 1px 2px rgba(0,0,0,.6);
 }
 @keyframes badge-bob{
   0%,100%{transform:translateX(-50%) translateY(0)}
-  50%{transform:translateX(-50%) translateY(-2px)}
+  50%{transform:translateX(-50%) translateY(-3px)}
 }
-/* Mob stack indicator (behind crowd) */
 .mob-crowd-indicator{
   position:absolute;bottom:13px;
   display:flex;align-items:flex-end;gap:-4px;
   pointer-events:none;
 }
+
+/* ── Battle hint text — gilded pixel style ── */
 .fc-battle-hint{
-  font-size:10px;color:#8a7040;font-family:var(--mono);
-  margin-top:6px;position:relative;z-index:1;text-align:center;
-  letter-spacing:.3px;
-  text-shadow:0 0 6px rgba(140,100,40,.4);
+  font-size:10px;color:#a08838;font-family:var(--mono);
+  margin-top:6px;position:relative;z-index:2;text-align:center;
+  letter-spacing:.4px;
+  text-shadow:0 0 8px rgba(160,130,40,.5),0 1px 0 rgba(0,0,0,.8);
 }
 
 /* combo */
@@ -3130,6 +3242,36 @@ function battleSlashEffect(wordCount) {
    Rest of the horde waits behind
 ════════════════════════════════════════════ */
 
+/* ── Crystal color palettes for energy crystal mobs ── */
+const CRYSTAL_COLORS = [
+  {glow:'#00ffaa',face:'#00cc88',dark:'#008844',shine:'#aaffdd',trail:'rgba(0,255,170,.4)'},
+  {glow:'#4488ff',face:'#2266dd',dark:'#1144aa',shine:'#88ccff',trail:'rgba(68,136,255,.4)'},
+  {glow:'#ff8800',face:'#dd6600',dark:'#aa4400',shine:'#ffcc66',trail:'rgba(255,136,0,.4)'},
+  {glow:'#cc44ff',face:'#aa22dd',dark:'#7700aa',shine:'#ee88ff',trail:'rgba(204,68,255,.4)'},
+  {glow:'#ffee00',face:'#cccc00',dark:'#888800',shine:'#ffff88',trail:'rgba(255,238,0,.4)'},
+];
+
+function svgCrystal(idx, size) {
+  const c = CRYSTAL_COLORS[idx % CRYSTAL_COLORS.length];
+  const s = size || 20;
+  return `<svg width="${s}" height="${Math.round(s*1.4)}" viewBox="0 0 10 14" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <!-- Crystal facets -->
+    <rect x="4" y="0" width="2" height="1" fill="${c.shine}"/>
+    <rect x="3" y="1" width="4" height="1" fill="${c.shine}"/>
+    <rect x="2" y="2" width="6" height="1" fill="${c.glow}"/>
+    <rect x="1" y="3" width="8" height="3" fill="${c.glow}"/>
+    <rect x="1" y="6" width="8" height="3" fill="${c.face}"/>
+    <rect x="2" y="9" width="6" height="2" fill="${c.face}"/>
+    <rect x="3" y="11" width="4" height="2" fill="${c.dark}"/>
+    <rect x="4" y="13" width="2" height="1" fill="${c.dark}"/>
+    <!-- Shine facet -->
+    <rect x="2" y="3" width="2" height="3" fill="${c.shine}" opacity=".6"/>
+    <rect x="2" y="3" width="1" height="2" fill="${c.shine}" opacity=".9"/>
+    <!-- Inner glow -->
+    <rect x="4" y="4" width="2" height="3" fill="${c.shine}" opacity=".35"/>
+  </svg>`;
+}
+
 function renderFCBattle() {
   if (!goal) return;
   const t = today();
@@ -3147,112 +3289,144 @@ function renderFCBattle() {
 
   battleEl.style.display = 'block';
 
-  const done     = todayPlan.done;
-  const required = todayPlan.required;
+  const done      = todayPlan.done;
+  const required  = todayPlan.required;
   const remaining = required - done;
   const onTrack   = done >= required;
 
   if (scoreEl) scoreEl.textContent = done + ' / ' + required;
-
   if (onTrack) {
-    if (hintEl) hintEl.textContent = '⚔ Đã tiêu diệt hết quái hôm nay! Victory!';
+    if (hintEl) hintEl.innerHTML = '<span style="color:#f0d060;text-shadow:0 0 8px rgba(240,200,60,.8);">⚔ VICTORY! Hết quái hôm nay!</span>';
   } else {
     if (hintEl) hintEl.textContent = remaining + ' quái còn lại · Học từ mới để chém!';
   }
 
-  // ── Build field content ──
-  // Warrior: left 6%
-  const warriorHTML = `<div class="battle-warrior" id="fc-warrior" style="left:3%;bottom:10px;position:absolute;z-index:5;">
-    ${svgWarrior().replace('viewBox="0 0 28 38"','viewBox="0 0 28 38" style="width:28px;height:38px;animation:warrior-breathe 2.4s ease-in-out infinite;filter:drop-shadow(0 0 4px rgba(100,160,255,.5));"')}
+  // ── Warrior: left side ──
+  const warriorHTML = `<div id="fc-warrior" style="position:absolute;left:3%;bottom:12px;z-index:5;">
+    ${svgWarrior().replace('viewBox="0 0 28 38"','viewBox="0 0 28 38" style="width:26px;height:34px;animation:warrior-breathe 2.4s ease-in-out infinite;filter:drop-shadow(0 0 5px rgba(80,140,255,.6));"')}
   </div>`;
-
-  // Mob colors
-  const mobColors = [
-    ['#3a6a2a','#4a8a3a'],['#2a3a6a','#3a5a8a'],
-    ['#6a3a2a','#8a5a3a'],['#4a2a6a','#6a4a8a'],['#5a5a2a','#7a7a3a']
-  ];
 
   let mobsHTML = '';
 
   if (remaining <= 0) {
-    // Victory state — no mobs
-    mobsHTML = `<div style="position:absolute;right:8%;bottom:18px;font-size:10px;font-weight:700;color:#c8a84a;font-family:var(--mono);letter-spacing:.5px;animation:victory-flash .4s ease 3;">CLEARED!</div>`;
+    mobsHTML = `<div style="position:absolute;right:6%;bottom:18px;font-size:11px;font-weight:700;color:#f0d060;font-family:var(--mono);letter-spacing:1px;text-shadow:0 0 10px rgba(240,200,60,1);animation:victory-flash .5s ease infinite;">CLEARED!</div>`;
   } else {
-    // ── Active mob (frontline) — stands out at ~38%, has count badge ──
-    const activeColorIdx = done % mobColors.length;
-    const [dark, light] = mobColors[activeColorIdx];
+    const activeColorIdx = done % CRYSTAL_COLORS.length;
     const isLastMob = (remaining === 1);
-    const activeSize = isLastMob ? 26 : 22; // boss-ish if last
+    const activeCrystalSize = isLastMob ? 26 : 22;
+    const c = CRYSTAL_COLORS[activeColorIdx];
 
     mobsHTML += `
-      <div id="fc-mob-active" style="position:absolute;left:38%;bottom:13px;z-index:4;transition:all .3s;">
+      <div id="fc-mob-active" style="position:absolute;left:36%;bottom:12px;z-index:4;transition:all .3s;">
         <div class="mob-count-badge">${remaining}</div>
-        <svg viewBox="0 0 24 28" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"
-             style="width:${activeSize}px;height:${activeSize+6}px;animation:mob-idle 3s ease-in-out infinite;${isLastMob?'filter:drop-shadow(0 0 4px rgba(200,60,40,.6));':''}">
-          <rect x="4" y="2" width="12" height="2" fill="${light}"/>
-          <rect x="2" y="4" width="16" height="12" fill="${light}"/>
-          <rect x="1" y="6" width="18" height="8" fill="${light}"/>
-          <rect x="5" y="6" width="2" height="3" fill="#ffeecc"/>
-          <rect x="13" y="6" width="2" height="3" fill="#ffeecc"/>
-          <rect x="5" y="7" width="1" height="1" fill="#1a0a0a"/>
-          <rect x="14" y="7" width="1" height="1" fill="#1a0a0a"/>
-          <rect x="7" y="12" width="6" height="1" fill="${dark}"/>
-          <rect x="2" y="16" width="4" height="6" fill="${dark}"/>
-          <rect x="14" y="16" width="4" height="6" fill="${dark}"/>
-          <rect x="6" y="16" width="8" height="8" fill="${dark}"/>
-          ${isLastMob ? `<rect x="8" y="0" width="2" height="3" fill="#c8a84a"/><rect x="11" y="0" width="2" height="3" fill="#c8a84a"/>` : ''}
-        </svg>
+        <div style="animation:mob-idle 2.4s ease-in-out infinite;filter:drop-shadow(0 0 6px ${c.glow});${isLastMob?'filter:drop-shadow(0 0 10px '+c.glow+') brightness(1.2);':''}">
+          ${svgMob(activeColorIdx)}
+        </div>
       </div>`;
 
-    // ── Horde behind (remaining-1 mobs, stacked toward right) ──
-    // Show up to 5 silhouettes, overlapping, getting smaller toward right
-    const hordeCount = Math.min(remaining - 1, 5);
-    const hordeExtra = remaining - 1 - 5; // if more than 5
+    // Energy crystal horde trail — right side, moving left animation
+    const hordeCount = Math.min(remaining - 1, 6);
+    const hordeExtra = remaining - 1 - 6;
 
     for (let hi = 0; hi < hordeCount; hi++) {
-      const ci = (activeColorIdx + hi + 1) % mobColors.length;
-      const [hd, hl] = mobColors[ci];
-      const leftPct = 52 + hi * 6;
-      const sz = Math.max(14, 20 - hi * 1.2);
-      const opacity = Math.max(0.3, 0.9 - hi * 0.12);
+      const ci = (activeColorIdx + hi + 1) % CRYSTAL_COLORS.length;
+      const cc = CRYSTAL_COLORS[ci];
+      const leftPct = 54 + hi * 5.5;
+      const sz = Math.max(12, 18 - hi * 1.0);
+      const opacity = Math.max(0.25, 0.85 - hi * 0.1);
+      // Light trail particle between crystals
+      const trailHTML = hi < hordeCount - 1
+        ? `<div style="position:absolute;left:${leftPct+3.5}%;bottom:20px;width:${4+hi*0.5}%;height:2px;
+             background:linear-gradient(90deg,${cc.trail},transparent);
+             border-radius:1px;opacity:${opacity*.7};z-index:2;
+             animation:crystal-trail ${1.2+hi*.2}s ease-in-out infinite;"></div>`
+        : '';
+      mobsHTML += trailHTML;
       mobsHTML += `
-        <div style="position:absolute;left:${leftPct}%;bottom:13px;z-index:${3-Math.floor(hi/2)};opacity:${opacity};">
-          <svg viewBox="0 0 24 28" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"
-               style="width:${sz}px;height:${sz+4}px;">
-            <rect x="4" y="2" width="12" height="2" fill="${hl}"/>
-            <rect x="2" y="4" width="16" height="12" fill="${hl}"/>
-            <rect x="1" y="6" width="18" height="8" fill="${hl}"/>
-            <rect x="2" y="16" width="4" height="6" fill="${hd}"/>
-            <rect x="14" y="16" width="4" height="6" fill="${hd}"/>
-            <rect x="6" y="16" width="8" height="8" fill="${hd}"/>
-          </svg>
+        <div style="position:absolute;left:${leftPct}%;bottom:12px;z-index:${4-Math.floor(hi/2)};opacity:${opacity};
+          animation:crystal-float ${1.8+hi*.3}s ease-in-out infinite;animation-delay:${hi*.15}s;
+          filter:drop-shadow(0 0 4px ${cc.glow});">
+          ${svgCrystal(ci, sz)}
         </div>`;
     }
 
-    // If horde > 5, show +N label on rightmost
     if (hordeExtra > 0) {
-      mobsHTML += `<div style="position:absolute;left:86%;bottom:18px;font-size:9px;font-weight:700;color:#6a5a2a;font-family:var(--mono);">+${hordeExtra}</div>`;
+      mobsHTML += `<div style="position:absolute;left:88%;bottom:18px;font-size:9px;font-weight:700;color:#a09030;font-family:var(--mono);text-shadow:0 0 4px rgba(160,140,40,.6);">+${hordeExtra}</div>`;
     }
   }
 
-  // Ground FX: dead mob marks (×) for slain
+  // Dead marks — small crosses on ground for slain
   let deadMarks = '';
-  for (let di = 0; di < Math.min(done, 8); di++) {
-    const xPos = 20 + di * 2.2;
-    deadMarks += `<div style="position:absolute;left:${xPos}%;bottom:5px;font-size:7px;color:#3a3220;font-family:var(--mono);opacity:.7;">×</div>`;
-  }
-  if (done > 8) {
-    deadMarks += `<div style="position:absolute;left:20%;bottom:3px;font-size:7px;color:#4a4228;font-family:var(--mono);">×${done}</div>`;
+  for (let di = 0; di < Math.min(done, 10); di++) {
+    const xPos = 18 + di * 1.8;
+    const ci = di % CRYSTAL_COLORS.length;
+    deadMarks += `<div style="position:absolute;left:${xPos}%;bottom:4px;font-size:7px;font-family:var(--mono);
+      opacity:.5;color:${CRYSTAL_COLORS[ci].face};">✦</div>`;
   }
 
-  // Compose field
-  // Keep ground, add warrior, mobs, dead marks
   field.innerHTML = `
     <div class="fc-battle-ground"></div>
     ${deadMarks}
     ${mobsHTML}
     ${warriorHTML}
+    <canvas id="fc-spark-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:25;opacity:.7;"></canvas>
   `;
+
+  // Start spark particle animation
+  startBattleParticles();
+}
+
+/* ── Spark particle system for battle field ── */
+let _sparkAF = null;
+function startBattleParticles() {
+  if (_sparkAF) { cancelAnimationFrame(_sparkAF); _sparkAF = null; }
+  const canvas = document.getElementById('fc-spark-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 400;
+  const H = canvas.offsetHeight || 84;
+  canvas.width  = W;
+  canvas.height = H;
+
+  const sparks = Array.from({length:18}, (_,i) => ({
+    x: W * (.4 + Math.random() * .55),  // right side only (crystal zone)
+    y: H * (.2 + Math.random() * .6),
+    vx: -(0.4 + Math.random() * 0.8),   // drift left
+    vy: (Math.random() - .5) * .4,
+    life: Math.random(),
+    maxLife: .6 + Math.random() * .8,
+    size: .8 + Math.random() * 1.4,
+    color: CRYSTAL_COLORS[Math.floor(Math.random() * CRYSTAL_COLORS.length)].glow,
+  }));
+
+  function loop() {
+    ctx.clearRect(0, 0, W, H);
+    const battle = document.getElementById('fc-battle');
+    if (!battle || battle.style.display === 'none') return;
+    sparks.forEach(s => {
+      s.x  += s.vx;
+      s.y  += s.vy;
+      s.life -= .008;
+      if (s.life <= 0 || s.x < W * .05) {
+        s.x    = W * (.45 + Math.random() * .5);
+        s.y    = H * (.2 + Math.random() * .6);
+        s.life = s.maxLife;
+        s.vx   = -(0.4 + Math.random() * 0.8);
+        s.vy   = (Math.random() - .5) * .4;
+        s.color = CRYSTAL_COLORS[Math.floor(Math.random() * CRYSTAL_COLORS.length)].glow;
+      }
+      const alpha = (s.life / s.maxLife) * .8;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur  = 4;
+      ctx.fillStyle   = s.color;
+      ctx.fillRect(Math.round(s.x), Math.round(s.y), s.size > 1 ? 2 : 1, s.size > 1 ? 2 : 1);
+      ctx.restore();
+    });
+    _sparkAF = requestAnimationFrame(loop);
+  }
+  loop();
 }
 
 function fcBattleSlash() {
@@ -3663,7 +3837,6 @@ let fcTimerRunning  = false;
 let fcTimerEnabled  = true;     // user can toggle off
 
 function svgHeart() {
-  // Bigger, more vivid pixel heart inspired by reference
   return `<svg viewBox="0 0 16 14" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
     <!-- outline -->
     <rect x="1" y="1" width="5" height="1" fill="#6a1010"/>
@@ -3755,6 +3928,30 @@ function fcStopTimer() {
   if (bar) bar.classList.remove('urgent');
 }
 
+function pixelFlame(phase) {
+  // Returns a tiny pixel-art flame SVG string
+  const colors = phase === 3
+    ? {outer:'#ff0000',mid:'#cc0020',inner:'#ff4010',tip:'#ff8030',core:'#ffaa60'}
+    : phase === 2
+    ? {outer:'#ff6600',mid:'#cc4400',inner:'#ff8800',tip:'#ffcc00',core:'#ffee80'}
+    : {outer:'#ff9900',mid:'#cc7700',inner:'#ffbb00',tip:'#ffee40',core:'#ffffff'};
+  return `<svg width="18" height="22" viewBox="0 0 9 11" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="3" y="0" width="3" height="1" fill="${colors.tip}"/>
+    <rect x="2" y="1" width="2" height="1" fill="${colors.tip}"/>
+    <rect x="5" y="1" width="2" height="1" fill="${colors.tip}"/>
+    <rect x="1" y="2" width="7" height="1" fill="${colors.outer}"/>
+    <rect x="1" y="3" width="7" height="2" fill="${colors.mid}"/>
+    <rect x="0" y="4" width="9" height="3" fill="${colors.mid}"/>
+    <rect x="2" y="3" width="3" height="1" fill="${colors.inner}"/>
+    <rect x="3" y="2" width="2" height="2" fill="${colors.inner}"/>
+    <rect x="3" y="4" width="3" height="2" fill="${colors.inner}"/>
+    <rect x="4" y="3" width="1" height="3" fill="${colors.core}"/>
+    <rect x="0" y="7" width="9" height="2" fill="${colors.outer}"/>
+    <rect x="1" y="9" width="7" height="1" fill="${colors.mid}"/>
+    <rect x="2" y="10" width="5" height="1" fill="${colors.mid}" opacity=".5"/>
+  </svg>`;
+}
+
 function fcUpdateTimerUI(sec) {
   const bar   = document.getElementById('fc-timer-bar');
   const label = document.getElementById('fc-timer-label');
@@ -3767,23 +3964,28 @@ function fcUpdateTimerUI(sec) {
   // 3-phase effects
   bar.classList.remove('phase2','phase3','urgent');
   if (orb) orb.classList.remove('phase2','phase3','urgent');
-  if (pct <= 30) {
+  const phase = pct <= 30 ? 3 : pct <= 60 ? 2 : 1;
+  if (phase === 3) {
     bar.classList.add('phase3','urgent');
-    if (orb) { orb.textContent = '💀'; orb.classList.add('phase3','urgent'); }
-  } else if (pct <= 60) {
+    if (orb) orb.classList.add('phase3','urgent');
+  } else if (phase === 2) {
     bar.classList.add('phase2');
-    if (orb) { orb.textContent = '🔥'; orb.classList.add('phase2'); }
-  } else {
-    if (orb) orb.textContent = '🔥';
+    if (orb) orb.classList.add('phase2');
   }
-  // Move orb to end of bar
+  // Update orb flame SVG
+  if (orb) orb.innerHTML = pixelFlame(phase);
+
+  // Position orb: sits ON TOP of the bar track, at the leading edge
   if (orb) {
     const track = bar.parentElement;
     if (track) {
-      const trackW = track.offsetWidth;
-      const orbX = Math.min(trackW - 4, (pct / 100) * trackW);
+      const trackW  = track.offsetWidth;
+      const fillPx  = (pct / 100) * trackW;
+      // Place orb centered on the end of the fill bar, but above the track
+      orb.style.left = Math.max(8, Math.min(trackW, fillPx)) + 'px';
+      orb.style.top  = '50%';
+      // No right, use left only
       orb.style.right = 'auto';
-      orb.style.left  = orbX + 'px';
     }
   }
   // Phase 1 = default (no class)
@@ -5724,6 +5926,57 @@ async function init(){
   updateSyncTimeDisplay();
 }
 document.addEventListener('DOMContentLoaded',init);
+
+/* ── Auto-restart spark particles when returning to flashcard ── */
+(function() {
+  const origGo = window.go;
+  // We patch 'go' after it's defined — use a MutationObserver trick
+  // Actually just hook into the RAF loop check in startBattleParticles
+})();
+
+/* ── Pixel flame animation keyframes injected once ── */
+(function injectFlameKeyframes() {
+  if (document.getElementById('flame-kf')) return;
+  const s = document.createElement('style');
+  s.id = 'flame-kf';
+  s.textContent = `
+    @keyframes orb-glow {
+      0%  { transform:scale(.85); opacity:.7 }
+      100%{ transform:scale(1.1); opacity:1  }
+    }
+    @keyframes magma-flow {
+      0%   { left:-120% }
+      100% { left: 120% }
+    }
+    @keyframes magma-bubble {
+      0%,100%{ opacity:.6; transform:scaleX(1)    }
+      50%    { opacity:1;  transform:scaleX(1.015) }
+    }
+    @keyframes timer-pulse2 {
+      0%,100%{ box-shadow:0 0 8px rgba(255,80,0,.6)  }
+      50%    { box-shadow:0 0 18px rgba(255,80,0,1)   }
+    }
+    @keyframes timer-crit {
+      0%,100%{ box-shadow:0 0 10px rgba(255,0,0,.8); filter:brightness(1)   }
+      50%    { box-shadow:0 0 22px rgba(255,0,0,1);  filter:brightness(1.35) }
+    }
+    @keyframes skull-shake {
+      0%,100%{ transform:translate(-50%,-50%) rotate(-8deg) scale(1)   }
+      50%    { transform:translate(-50%,-58%) rotate(8deg)  scale(1.12) }
+    }
+    @keyframes fireball-bob {
+      0%  { transform:translate(-50%,-50%) scale(1)   }
+      100%{ transform:translate(-50%,-60%) scale(1.2) }
+    }
+    @keyframes hp-damage-shake{
+      0%,100%{transform:translateX(0)}
+      15%{transform:translateX(-6px)} 30%{transform:translateX(5px)}
+      45%{transform:translateX(-4px)} 60%{transform:translateX(3px)}
+      75%{transform:translateX(-2px)} 90%{transform:translateX(1px)}
+    }
+  `;
+  document.head.appendChild(s);
+})();
 
 function toggleMoreMenu() {
   const menu = document.getElementById('more-menu');
