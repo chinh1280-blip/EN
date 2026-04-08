@@ -821,23 +821,29 @@ input::placeholder{color:var(--muted)}
 .fc-timer-orb{
   position:absolute;
   top:50%;
-  transform:translate(-50%,-50%);
-  width:22px;height:22px;
-  pointer-events:none;z-index:10;
+  transform:translate(-50%,-60%);  /* sit above the bar */
+  width:20px;height:24px;
+  pointer-events:none;z-index:12;
   display:flex;align-items:center;justify-content:center;
   font-size:0;line-height:1;
+  filter:drop-shadow(0 0 5px rgba(240,200,60,.9));
+  animation:crystal-orb-bob .6s ease-in-out infinite alternate;
 }
-/* Pixel flame SVG rendered via JS — see fcUpdateTimerUI */
-.fc-timer-orb::before{
-  content:'';
-  position:absolute;inset:-4px;
-  border-radius:50%;
-  background:radial-gradient(circle,rgba(255,200,60,.5) 0%,rgba(255,100,0,.3) 40%,transparent 70%);
-  animation:orb-glow .5s ease-in-out infinite alternate;
+.fc-timer-orb.phase2{
+  filter:drop-shadow(0 0 7px rgba(255,120,0,1));
 }
-@keyframes orb-glow{
-  0%{transform:scale(.9);opacity:.7}
-  100%{transform:scale(1.1);opacity:1}
+.fc-timer-orb.phase3,.fc-timer-orb.urgent{
+  filter:drop-shadow(0 0 10px rgba(255,30,0,1)) drop-shadow(0 0 20px rgba(255,0,0,.5));
+  animation:crystal-orb-bob .25s ease-in-out infinite alternate, crystal-orb-shake .2s ease-in-out infinite;
+}
+@keyframes crystal-orb-bob{
+  0%{transform:translate(-50%,-58%) scale(1)}
+  100%{transform:translate(-50%,-66%) scale(1.08)}
+}
+@keyframes crystal-orb-shake{
+  0%,100%{margin-left:0}
+  33%{margin-left:-2px}
+  66%{margin-left:2px}
 }
 
 /* ── Timer countdown label ── */
@@ -955,7 +961,7 @@ input::placeholder{color:var(--muted)}
 
 /* ── Battle field — stone dungeon floor ── */
 .fc-battle-field{
-  position:relative;height:84px;
+  position:relative;height:88px;
   border-radius:8px;
   overflow:visible;
   z-index:2;
@@ -1015,6 +1021,27 @@ input::placeholder{color:var(--muted)}
   margin-top:6px;position:relative;z-index:2;text-align:center;
   letter-spacing:.4px;
   text-shadow:0 0 8px rgba(160,130,40,.5),0 1px 0 rgba(0,0,0,.8);
+}
+/* Rune decorations on battle panel */
+.fc-battle-runes{
+  position:absolute;bottom:2px;left:0;right:0;
+  text-align:center;font-size:8px;letter-spacing:3px;
+  color:rgba(200,170,60,.12);pointer-events:none;z-index:1;
+  font-family:var(--mono);
+  animation:rune-pulse 4s ease-in-out infinite;
+}
+@keyframes rune-pulse{0%,100%{opacity:.12}50%{opacity:.22}}
+/* Level-based field glow */
+.fc-battle-field[data-effect-level="2"]{
+  box-shadow:inset 0 2px 12px rgba(0,0,0,.7),inset 0 -2px 8px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.6),0 0 12px rgba(80,180,255,.25);
+}
+.fc-battle-field[data-effect-level="3"]{
+  box-shadow:inset 0 2px 12px rgba(0,0,0,.7),0 0 0 2px rgba(100,200,255,.5),0 0 24px rgba(80,160,255,.5);
+  animation:field-kame-pulse .3s ease-in-out infinite;
+}
+@keyframes field-kame-pulse{
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.08)}
 }
 
 /* combo */
@@ -1863,6 +1890,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <!-- rendered by renderFCBattle() -->
           </div>
           <div class="fc-battle-hint" id="fc-battle-hint">Học từ mới để tiêu diệt quái!</div>
+          <div class="fc-battle-runes">ᚱ ᚢ ᚾ ᛖ ᛋ ᛟ ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ</div>
         </div>
 
         <div id="fc-zone">
@@ -3242,41 +3270,226 @@ function battleSlashEffect(wordCount) {
    Rest of the horde waits behind
 ════════════════════════════════════════════ */
 
-/* ── Crystal color palettes for energy crystal mobs ── */
-const CRYSTAL_COLORS = [
-  {glow:'#00ffaa',face:'#00cc88',dark:'#008844',shine:'#aaffdd',trail:'rgba(0,255,170,.4)'},
-  {glow:'#4488ff',face:'#2266dd',dark:'#1144aa',shine:'#88ccff',trail:'rgba(68,136,255,.4)'},
-  {glow:'#ff8800',face:'#dd6600',dark:'#aa4400',shine:'#ffcc66',trail:'rgba(255,136,0,.4)'},
-  {glow:'#cc44ff',face:'#aa22dd',dark:'#7700aa',shine:'#ee88ff',trail:'rgba(204,68,255,.4)'},
-  {glow:'#ffee00',face:'#cccc00',dark:'#888800',shine:'#ffff88',trail:'rgba(255,238,0,.4)'},
+/* ══════════════════════════════════════════════════════
+   BATTLE FIELD — MAGIC ARTIFACTS + MULTI-LEVEL EFFECTS
+══════════════════════════════════════════════════════ */
+
+/* ── Magic Artifact palette ── */
+const ARTIFACT_DATA = [
+  {name:'skull',   glow:'#ff4060',trail:'rgba(255,64,96,.5)',    label:'💀'},
+  {name:'thunder', glow:'#60d0ff',trail:'rgba(96,208,255,.5)',   label:'⚡'},
+  {name:'fire',    glow:'#ff8820',trail:'rgba(255,136,32,.5)',   label:'🔥'},
+  {name:'poison',  glow:'#40ff80',trail:'rgba(64,255,128,.5)',   label:'☠'},
+  {name:'arcane',  glow:'#c060ff',trail:'rgba(192,96,255,.5)',   label:'✦'},
+  {name:'ice',     glow:'#80eeff',trail:'rgba(128,238,255,.5)',  label:'❄'},
 ];
 
-function svgCrystal(idx, size) {
-  const c = CRYSTAL_COLORS[idx % CRYSTAL_COLORS.length];
-  const s = size || 20;
-  return `<svg width="${s}" height="${Math.round(s*1.4)}" viewBox="0 0 10 14" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
-    <!-- Crystal facets -->
-    <rect x="4" y="0" width="2" height="1" fill="${c.shine}"/>
-    <rect x="3" y="1" width="4" height="1" fill="${c.shine}"/>
-    <rect x="2" y="2" width="6" height="1" fill="${c.glow}"/>
-    <rect x="1" y="3" width="8" height="3" fill="${c.glow}"/>
-    <rect x="1" y="6" width="8" height="3" fill="${c.face}"/>
-    <rect x="2" y="9" width="6" height="2" fill="${c.face}"/>
-    <rect x="3" y="11" width="4" height="2" fill="${c.dark}"/>
-    <rect x="4" y="13" width="2" height="1" fill="${c.dark}"/>
-    <!-- Shine facet -->
-    <rect x="2" y="3" width="2" height="3" fill="${c.shine}" opacity=".6"/>
-    <rect x="2" y="3" width="1" height="2" fill="${c.shine}" opacity=".9"/>
-    <!-- Inner glow -->
-    <rect x="4" y="4" width="2" height="3" fill="${c.shine}" opacity=".35"/>
+/* ── Draw a pixel-art magic artifact as SVG ── */
+function svgArtifact(idx, size) {
+  const a = ARTIFACT_DATA[idx % ARTIFACT_DATA.length];
+  const s = size || 18;
+  const g = a.glow;
+  // Each artifact has a distinct pixel shape
+  if (a.name === 'skull') return `<svg width="${s}" height="${s}" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="2" y="0" width="6" height="1" fill="${g}"/>
+    <rect x="1" y="1" width="8" height="4" fill="${g}"/>
+    <rect x="0" y="2" width="10" height="2" fill="${g}"/>
+    <rect x="2" y="5" width="2" height="1" fill="#220a0a"/>
+    <rect x="6" y="5" width="2" height="1" fill="#220a0a"/>
+    <rect x="2" y="4" width="2" height="2" fill="#110505"/>
+    <rect x="6" y="4" width="2" height="2" fill="#110505"/>
+    <rect x="1" y="5" width="8" height="1" fill="${g}"/>
+    <rect x="2" y="6" width="6" height="1" fill="${g}"/>
+    <rect x="3" y="7" width="1" height="2" fill="${g}"/>
+    <rect x="5" y="7" width="1" height="2" fill="${g}"/>
+    <rect x="7" y="7" width="1" height="2" fill="${g}"/>
+    <rect x="4" y="5" width="2" height="1" fill="#ff8888" opacity=".5"/>
   </svg>`;
+  if (a.name === 'thunder') return `<svg width="${s}" height="${s}" viewBox="0 0 10 12" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="5" y="0" width="4" height="1" fill="${g}"/>
+    <rect x="4" y="1" width="4" height="1" fill="${g}"/>
+    <rect x="3" y="2" width="4" height="2" fill="${g}"/>
+    <rect x="2" y="4" width="6" height="1" fill="${g}"/>
+    <rect x="3" y="5" width="4" height="1" fill="${g}"/>
+    <rect x="2" y="6" width="5" height="1" fill="${g}"/>
+    <rect x="1" y="7" width="4" height="2" fill="${g}"/>
+    <rect x="0" y="9" width="4" height="1" fill="${g}"/>
+    <rect x="1" y="10" width="3" height="1" fill="${g}"/>
+    <rect x="5" y="0" width="2" height="6" fill="white" opacity=".4"/>
+  </svg>`;
+  if (a.name === 'fire') return `<svg width="${s}" height="${s}" viewBox="0 0 10 12" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="4" y="0" width="2" height="2" fill="#ffe840"/>
+    <rect x="3" y="1" width="4" height="2" fill="#ffaa00"/>
+    <rect x="2" y="3" width="6" height="3" fill="${g}"/>
+    <rect x="1" y="5" width="8" height="3" fill="${g}"/>
+    <rect x="0" y="7" width="10" height="3" fill="${g}"/>
+    <rect x="1" y="10" width="8" height="1" fill="#cc4400"/>
+    <rect x="2" y="11" width="6" height="1" fill="#882200"/>
+    <rect x="3" y="4" width="2" height="3" fill="#ffee80" opacity=".6"/>
+    <rect x="4" y="3" width="2" height="4" fill="white" opacity=".3"/>
+  </svg>`;
+  if (a.name === 'poison') return `<svg width="${s}" height="${s}" viewBox="0 0 10 12" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="4" y="0" width="2" height="1" fill="${g}"/>
+    <rect x="3" y="1" width="4" height="2" fill="${g}"/>
+    <rect x="2" y="3" width="6" height="6" fill="${g}"/>
+    <rect x="1" y="4" width="8" height="4" fill="${g}"/>
+    <rect x="2" y="9" width="6" height="2" fill="${g}"/>
+    <rect x="3" y="11" width="4" height="1" fill="${g}"/>
+    <rect x="3" y="4" width="2" height="2" fill="#000000" opacity=".5"/>
+    <rect x="6" y="5" width="2" height="2" fill="#000000" opacity=".4"/>
+    <rect x="4" y="3" width="2" height="1" fill="white" opacity=".4"/>
+  </svg>`;
+  if (a.name === 'arcane') return `<svg width="${s}" height="${s}" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="5" y="0" width="2" height="2" fill="${g}"/>
+    <rect x="0" y="5" width="2" height="2" fill="${g}"/>
+    <rect x="10" y="5" width="2" height="2" fill="${g}"/>
+    <rect x="5" y="10" width="2" height="2" fill="${g}"/>
+    <rect x="2" y="2" width="2" height="2" fill="${g}"/>
+    <rect x="8" y="2" width="2" height="2" fill="${g}"/>
+    <rect x="2" y="8" width="2" height="2" fill="${g}"/>
+    <rect x="8" y="8" width="2" height="2" fill="${g}"/>
+    <rect x="4" y="3" width="4" height="6" fill="${g}"/>
+    <rect x="3" y="4" width="6" height="4" fill="${g}"/>
+    <rect x="5" y="5" width="2" height="2" fill="white" opacity=".8"/>
+    <rect x="5" y="4" width="2" height="1" fill="white" opacity=".4"/>
+  </svg>`;
+  // ice
+  return `<svg width="${s}" height="${s}" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="5" y="0" width="2" height="12" fill="${g}"/>
+    <rect x="0" y="5" width="12" height="2" fill="${g}"/>
+    <rect x="2" y="2" width="2" height="2" fill="${g}"/>
+    <rect x="8" y="2" width="2" height="2" fill="${g}"/>
+    <rect x="2" y="8" width="2" height="2" fill="${g}"/>
+    <rect x="8" y="8" width="2" height="2" fill="${g}"/>
+    <rect x="5" y="5" width="2" height="2" fill="white" opacity=".9"/>
+    <rect x="4" y="4" width="4" height="4" fill="${g}" opacity=".5"/>
+  </svg>`;
+}
+
+/* ── Vicious slime mob SVG ── */
+function svgViciousSlime(colorIdx, sz) {
+  const palettes = [
+    {body:'#1aaa30',hi:'#60ff70',dark:'#0a6010',eye:'#ff2020',sclera:'#440000',spine:'#ff4020'},
+    {body:'#2050dd',hi:'#60a0ff',dark:'#0a2888',eye:'#00ffff',sclera:'#003333',spine:'#00aaff'},
+    {body:'#cc5000',hi:'#ff9040',dark:'#661800',eye:'#ffee00',sclera:'#443300',spine:'#ff8000'},
+    {body:'#8820cc',hi:'#cc70ff',dark:'#440077',eye:'#ff60ff',sclera:'#330033',spine:'#dd00ff'},
+    {body:'#008888',hi:'#40ffee',dark:'#003333',eye:'#ffff40',sclera:'#333300',spine:'#00ddcc'},
+  ];
+  const p = palettes[colorIdx % palettes.length];
+  const w = sz || 26, h = Math.round((sz||26)*1.2);
+  return `<svg width="${w}" height="${h}" viewBox="0 0 13 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <!-- Spines on top -->
+    <rect x="2"  y="0"  width="1" height="2" fill="${p.spine}"/>
+    <rect x="5"  y="0"  width="1" height="3" fill="${p.spine}"/>
+    <rect x="8"  y="0"  width="1" height="2" fill="${p.spine}"/>
+    <rect x="11" y="0"  width="1" height="2" fill="${p.spine}"/>
+    <!-- Body shadow -->
+    <rect x="1"  y="2"  width="11" height="1" fill="${p.dark}"/>
+    <rect x="0"  y="3"  width="13" height="8" fill="${p.dark}"/>
+    <!-- Body fill -->
+    <rect x="1"  y="3"  width="11" height="7" fill="${p.body}"/>
+    <rect x="0"  y="4"  width="13" height="5" fill="${p.body}"/>
+    <!-- Highlight -->
+    <rect x="1"  y="3"  width="5"  height="3" fill="${p.hi}" opacity=".5"/>
+    <rect x="1"  y="3"  width="2"  height="2" fill="${p.hi}" opacity=".9"/>
+    <!-- Evil eyes — red sclera, dark pupil -->
+    <rect x="2"  y="5"  width="3"  height="3" fill="${p.sclera}"/>
+    <rect x="8"  y="5"  width="3"  height="3" fill="${p.sclera}"/>
+    <rect x="2"  y="5"  width="3"  height="3" fill="${p.eye}" opacity=".8"/>
+    <rect x="8"  y="5"  width="3"  height="3" fill="${p.eye}" opacity=".8"/>
+    <rect x="3"  y="6"  width="1"  height="1" fill="#000"/>
+    <rect x="9"  y="6"  width="1"  height="1" fill="#000"/>
+    <rect x="3"  y="5"  width="1"  height="1" fill="white" opacity=".7"/>
+    <rect x="9"  y="5"  width="1"  height="1" fill="white" opacity=".7"/>
+    <!-- Angry mouth with fang -->
+    <rect x="3"  y="9"  width="7"  height="1" fill="${p.dark}"/>
+    <rect x="3"  y="10" width="1"  height="1" fill="${p.dark}"/>
+    <rect x="5"  y="10" width="1"  height="2" fill="${p.spine}"/>
+    <rect x="7"  y="10" width="1"  height="1" fill="${p.dark}"/>
+    <rect x="9"  y="10" width="1"  height="1" fill="${p.dark}"/>
+    <!-- Feet/base -->
+    <rect x="0"  y="11" width="4"  height="4" fill="${p.dark}"/>
+    <rect x="5"  y="11" width="3"  height="5" fill="${p.dark}"/>
+    <rect x="9"  y="11" width="4"  height="4" fill="${p.dark}"/>
+    <rect x="1"  y="12" width="2"  height="3" fill="${p.body}"/>
+    <rect x="6"  y="12" width="1"  height="4" fill="${p.body}"/>
+    <rect x="10" y="12" width="2"  height="3" fill="${p.body}"/>
+    <!-- Ground shadow -->
+    <rect x="0"  y="15" width="13" height="1" fill="#000" opacity=".25"/>
+  </svg>`;
+}
+
+/* ── Particle & effect state ── */
+let _sparkAF = null;
+let _battleEffectLevel = 1; // 1=normal, 2=dramatic(<10s), 3=kamehameha(<3s)
+let _lightningTimer = null;
+
+function updateBattleEffectLevel(secLeft) {
+  const newLevel = secLeft <= 3 ? 3 : secLeft <= 10 ? 2 : 1;
+  if (newLevel !== _battleEffectLevel) {
+    _battleEffectLevel = newLevel;
+    const field = document.getElementById('fc-battle-field');
+    if (field) {
+      field.dataset.effectLevel = newLevel;
+      if (newLevel >= 2 && !_lightningTimer) startLightningEffect();
+      if (newLevel < 2 && _lightningTimer) { clearInterval(_lightningTimer); _lightningTimer = null; }
+    }
+  }
+}
+
+function startLightningEffect() {
+  if (_lightningTimer) clearInterval(_lightningTimer);
+  _lightningTimer = setInterval(() => {
+    const field = document.getElementById('fc-battle-field');
+    if (!field) { clearInterval(_lightningTimer); _lightningTimer = null; return; }
+    spawnLightningBolt(field, _battleEffectLevel);
+  }, _battleEffectLevel >= 3 ? 400 : 900);
+}
+
+function spawnLightningBolt(field, level) {
+  const fW = field.offsetWidth || 400;
+  const fH = field.offsetHeight || 84;
+  const bold = level >= 3;
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = `position:absolute;left:0;top:0;width:100%;height:${fH}px;pointer-events:none;z-index:22;`;
+  canvas.width = fW; canvas.height = fH;
+  const ctx = canvas.getContext('2d');
+  // Draw jagged lightning line from crystal zone toward mob
+  const startX = fW * (.5 + Math.random()*.35);
+  const endX   = fW * .38;
+  const y      = fH * (.3 + Math.random()*.4);
+  ctx.strokeStyle = bold ? '#ffffff' : '#88ddff';
+  ctx.lineWidth   = bold ? 1.5 : .8;
+  ctx.shadowColor = bold ? '#aaddff' : '#60c0ff';
+  ctx.shadowBlur  = bold ? 8 : 4;
+  ctx.beginPath();
+  ctx.moveTo(startX, y);
+  let cx = startX;
+  const steps = bold ? 8 : 5;
+  for (let i = 0; i < steps; i++) {
+    cx -= (startX - endX) / steps;
+    const cy = y + (Math.random()-.5) * (bold ? 14 : 8);
+    ctx.lineTo(cx, cy);
+  }
+  ctx.lineTo(endX, y);
+  ctx.stroke();
+  if (bold) {
+    // Branch bolt
+    ctx.lineWidth = .6; ctx.shadowBlur = 3;
+    ctx.beginPath();
+    const bx = startX - (startX-endX)*.4;
+    ctx.moveTo(bx, y);
+    ctx.lineTo(bx - 12, y - 10 + Math.random()*20);
+    ctx.stroke();
+  }
+  field.appendChild(canvas);
+  setTimeout(() => canvas.remove(), bold ? 180 : 120);
 }
 
 function renderFCBattle() {
   if (!goal) return;
   const t = today();
   if (t < goal.start || t > goal.end) return;
-
   const plan = computeGoalPlan();
   const todayPlan = plan.find(d => d.date === t);
   if (!todayPlan) return;
@@ -3288,7 +3501,6 @@ function renderFCBattle() {
   if (!battleEl || !field) return;
 
   battleEl.style.display = 'block';
-
   const done      = todayPlan.done;
   const required  = todayPlan.required;
   const remaining = required - done;
@@ -3296,72 +3508,75 @@ function renderFCBattle() {
 
   if (scoreEl) scoreEl.textContent = done + ' / ' + required;
   if (onTrack) {
-    if (hintEl) hintEl.innerHTML = '<span style="color:#f0d060;text-shadow:0 0 8px rgba(240,200,60,.8);">⚔ VICTORY! Hết quái hôm nay!</span>';
+    if (hintEl) hintEl.innerHTML = '<span style="color:#f0d060;text-shadow:0 0 10px #f0d060;">⚔ VICTORY! Hết quái hôm nay!</span>';
   } else {
     if (hintEl) hintEl.textContent = remaining + ' quái còn lại · Học từ mới để chém!';
   }
 
-  // ── Warrior: left side ──
-  const warriorHTML = `<div id="fc-warrior" style="position:absolute;left:3%;bottom:12px;z-index:5;">
-    ${svgWarrior().replace('viewBox="0 0 28 38"','viewBox="0 0 28 38" style="width:26px;height:34px;animation:warrior-breathe 2.4s ease-in-out infinite;filter:drop-shadow(0 0 5px rgba(80,140,255,.6));"')}
+  // ── Warrior (left side, fully visible) ──
+  const warriorHTML = `<div id="fc-warrior" style="position:absolute;left:2%;bottom:15px;z-index:5;">
+    ${svgWarrior().replace('viewBox="0 0 28 38"',
+      'viewBox="0 0 28 38" style="width:26px;height:34px;animation:warrior-breathe 2.4s ease-in-out infinite;filter:drop-shadow(0 0 5px rgba(80,140,255,.7));"')}
   </div>`;
 
+  // ── Mobs ──
   let mobsHTML = '';
-
   if (remaining <= 0) {
-    mobsHTML = `<div style="position:absolute;right:6%;bottom:18px;font-size:11px;font-weight:700;color:#f0d060;font-family:var(--mono);letter-spacing:1px;text-shadow:0 0 10px rgba(240,200,60,1);animation:victory-flash .5s ease infinite;">CLEARED!</div>`;
+    mobsHTML = `<div style="position:absolute;right:5%;bottom:20px;font-size:12px;font-weight:700;
+      color:#f0d060;font-family:var(--mono);letter-spacing:1px;
+      text-shadow:0 0 12px rgba(240,200,60,1);animation:victory-flash .5s infinite;">✦ CLEARED ✦</div>`;
   } else {
-    const activeColorIdx = done % CRYSTAL_COLORS.length;
+    const colorIdx  = done % ARTIFACT_DATA.length;
     const isLastMob = (remaining === 1);
-    const activeCrystalSize = isLastMob ? 26 : 22;
-    const c = CRYSTAL_COLORS[activeColorIdx];
+    const mobSize   = isLastMob ? 30 : 26;
+    const c = ARTIFACT_DATA[colorIdx];
 
-    mobsHTML += `
-      <div id="fc-mob-active" style="position:absolute;left:36%;bottom:12px;z-index:4;transition:all .3s;">
-        <div class="mob-count-badge">${remaining}</div>
-        <div style="animation:mob-idle 2.4s ease-in-out infinite;filter:drop-shadow(0 0 6px ${c.glow});${isLastMob?'filter:drop-shadow(0 0 10px '+c.glow+') brightness(1.2);':''}">
-          ${svgMob(activeColorIdx)}
-        </div>
-      </div>`;
+    // Active mob — fully visible above ground
+    mobsHTML += `<div id="fc-mob-active" style="position:absolute;left:34%;bottom:15px;z-index:4;transition:all .3s;">
+      <div class="mob-count-badge">${remaining}</div>
+      <div style="animation:mob-idle 2.2s ease-in-out infinite;
+        filter:drop-shadow(0 0 7px ${c.glow}) drop-shadow(0 0 3px ${c.glow});">
+        ${svgViciousSlime(colorIdx, mobSize)}
+      </div>
+    </div>`;
 
-    // Energy crystal horde trail — right side, moving left animation
-    const hordeCount = Math.min(remaining - 1, 6);
-    const hordeExtra = remaining - 1 - 6;
+    // Artifact horde (right side, moving-left trail)
+    const hordeCount = Math.min(remaining - 1, 7);
+    const hordeExtra = remaining - 1 - 7;
 
     for (let hi = 0; hi < hordeCount; hi++) {
-      const ci = (activeColorIdx + hi + 1) % CRYSTAL_COLORS.length;
-      const cc = CRYSTAL_COLORS[ci];
-      const leftPct = 54 + hi * 5.5;
-      const sz = Math.max(12, 18 - hi * 1.0);
-      const opacity = Math.max(0.25, 0.85 - hi * 0.1);
-      // Light trail particle between crystals
-      const trailHTML = hi < hordeCount - 1
-        ? `<div style="position:absolute;left:${leftPct+3.5}%;bottom:20px;width:${4+hi*0.5}%;height:2px;
-             background:linear-gradient(90deg,${cc.trail},transparent);
-             border-radius:1px;opacity:${opacity*.7};z-index:2;
-             animation:crystal-trail ${1.2+hi*.2}s ease-in-out infinite;"></div>`
-        : '';
-      mobsHTML += trailHTML;
-      mobsHTML += `
-        <div style="position:absolute;left:${leftPct}%;bottom:12px;z-index:${4-Math.floor(hi/2)};opacity:${opacity};
-          animation:crystal-float ${1.8+hi*.3}s ease-in-out infinite;animation-delay:${hi*.15}s;
-          filter:drop-shadow(0 0 4px ${cc.glow});">
-          ${svgCrystal(ci, sz)}
-        </div>`;
+      const ai = (colorIdx + hi + 1) % ARTIFACT_DATA.length;
+      const ac = ARTIFACT_DATA[ai];
+      const leftPct = 52 + hi * 5.5;
+      const sz = Math.max(12, 18 - hi);
+      const op = Math.max(.2, .9 - hi * .09);
+      // Trail glow between artifacts
+      if (hi < hordeCount - 1) {
+        mobsHTML += `<div style="position:absolute;left:${leftPct+3}%;bottom:22px;
+          width:6%;height:2px;
+          background:linear-gradient(90deg,${ac.trail},transparent);
+          border-radius:1px;opacity:${op*.6};z-index:3;
+          animation:crystal-trail ${1.1+hi*.2}s ease-in-out infinite;"></div>`;
+      }
+      mobsHTML += `<div style="position:absolute;left:${leftPct}%;bottom:15px;z-index:${4-Math.floor(hi/2)};opacity:${op};
+        animation:crystal-float ${1.6+hi*.25}s ease-in-out infinite;animation-delay:${hi*.12}s;
+        filter:drop-shadow(0 0 5px ${ac.glow});">
+        ${svgArtifact(ai, sz)}
+      </div>`;
     }
-
     if (hordeExtra > 0) {
-      mobsHTML += `<div style="position:absolute;left:88%;bottom:18px;font-size:9px;font-weight:700;color:#a09030;font-family:var(--mono);text-shadow:0 0 4px rgba(160,140,40,.6);">+${hordeExtra}</div>`;
+      mobsHTML += `<div style="position:absolute;right:2%;bottom:20px;font-size:9px;font-weight:700;
+        color:#c0a020;font-family:var(--mono);text-shadow:0 0 4px rgba(200,160,30,.7);">+${hordeExtra}</div>`;
     }
   }
 
-  // Dead marks — small crosses on ground for slain
+  // Dead marks
   let deadMarks = '';
   for (let di = 0; di < Math.min(done, 10); di++) {
     const xPos = 18 + di * 1.8;
-    const ci = di % CRYSTAL_COLORS.length;
-    deadMarks += `<div style="position:absolute;left:${xPos}%;bottom:4px;font-size:7px;font-family:var(--mono);
-      opacity:.5;color:${CRYSTAL_COLORS[ci].face};">✦</div>`;
+    const ai = di % ARTIFACT_DATA.length;
+    deadMarks += `<div style="position:absolute;left:${xPos}%;bottom:5px;font-size:7px;
+      font-family:var(--mono);opacity:.5;color:${ARTIFACT_DATA[ai].glow};">✦</div>`;
   }
 
   field.innerHTML = `
@@ -3369,61 +3584,147 @@ function renderFCBattle() {
     ${deadMarks}
     ${mobsHTML}
     ${warriorHTML}
-    <canvas id="fc-spark-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:25;opacity:.7;"></canvas>
+    <canvas id="fc-spark-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:25;"></canvas>
+    <canvas id="fc-effect-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:26;"></canvas>
   `;
-
-  // Start spark particle animation
   startBattleParticles();
 }
 
-/* ── Spark particle system for battle field ── */
-let _sparkAF = null;
+/* ── Particle system (2 canvases: sparks + level 3 kamehameha) ── */
 function startBattleParticles() {
   if (_sparkAF) { cancelAnimationFrame(_sparkAF); _sparkAF = null; }
-  const canvas = document.getElementById('fc-spark-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.offsetWidth || 400;
-  const H = canvas.offsetHeight || 84;
-  canvas.width  = W;
-  canvas.height = H;
 
-  const sparks = Array.from({length:18}, (_,i) => ({
-    x: W * (.4 + Math.random() * .55),  // right side only (crystal zone)
-    y: H * (.2 + Math.random() * .6),
-    vx: -(0.4 + Math.random() * 0.8),   // drift left
-    vy: (Math.random() - .5) * .4,
+  const sparkCanvas = document.getElementById('fc-spark-canvas');
+  const fxCanvas    = document.getElementById('fc-effect-canvas');
+  if (!sparkCanvas) return;
+
+  const sCtx = sparkCanvas.getContext('2d');
+  const eCtx = fxCanvas ? fxCanvas.getContext('2d') : null;
+
+  function resize() {
+    const W = sparkCanvas.offsetWidth  || 400;
+    const H = sparkCanvas.offsetHeight || 84;
+    sparkCanvas.width = W; sparkCanvas.height = H;
+    if (fxCanvas) { fxCanvas.width = W; fxCanvas.height = H; }
+    return {W, H};
+  }
+  let {W, H} = resize();
+
+  const sparks = Array.from({length:24}, (_,i) => ({
+    x: W * (.45 + Math.random()*.5),
+    y: H * (.15 + Math.random()*.65),
+    vx: -(0.35 + Math.random()*.9),
+    vy: (Math.random()-.5) * .5,
     life: Math.random(),
-    maxLife: .6 + Math.random() * .8,
-    size: .8 + Math.random() * 1.4,
-    color: CRYSTAL_COLORS[Math.floor(Math.random() * CRYSTAL_COLORS.length)].glow,
+    maxLife: .5 + Math.random()*.9,
+    size: .8 + Math.random()*1.6,
+    color: ARTIFACT_DATA[Math.floor(Math.random() * ARTIFACT_DATA.length)].glow,
   }));
 
+  let kameBeams = []; // level-3 beam segments
+  let kameT = 0;
+
   function loop() {
-    ctx.clearRect(0, 0, W, H);
     const battle = document.getElementById('fc-battle');
-    if (!battle || battle.style.display === 'none') return;
-    sparks.forEach(s => {
-      s.x  += s.vx;
+    if (!battle || battle.style.display === 'none') { _sparkAF = null; return; }
+
+    // Resize check (field height may differ)
+    if (sparkCanvas.offsetWidth !== W) {
+      ({W, H} = resize());
+    }
+
+    sCtx.clearRect(0, 0, W, H);
+    if (eCtx) eCtx.clearRect(0, 0, W, H);
+
+    const lvl = _battleEffectLevel;
+    const particleMult = lvl >= 3 ? 3 : lvl >= 2 ? 2 : 1;
+
+    // ── Sparks (always) ──
+    sparks.forEach((s, i) => {
+      s.x  += s.vx * (lvl >= 2 ? 1.6 : 1);
       s.y  += s.vy;
-      s.life -= .008;
-      if (s.life <= 0 || s.x < W * .05) {
-        s.x    = W * (.45 + Math.random() * .5);
-        s.y    = H * (.2 + Math.random() * .6);
+      s.life -= .007 * particleMult;
+      if (s.life <= 0 || s.x < W * .04) {
+        s.x    = W * (.48 + Math.random()*.48);
+        s.y    = H * (.15 + Math.random()*.65);
         s.life = s.maxLife;
-        s.vx   = -(0.4 + Math.random() * 0.8);
-        s.vy   = (Math.random() - .5) * .4;
-        s.color = CRYSTAL_COLORS[Math.floor(Math.random() * CRYSTAL_COLORS.length)].glow;
+        s.vx   = -(0.35 + Math.random()*.9);
+        s.vy   = (Math.random()-.5) * .5;
+        s.color = ARTIFACT_DATA[Math.floor(Math.random() * ARTIFACT_DATA.length)].glow;
+        s.size  = .8 + Math.random()*1.6;
       }
-      const alpha = (s.life / s.maxLife) * .8;
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.shadowColor = s.color;
-      ctx.shadowBlur  = 4;
-      ctx.fillStyle   = s.color;
-      ctx.fillRect(Math.round(s.x), Math.round(s.y), s.size > 1 ? 2 : 1, s.size > 1 ? 2 : 1);
-      ctx.restore();
+      const alpha = (s.life / s.maxLife) * .85;
+      sCtx.save();
+      sCtx.globalAlpha = alpha;
+      sCtx.shadowColor = s.color;
+      sCtx.shadowBlur  = lvl >= 2 ? 6 : 3;
+      sCtx.fillStyle   = s.color;
+      const px = s.size > 1.2 ? 2 : 1;
+      sCtx.fillRect(Math.round(s.x), Math.round(s.y), px, px);
+      sCtx.restore();
     });
+
+    // ── Level 2: mini lightning trail flashes ──
+    if (lvl >= 2 && eCtx) {
+      if (Math.random() < .06) {
+        const x1 = W * (.52 + Math.random()*.4);
+        const x2 = x1 - W*.1 - Math.random()*W*.05;
+        const y1 = H * (.2 + Math.random()*.5);
+        eCtx.strokeStyle = 'rgba(100,220,255,.7)';
+        eCtx.lineWidth = .8;
+        eCtx.shadowColor = '#60d0ff';
+        eCtx.shadowBlur = 5;
+        eCtx.beginPath();
+        eCtx.moveTo(x1, y1);
+        eCtx.lineTo((x1+x2)/2, y1 + (Math.random()-.5)*8);
+        eCtx.lineTo(x2, y1 + (Math.random()-.5)*6);
+        eCtx.stroke();
+      }
+    }
+
+    // ── Level 3: Kamehameha beam ──
+    if (lvl >= 3 && eCtx) {
+      kameT += .08;
+      const beamY = H * .45;
+      const mobX  = W * .36;
+      // Beam from right side to mob
+      for (let layer = 0; layer < 3; layer++) {
+        const alpha = [.15, .3, .6][layer];
+        const thick = [H*.35, H*.2, H*.08][layer];
+        const hue   = ['rgba(80,200,255,', 'rgba(160,230,255,', 'rgba(255,255,255,'][layer];
+        eCtx.save();
+        eCtx.globalAlpha = alpha * (.8 + .2*Math.sin(kameT*3));
+        eCtx.shadowColor = '#60d0ff';
+        eCtx.shadowBlur  = 20;
+        eCtx.fillStyle   = hue + '.9)';
+        eCtx.fillRect(mobX, beamY - thick/2, W - mobX, thick);
+        eCtx.restore();
+      }
+      // Mega-glow at mob
+      const grd = eCtx.createRadialGradient(mobX, beamY, 2, mobX, beamY, H*.55 * (1 + .1*Math.sin(kameT*4)));
+      grd.addColorStop(0,  'rgba(180,240,255,.9)');
+      grd.addColorStop(.3, 'rgba(80,180,255,.5)');
+      grd.addColorStop(.6, 'rgba(40,120,220,.2)');
+      grd.addColorStop(1,  'rgba(0,0,0,0)');
+      eCtx.save();
+      eCtx.globalAlpha = .7 + .2*Math.sin(kameT*5);
+      eCtx.fillStyle = grd;
+      eCtx.fillRect(0, 0, W, H);
+      eCtx.restore();
+      // Shockwave ring
+      const sw = eCtx.createRadialGradient(mobX, beamY, H*.2*Math.abs(Math.sin(kameT)), mobX, beamY, H*.4);
+      sw.addColorStop(0,   'rgba(255,255,255,0)');
+      sw.addColorStop(.7,  'rgba(120,220,255,.4)');
+      sw.addColorStop(1,   'rgba(120,220,255,0)');
+      eCtx.save();
+      eCtx.globalAlpha = .5;
+      eCtx.fillStyle = sw;
+      eCtx.beginPath();
+      eCtx.arc(mobX, beamY, H*.4, 0, Math.PI*2);
+      eCtx.fill();
+      eCtx.restore();
+    }
+
     _sparkAF = requestAnimationFrame(loop);
   }
   loop();
@@ -3928,27 +4229,32 @@ function fcStopTimer() {
   if (bar) bar.classList.remove('urgent');
 }
 
-function pixelFlame(phase) {
-  // Returns a tiny pixel-art flame SVG string
-  const colors = phase === 3
-    ? {outer:'#ff0000',mid:'#cc0020',inner:'#ff4010',tip:'#ff8030',core:'#ffaa60'}
+/* ── Ancient Energy Crystal (timer orb) SVG ── */
+function svgEnergyCrystal(phase) {
+  // Pixel-art diamond crystal, color changes by phase
+  const c = phase === 3
+    ? {out:'#ff2020',mid:'#ff6040',hi:'#ffaa80',core:'#ffffff',glow:'#ff4020'}
     : phase === 2
-    ? {outer:'#ff6600',mid:'#cc4400',inner:'#ff8800',tip:'#ffcc00',core:'#ffee80'}
-    : {outer:'#ff9900',mid:'#cc7700',inner:'#ffbb00',tip:'#ffee40',core:'#ffffff'};
-  return `<svg width="18" height="22" viewBox="0 0 9 11" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
-    <rect x="3" y="0" width="3" height="1" fill="${colors.tip}"/>
-    <rect x="2" y="1" width="2" height="1" fill="${colors.tip}"/>
-    <rect x="5" y="1" width="2" height="1" fill="${colors.tip}"/>
-    <rect x="1" y="2" width="7" height="1" fill="${colors.outer}"/>
-    <rect x="1" y="3" width="7" height="2" fill="${colors.mid}"/>
-    <rect x="0" y="4" width="9" height="3" fill="${colors.mid}"/>
-    <rect x="2" y="3" width="3" height="1" fill="${colors.inner}"/>
-    <rect x="3" y="2" width="2" height="2" fill="${colors.inner}"/>
-    <rect x="3" y="4" width="3" height="2" fill="${colors.inner}"/>
-    <rect x="4" y="3" width="1" height="3" fill="${colors.core}"/>
-    <rect x="0" y="7" width="9" height="2" fill="${colors.outer}"/>
-    <rect x="1" y="9" width="7" height="1" fill="${colors.mid}"/>
-    <rect x="2" y="10" width="5" height="1" fill="${colors.mid}" opacity=".5"/>
+    ? {out:'#ff8800',mid:'#ffbb30',hi:'#ffe880',core:'#ffffff',glow:'#ffaa00'}
+    : {out:'#c0a020',mid:'#f0cc40',hi:'#fff080',core:'#ffffff',glow:'#f0d050'};
+  return `<svg width="20" height="24" viewBox="0 0 10 12" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <!-- Top facet -->
+    <rect x="4" y="0" width="2" height="1" fill="${c.hi}"/>
+    <rect x="3" y="1" width="4" height="1" fill="${c.hi}"/>
+    <rect x="2" y="2" width="6" height="1" fill="${c.mid}"/>
+    <!-- Middle belt -->
+    <rect x="1" y="3" width="8" height="4" fill="${c.mid}"/>
+    <rect x="0" y="4" width="10" height="2" fill="${c.out}"/>
+    <!-- Inner shine -->
+    <rect x="2" y="3" width="3" height="2" fill="${c.hi}" opacity=".7"/>
+    <rect x="2" y="3" width="2" height="1" fill="${c.core}" opacity=".5"/>
+    <!-- Core glow -->
+    <rect x="4" y="4" width="2" height="2" fill="${c.core}" opacity=".6"/>
+    <!-- Bottom taper -->
+    <rect x="1" y="7" width="8" height="2" fill="${c.out}"/>
+    <rect x="2" y="9" width="6" height="1" fill="${c.mid}"/>
+    <rect x="3" y="10" width="4" height="1" fill="${c.mid}"/>
+    <rect x="4" y="11" width="2" height="1" fill="${c.hi}"/>
   </svg>`;
 }
 
@@ -3961,7 +4267,7 @@ function fcUpdateTimerUI(sec) {
   const pct = (sec / fcTimerDuration) * 100;
   bar.style.width = pct + '%';
 
-  // 3-phase effects
+  // 3-phase classes
   bar.classList.remove('phase2','phase3','urgent');
   if (orb) orb.classList.remove('phase2','phase3','urgent');
   const phase = pct <= 30 ? 3 : pct <= 60 ? 2 : 1;
@@ -3972,38 +4278,36 @@ function fcUpdateTimerUI(sec) {
     bar.classList.add('phase2');
     if (orb) orb.classList.add('phase2');
   }
-  // Update orb flame SVG
-  if (orb) orb.innerHTML = pixelFlame(phase);
 
-  // Position orb: sits ON TOP of the bar track, at the leading edge
+  // Update crystal SVG
+  if (orb) orb.innerHTML = svgEnergyCrystal(phase);
+
+  // Position orb at leading edge of bar, above track
   if (orb) {
     const track = bar.parentElement;
     if (track) {
-      const trackW  = track.offsetWidth;
-      const fillPx  = (pct / 100) * trackW;
-      // Place orb centered on the end of the fill bar, but above the track
-      orb.style.left = Math.max(8, Math.min(trackW, fillPx)) + 'px';
-      orb.style.top  = '50%';
-      // No right, use left only
+      const trackW = track.offsetWidth;
+      const fillPx = Math.min(trackW, (pct / 100) * trackW);
+      orb.style.left  = Math.max(8, fillPx) + 'px';
+      orb.style.top   = '50%';
       orb.style.right = 'auto';
     }
   }
-  // Phase 1 = default (no class)
 
-  const display = Math.ceil(sec) + 's';
-  label.textContent = display;
-  // Show live countdown in the input box too (skip when user editing)
+  // Show live countdown in input
   if (inp && fcTimerRunning && inp.dataset.editing !== '1') inp.value = Math.ceil(sec);
-  // Label color changes with phase
-  label.style.color = pct <= 30 ? '#ff5050'
-                    : pct <= 60 ? '#ffa040'
-                    : '#60dd40';
-  label.style.textShadow = pct <= 30
+
+  // Label color by phase
+  label.style.color = phase === 3 ? '#ff5050' : phase === 2 ? '#ffa040' : '#e8c060';
+  label.style.textShadow = phase === 3
     ? '0 0 10px rgba(255,60,40,.9)'
-    : pct <= 60
-      ? '0 0 8px rgba(255,140,40,.7)'
-      : '0 0 8px rgba(80,220,80,.6)';
+    : phase === 2 ? '0 0 8px rgba(255,140,40,.7)'
+    : '0 0 8px rgba(220,180,60,.7)';
+
+  // Sync battle effect level for particle system
+  if (typeof updateBattleEffectLevel === 'function') updateBattleEffectLevel(sec);
 }
+
 
 function svgShieldPixel() {
   return `<svg viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
