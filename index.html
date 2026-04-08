@@ -563,6 +563,22 @@ input::placeholder{color:var(--muted)}
   50%{transform:translateY(0) scaleX(.98)}
   75%{transform:translateY(-1px) scaleX(1.02)}
 }
+@keyframes mob-hit-shake{
+  0%,100%{transform:translateX(0)}
+  15%{transform:translateX(5px)}
+  30%{transform:translateX(-7px)}
+  45%{transform:translateX(5px)}
+  60%{transform:translateX(-4px)}
+  75%{transform:translateX(3px)}
+  90%{transform:translateX(-2px)}
+}
+@keyframes field-hit-shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-3px)}
+  40%{transform:translateX(3px)}
+  60%{transform:translateX(-2px)}
+  80%{transform:translateX(2px)}
+}
 @keyframes mob-hit-flash{
   0%{filter:brightness(1)}
   30%{filter:brightness(3) saturate(0)}
@@ -748,103 +764,19 @@ input::placeholder{color:var(--muted)}
     0 0 0 1px rgba(0,0,0,.4);
 }
 
-/* ── Magma river bar fill ── */
-.fc-timer-bar-fill{
-  height:100%;
-  border-radius:6px;
-  position:relative;
-  overflow:hidden;
-  background:linear-gradient(90deg,
-    #1a0800 0%,
-    #6a1800 15%,
-    #cc4800 35%,
-    #ff8800 55%,
-    #ffcc00 75%,
-    #ffe840 90%,
-    #fff0a0 100%
-  );
-  box-shadow:
-    0 0 8px rgba(255,140,0,.6),
-    inset 0 1px 0 rgba(255,240,180,.3);
+/* ── Timer bar: dark background track, canvas handles animation ── */
+.fc-timer-bar-bg{
+  height:100%;border-radius:6px;
+  background:linear-gradient(90deg,#1a1008 0%,#2a1a0a 100%);
   transition:width .1s linear;
+  position:relative;
 }
-/* Lava flow shimmer — stays INSIDE overflow:hidden track */
-.fc-timer-bar-fill::before{
-  content:'';position:absolute;top:0;left:-200%;
-  width:120%;height:100%;
-  background:linear-gradient(90deg,
-    transparent 0%,
-    rgba(255,255,200,.0) 30%,
-    rgba(255,255,220,.5) 50%,
-    rgba(255,255,200,.0) 70%,
-    transparent 100%
-  );
-  animation:magma-flow 1.8s linear infinite;
-}
-@keyframes magma-flow{0%{left:-120%}100%{left:120%}}
-/* Magma bubble texture */
-.fc-timer-bar-fill::after{
-  content:'';position:absolute;inset:0;
-  background:
-    radial-gradient(circle at 20% 60%,rgba(255,60,0,.3) 0%,transparent 25%),
-    radial-gradient(circle at 50% 40%,rgba(255,200,0,.2) 0%,transparent 20%),
-    radial-gradient(circle at 80% 65%,rgba(255,80,0,.25) 0%,transparent 20%);
-  animation:magma-bubble 2.4s ease-in-out infinite;
-}
-@keyframes magma-bubble{
-  0%,100%{opacity:.6;transform:scaleX(1)}
-  50%{opacity:1;transform:scaleX(1.01)}
-}
-
-/* Phase 2 orange-red (30-60%) */
-.fc-timer-bar-fill.phase2{
-  background:linear-gradient(90deg,
-    #1a0000 0%,#7a0a00 20%,#cc2200 45%,#ff5500 70%,#ff8800 90%,#ffaa00 100%
-  );
-  animation:timer-pulse2 .5s ease-in-out infinite;
-}
-@keyframes timer-pulse2{0%,100%{box-shadow:0 0 8px rgba(255,80,0,.6)}50%{box-shadow:0 0 16px rgba(255,80,0,1)}}
-
-/* Phase 3 critical red (<30%) */
-.fc-timer-bar-fill.urgent,.fc-timer-bar-fill.phase3{
-  background:linear-gradient(90deg,
-    #080000 0%,#3a0000 15%,#880000 40%,#cc0000 70%,#ff1000 90%,#ff4020 100%
-  );
-  animation:timer-crit .25s ease-in-out infinite;
-}
-@keyframes timer-crit{
-  0%,100%{box-shadow:0 0 10px rgba(255,0,0,.8);filter:brightness(1)}
-  50%{box-shadow:0 0 20px rgba(255,0,0,1);filter:brightness(1.3)}
-}
+/* Phase classes kept for label color logic */
+.fc-timer-bar-bg.phase2{}
+.fc-timer-bar-bg.phase3,.fc-timer-bar-bg.urgent{}
 
 /* ── Fire orb element (positioned via JS, sits outside overflow:hidden track) ── */
-.fc-timer-orb{
-  position:absolute;
-  top:50%;
-  transform:translate(-50%,-60%);  /* sit above the bar */
-  width:20px;height:24px;
-  pointer-events:none;z-index:12;
-  display:flex;align-items:center;justify-content:center;
-  font-size:0;line-height:1;
-  filter:drop-shadow(0 0 5px rgba(240,200,60,.9));
-  animation:crystal-orb-bob .6s ease-in-out infinite alternate;
-}
-.fc-timer-orb.phase2{
-  filter:drop-shadow(0 0 7px rgba(255,120,0,1));
-}
-.fc-timer-orb.phase3,.fc-timer-orb.urgent{
-  filter:drop-shadow(0 0 10px rgba(255,30,0,1)) drop-shadow(0 0 20px rgba(255,0,0,.5));
-  animation:crystal-orb-bob .25s ease-in-out infinite alternate, crystal-orb-shake .2s ease-in-out infinite;
-}
-@keyframes crystal-orb-bob{
-  0%{transform:translate(-50%,-58%) scale(1)}
-  100%{transform:translate(-50%,-66%) scale(1.08)}
-}
-@keyframes crystal-orb-shake{
-  0%,100%{margin-left:0}
-  33%{margin-left:-2px}
-  66%{margin-left:2px}
-}
+/* orb removed — canvas-based timer */
 
 /* ── Timer countdown label ── */
 .fc-timer-label{
@@ -961,7 +893,7 @@ input::placeholder{color:var(--muted)}
 
 /* ── Battle field — stone dungeon floor ── */
 .fc-battle-field{
-  position:relative;height:88px;
+  position:relative;height:96px;
   border-radius:8px;
   overflow:visible;
   z-index:2;
@@ -1864,10 +1796,10 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <div class="fc-hp-pips" id="fc-hp-pips"></div>
           </div>
           <div class="fc-timer-section" style="position:relative;">
-            <div class="fc-timer-bar-track">
-              <div class="fc-timer-bar-fill" id="fc-timer-bar" style="width:100%"></div>
+            <div class="fc-timer-bar-track" style="position:relative;overflow:hidden;">
+              <div class="fc-timer-bar-bg" id="fc-timer-bar" style="width:100%"></div>
+              <canvas id="fc-timer-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;"></canvas>
             </div>
-            <div id="fc-timer-orb" class="fc-timer-orb">🔥</div>
             <div class="fc-timer-label" id="fc-timer-label">30s</div>
           </div>
           <div class="fc-timer-setting">
@@ -2957,81 +2889,88 @@ let battleSlashing = false;
 
 // ── SVG: Pixel warrior (SVG-based, vintage style)
 function svgWarrior() {
-  return `<svg viewBox="0 0 28 38" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
-    <!-- Helmet top spikes -->
-    <rect x="11" y="0" width="2" height="2" fill="#d4a020"/>
-    <rect x="15" y="0" width="2" height="2" fill="#d4a020"/>
-    <!-- Helmet -->
-    <rect x="8"  y="2"  width="12" height="1" fill="#c8a030"/>
-    <rect x="7"  y="3"  width="14" height="3" fill="#e0b840"/>
-    <rect x="6"  y="3"  width="2"  height="3" fill="#c8a030"/>
-    <rect x="20" y="3"  width="2"  height="3" fill="#c8a030"/>
-    <rect x="6"  y="6"  width="16" height="1" fill="#a88020"/>
-    <!-- Helmet shine -->
-    <rect x="9"  y="3"  width="4"  height="1" fill="#f8d860" opacity=".7"/>
-    <!-- Eyes glow -->
-    <rect x="9"  y="8"  width="3"  height="2" fill="#40aaff"/>
-    <rect x="16" y="8"  width="3"  height="2" fill="#40aaff"/>
-    <rect x="10" y="8"  width="1"  height="1" fill="#a0d8ff" opacity=".8"/>
-    <rect x="17" y="8"  width="1"  height="1" fill="#a0d8ff" opacity=".8"/>
-    <!-- Face -->
-    <rect x="7"  y="7"  width="14" height="7" fill="#1a1a2a"/>
-    <rect x="8"  y="7"  width="12" height="1" fill="#2a2a3a"/>
-    <!-- Visor grille -->
-    <rect x="8"  y="11" width="12" height="1" fill="#383858"/>
-    <rect x="8"  y="13" width="12" height="1" fill="#2a2a3a"/>
-    <!-- Neck -->
-    <rect x="11" y="14" width="6"  height="1" fill="#c8a87a"/>
-    <!-- Body armor — blue steel -->
-    <rect x="5"  y="15" width="18" height="12" fill="#2a3a6a"/>
-    <rect x="7"  y="15" width="14" height="2"  fill="#3a4a7a"/>
-    <rect x="5"  y="17" width="18" height="1"  fill="#1a2a5a"/>
-    <rect x="6"  y="19" width="16" height="3"  fill="#3a4a7a"/>
-    <rect x="5"  y="22" width="18" height="1"  fill="#1a2a5a"/>
-    <rect x="7"  y="23" width="14" height="3"  fill="#2a3a6a"/>
-    <!-- Chest emblem -->
-    <rect x="12" y="18" width="4"  height="4"  fill="#4a6aaa"/>
-    <rect x="13" y="19" width="2"  height="2"  fill="#a0c0ff"/>
-    <!-- Pauldrons (shoulder armor) -->
-    <rect x="2"  y="15" width="4"  height="5"  fill="#c8a030"/>
-    <rect x="22" y="15" width="4"  height="5"  fill="#c8a030"/>
-    <rect x="2"  y="20" width="4"  height="1"  fill="#a08020"/>
-    <rect x="22" y="20" width="4"  height="1"  fill="#a08020"/>
-    <!-- Left arm -->
-    <rect x="2"  y="21" width="3"  height="4"  fill="#2a3a6a"/>
-    <!-- Shield (left hand) -->
-    <rect x="0"  y="17" width="3"  height="6"  fill="#aa3020"/>
-    <rect x="1"  y="17" width="2"  height="1"  fill="#dd4030"/>
-    <rect x="0"  y="20" width="3"  height="1"  fill="#881810"/>
-    <rect x="1"  y="21" width="1"  height="2"  fill="#cc3828"/>
-    <!-- Right arm -->
-    <rect x="23" y="21" width="3"  height="4"  fill="#2a3a6a"/>
-    <!-- Sword arm extended right -->
-    <rect x="24" y="15" width="2"  height="10" fill="#2a3a6a"/>
-    <!-- Sword blade (glowing) -->
-    <rect x="26" y="8"  width="2"  height="16" fill="#e8f0ff" class="sword-glow"/>
-    <rect x="27" y="7"  width="1"  height="2"  fill="#ffffff" class="sword-glow"/>
-    <rect x="26" y="6"  width="2"  height="3"  fill="#c0d8ff" class="sword-glow"/>
-    <!-- Sword guard -->
-    <rect x="24" y="14" width="5"  height="2"  fill="#c8a030" class="sword-glow"/>
-    <rect x="25" y="13" width="3"  height="1"  fill="#e0c040" class="sword-glow"/>
-    <!-- Legs -->
-    <rect x="8"  y="27" width="5"  height="7"  fill="#2a3a6a"/>
-    <rect x="15" y="27" width="5"  height="7"  fill="#2a3a6a"/>
-    <rect x="9"  y="27" width="3"  height="1"  fill="#3a4a7a"/>
-    <rect x="16" y="27" width="3"  height="1"  fill="#3a4a7a"/>
+  return `<svg viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <!-- ═══ HELMET ═══ -->
+    <rect x="12" y="0"  width="2"  height="2"  fill="#d4a020"/><!-- crest spike L -->
+    <rect x="18" y="0"  width="2"  height="2"  fill="#d4a020"/><!-- crest spike R -->
+    <rect x="10" y="2"  width="12" height="1"  fill="#d4a020"/><!-- crest top -->
+    <rect x="8"  y="3"  width="16" height="4"  fill="#e8c040"/><!-- helm upper -->
+    <rect x="7"  y="4"  width="2"  height="4"  fill="#d4a020"/><!-- left cheek -->
+    <rect x="23" y="4"  width="2"  height="4"  fill="#d4a020"/><!-- right cheek -->
+    <rect x="8"  y="7"  width="16" height="3"  fill="#3a4a6a"/><!-- visor dark -->
+    <rect x="10" y="7"  width="12" height="2"  fill="#d4a020"/><!-- visor slit gold -->
+    <rect x="11" y="7"  width="10" height="1"  fill="#fff0a0" opacity=".6"/><!-- visor glow -->
+    <rect x="7"  y="3"  width="18" height="1"  fill="#c89030"/><!-- helm brow -->
+    <!-- ═══ NECK ═══ -->
+    <rect x="13" y="10" width="6"  height="2"  fill="#c8a87a"/>
+    <!-- ═══ PAULDRONS (shoulders) ═══ -->
+    <rect x="3"  y="12" width="6"  height="6"  fill="#d4a020"/><!-- L shoulder plate -->
+    <rect x="23" y="12" width="6"  height="6"  fill="#d4a020"/><!-- R shoulder plate -->
+    <rect x="4"  y="18" width="5"  height="2"  fill="#a08018"/><!-- L shoulder lower -->
+    <rect x="23" y="18" width="5"  height="2"  fill="#a08018"/><!-- R shoulder lower -->
+    <rect x="3"  y="12" width="6"  height="1"  fill="#f8e060"/><!-- L shoulder highlight -->
+    <rect x="23" y="12" width="6"  height="1"  fill="#f8e060"/><!-- R shoulder highlight -->
+    <!-- ═══ CHEST ARMOR ═══ -->
+    <rect x="9"  y="12" width="14" height="12" fill="#2a3a5a"/><!-- chest dark -->
+    <rect x="10" y="13" width="12" height="10" fill="#3a4a6a"/><!-- chest mid -->
+    <rect x="11" y="14" width="10" height="2"  fill="#4a5a7a"/><!-- chest upper light -->
+    <rect x="11" y="16" width="10" height="1"  fill="#2a3a5a"/><!-- chest stripe -->
+    <rect x="11" y="17" width="10" height="3"  fill="#3a4a6a"/><!-- chest lower -->
+    <rect x="11" y="20" width="10" height="2"  fill="#2a3a5a"/><!-- chest bottom -->
+    <!-- Chest emblem (cross) -->
+    <rect x="15" y="15" width="2"  height="5"  fill="#d4a020" opacity=".7"/>
+    <rect x="13" y="17" width="6"  height="1"  fill="#d4a020" opacity=".7"/>
+    <!-- Belt -->
+    <rect x="9"  y="24" width="14" height="2"  fill="#8a6020"/>
+    <rect x="14" y="24" width="4"  height="2"  fill="#d4a020"/><!-- buckle -->
+    <!-- ═══ SHIELD (left, held forward) ═══ -->
+    <rect x="0"  y="14" width="9"  height="12" fill="#8a1818"/><!-- shield base red -->
+    <rect x="1"  y="15" width="7"  height="10" fill="#aa2020"/><!-- shield fill -->
+    <rect x="3"  y="14" width="3"  height="12" fill="#c8a020" opacity=".5"/><!-- vertical cross -->
+    <rect x="0"  y="19" width="9"  height="2"  fill="#c8a020" opacity=".5"/><!-- horizontal cross -->
+    <rect x="1"  y="15" width="3"  height="3"  fill="#dd4040" opacity=".5"/><!-- top-left quadrant -->
+    <rect x="5"  y="20" width="3"  height="3"  fill="#dd4040" opacity=".5"/><!-- bot-right quad -->
+    <rect x="0"  y="14" width="1"  height="12" fill="#6a1010"/><!-- shield edge L -->
+    <rect x="8"  y="14" width="1"  height="12" fill="#6a1010"/><!-- shield edge R -->
+    <!-- Shield shine -->
+    <rect x="1"  y="15" width="2"  height="4"  fill="white" opacity=".12"/>
+    <!-- ═══ LEFT ARM (shield arm) ═══ -->
+    <rect x="5"  y="26" width="4"  height="5"  fill="#3a4a6a"/><!-- forearm -->
+    <!-- ═══ RIGHT ARM + SWORD ═══ -->
+    <rect x="23" y="20" width="4"  height="6"  fill="#3a4a6a"/><!-- right forearm -->
+    <rect x="24" y="14" width="3"  height="7"  fill="#3a4a6a"/><!-- upper arm -->
+    <!-- Sword grip -->
+    <rect x="25" y="26" width="2"  height="3"  fill="#6a4020"/>
+    <!-- Crossguard -->
+    <rect x="23" y="24" width="6"  height="2"  fill="#d4a020"/>
+    <rect x="23" y="23" width="6"  height="1"  fill="#f8d840" opacity=".7"/>
+    <!-- Sword blade — long, glowing -->
+    <rect x="26" y="5"  width="3"  height="20" fill="#e8f4ff"/><!-- blade main -->
+    <rect x="27" y="4"  width="2"  height="22" fill="#ffffff" opacity=".7"/><!-- blade edge bright -->
+    <rect x="26" y="5"  width="1"  height="18" fill="#b0d0ff" opacity=".5"/><!-- blade shadow side -->
+    <rect x="28" y="5"  width="1"  height="3"  fill="#ffffff"/><!-- blade tip -->
+    <!-- Sword glow aura -->
+    <rect x="25" y="4"  width="5"  height="22" fill="#a0d0ff" opacity=".12"/>
+    <!-- ═══ LEGS ═══ -->
+    <rect x="10" y="26" width="5"  height="8"  fill="#2a3a5a"/><!-- L thigh -->
+    <rect x="17" y="26" width="5"  height="8"  fill="#2a3a5a"/><!-- R thigh -->
+    <rect x="10" y="26" width="5"  height="1"  fill="#3a4a6a"/><!-- L thigh top -->
+    <rect x="17" y="26" width="5"  height="1"  fill="#3a4a6a"/><!-- R thigh top -->
+    <!-- Knee pads -->
+    <rect x="10" y="32" width="5"  height="3"  fill="#d4a020"/><!-- L knee -->
+    <rect x="17" y="32" width="5"  height="3"  fill="#d4a020"/><!-- R knee -->
+    <!-- Greaves -->
+    <rect x="10" y="35" width="5"  height="4"  fill="#3a4a6a"/><!-- L greave -->
+    <rect x="17" y="35" width="5"  height="4"  fill="#3a4a6a"/><!-- R greave -->
     <!-- Boots -->
-    <rect x="7"  y="33" width="7"  height="3"  fill="#1a1a10"/>
-    <rect x="14" y="33" width="7"  height="3"  fill="#1a1a10"/>
-    <rect x="7"  y="35" width="8"  height="1"  fill="#2a2a18"/>
-    <rect x="14" y="35" width="8"  height="1"  fill="#2a2a18"/>
-    <!-- Boot highlight -->
-    <rect x="8"  y="33" width="3"  height="1"  fill="#383820" opacity=".6"/>
-    <rect x="15" y="33" width="3"  height="1"  fill="#383820" opacity=".6"/>
+    <rect x="9"  y="38" width="7"  height="3"  fill="#1a1a10"/><!-- L boot -->
+    <rect x="16" y="38" width="7"  height="3"  fill="#1a1a10"/><!-- R boot -->
+    <rect x="9"  y="38" width="4"  height="1"  fill="#2a2a18" opacity=".6"/>
+    <rect x="16" y="38" width="4"  height="1"  fill="#2a2a18" opacity=".6"/>
   </svg>`;
 }
 
-// ── SVG: Slime monster (small, pixel)
+
 function svgMob(type) {
   if (type === 'boss') {
     // Dragon boss - vivid red/orange, wings, crown
@@ -3486,6 +3425,73 @@ function spawnLightningBolt(field, level) {
   setTimeout(() => canvas.remove(), bold ? 180 : 120);
 }
 
+/* ── Armored Fiend boss mob (full-body, 16×18 viewbox) ── */
+function svgBossMob(colorIdx, size) {
+  const palettes = [
+    {armor:'#3a1010',body:'#881818',hi:'#cc3030',eye:'#ff3020',horn:'#2a0808',fist:'#441010'},
+    {armor:'#1a0a2a',body:'#4a1a7a',hi:'#8830cc',eye:'#cc40ff',horn:'#120818',fist:'#2a0844'},
+    {armor:'#082020',body:'#1a5a5a',hi:'#20aaaa',eye:'#00ffee',horn:'#041414',fist:'#104444'},
+    {armor:'#201005',body:'#7a3a10',hi:'#cc6820',eye:'#ff9900',horn:'#140800',fist:'#4a1a05'},
+    {armor:'#081a08',body:'#1a5a18',hi:'#30aa40',eye:'#40ff50',horn:'#041004',fist:'#0a3010'},
+  ];
+  const p = palettes[colorIdx % palettes.length];
+  const w = size || 32, h = Math.round((size||32) * 1.15);
+  return `<svg width="${w}" height="${h}" viewBox="0 0 16 18" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <!-- Horns -->
+    <rect x="3"  y="0"  width="2"  height="3"  fill="${p.horn}"/>
+    <rect x="2"  y="1"  width="1"  height="2"  fill="${p.horn}"/>
+    <rect x="11" y="0"  width="2"  height="3"  fill="${p.horn}"/>
+    <rect x="13" y="1"  width="1"  height="2"  fill="${p.horn}"/>
+    <!-- Helmet -->
+    <rect x="3"  y="3"  width="10" height="1"  fill="${p.armor}"/>
+    <rect x="2"  y="4"  width="12" height="4"  fill="${p.armor}"/>
+    <rect x="1"  y="5"  width="14" height="2"  fill="${p.body}"/>
+    <!-- Glowing eye slits -->
+    <rect x="3"  y="5"  width="3"  height="1"  fill="${p.eye}"/>
+    <rect x="10" y="5"  width="3"  height="1"  fill="${p.eye}"/>
+    <rect x="3"  y="5"  width="1"  height="1"  fill="white" opacity=".6"/>
+    <rect x="10" y="5"  width="1"  height="1"  fill="white" opacity=".6"/>
+    <!-- Visor bottom crack -->
+    <rect x="4"  y="7"  width="8"  height="1"  fill="${p.armor}"/>
+    <rect x="7"  y="7"  width="2"  height="1"  fill="${p.eye}" opacity=".4"/>
+    <!-- Neck / throat armor -->
+    <rect x="5"  y="8"  width="6"  height="1"  fill="${p.armor}"/>
+    <!-- Shoulder spikes -->
+    <rect x="0"  y="9"  width="2"  height="4"  fill="${p.armor}"/>
+    <rect x="0"  y="8"  width="3"  height="2"  fill="${p.horn}"/><!-- L spike -->
+    <rect x="14" y="9"  width="2"  height="4"  fill="${p.armor}"/>
+    <rect x="13" y="8"  width="3"  height="2"  fill="${p.horn}"/><!-- R spike -->
+    <!-- Body armor (chest) -->
+    <rect x="2"  y="9"  width="12" height="6"  fill="${p.body}"/>
+    <rect x="3"  y="9"  width="10" height="5"  fill="${p.armor}"/>
+    <!-- Chest plate rivets -->
+    <rect x="4"  y="10" width="1"  height="1"  fill="${p.hi}"/>
+    <rect x="11" y="10" width="1"  height="1"  fill="${p.hi}"/>
+    <rect x="7"  y="10" width="2"  height="3"  fill="${p.hi}" opacity=".4"/><!-- chest crest -->
+    <!-- Cracked armor lines -->
+    <rect x="5"  y="11" width="1"  height="2"  fill="${p.armor}"/>
+    <rect x="10" y="12" width="1"  height="2"  fill="${p.armor}"/>
+    <!-- Clawed fists -->
+    <rect x="0"  y="13" width="3"  height="3"  fill="${p.fist}"/>
+    <rect x="0"  y="12" width="1"  height="1"  fill="${p.horn}"/><!-- claw L1 -->
+    <rect x="1"  y="12" width="1"  height="1"  fill="${p.horn}"/><!-- claw L2 -->
+    <rect x="13" y="13" width="3"  height="3"  fill="${p.fist}"/>
+    <rect x="14" y="12" width="1"  height="1"  fill="${p.horn}"/><!-- claw R1 -->
+    <rect x="15" y="12" width="1"  height="1"  fill="${p.horn}"/><!-- claw R2 -->
+    <!-- Legs -->
+    <rect x="3"  y="15" width="4"  height="3"  fill="${p.body}"/>
+    <rect x="9"  y="15" width="4"  height="3"  fill="${p.body}"/>
+    <!-- Boot claws -->
+    <rect x="2"  y="17" width="2"  height="1"  fill="${p.horn}"/>
+    <rect x="5"  y="17" width="2"  height="1"  fill="${p.horn}"/>
+    <rect x="9"  y="17" width="2"  height="1"  fill="${p.horn}"/>
+    <rect x="12" y="17" width="2"  height="1"  fill="${p.horn}"/>
+    <!-- Ground shadow -->
+    <rect x="1"  y="17" width="14" height="1"  fill="#000" opacity=".2"/>
+  </svg>`;
+}
+
+
 function renderFCBattle() {
   if (!goal) return;
   const t = today();
@@ -3514,9 +3520,9 @@ function renderFCBattle() {
   }
 
   // ── Warrior (left side, fully visible) ──
-  const warriorHTML = `<div id="fc-warrior" style="position:absolute;left:2%;bottom:15px;z-index:5;">
-    ${svgWarrior().replace('viewBox="0 0 28 38"',
-      'viewBox="0 0 28 38" style="width:26px;height:34px;animation:warrior-breathe 2.4s ease-in-out infinite;filter:drop-shadow(0 0 5px rgba(80,140,255,.7));"')}
+  const warriorHTML = `<div id="fc-warrior" style="position:absolute;left:1%;bottom:12px;z-index:5;">
+    ${svgWarrior().replace('viewBox="0 0 32 42"',
+      'viewBox="0 0 32 42" style="width:32px;height:42px;animation:warrior-breathe 2.4s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(80,140,255,.8)) drop-shadow(0 0 12px rgba(200,168,74,.4));"')}
   </div>`;
 
   // ── Mobs ──
@@ -3531,12 +3537,12 @@ function renderFCBattle() {
     const mobSize   = isLastMob ? 30 : 26;
     const c = ARTIFACT_DATA[colorIdx];
 
-    // Active mob — fully visible above ground
-    mobsHTML += `<div id="fc-mob-active" style="position:absolute;left:34%;bottom:15px;z-index:4;transition:all .3s;">
+    // Active mob — fully visible above ground (boss mob)
+    mobsHTML += `<div id="fc-mob-active" style="position:absolute;right:5%;bottom:12px;z-index:4;transition:all .3s;">
       <div class="mob-count-badge">${remaining}</div>
       <div style="animation:mob-idle 2.2s ease-in-out infinite;
-        filter:drop-shadow(0 0 7px ${c.glow}) drop-shadow(0 0 3px ${c.glow});">
-        ${svgViciousSlime(colorIdx, mobSize)}
+        filter:drop-shadow(0 0 8px ${c.glow}) drop-shadow(0 0 14px ${c.glow});">
+        ${svgBossMob(colorIdx, mobSize + 6)}
       </div>
     </div>`;
 
@@ -3547,19 +3553,20 @@ function renderFCBattle() {
     for (let hi = 0; hi < hordeCount; hi++) {
       const ai = (colorIdx + hi + 1) % ARTIFACT_DATA.length;
       const ac = ARTIFACT_DATA[ai];
-      const leftPct = 52 + hi * 5.5;
-      const sz = Math.max(12, 18 - hi);
-      const op = Math.max(.2, .9 - hi * .09);
+      // Artifacts float in middle zone (35%-75%)
+      const leftPct = 36 + hi * 6;
+      const sz = Math.max(11, 17 - hi);
+      const op = Math.max(.2, .85 - hi * .08);
       // Trail glow between artifacts
       if (hi < hordeCount - 1) {
-        mobsHTML += `<div style="position:absolute;left:${leftPct+3}%;bottom:22px;
+        mobsHTML += `<div style="position:absolute;left:${leftPct+3.5}%;bottom:22px;
           width:6%;height:2px;
-          background:linear-gradient(90deg,${ac.trail},transparent);
-          border-radius:1px;opacity:${op*.6};z-index:3;
-          animation:crystal-trail ${1.1+hi*.2}s ease-in-out infinite;"></div>`;
+          background:linear-gradient(90deg,transparent,${ac.trail},transparent);
+          border-radius:1px;opacity:${op*.7};z-index:3;
+          animation:crystal-trail ${1.0+hi*.18}s ease-in-out infinite;"></div>`;
       }
-      mobsHTML += `<div style="position:absolute;left:${leftPct}%;bottom:15px;z-index:${4-Math.floor(hi/2)};opacity:${op};
-        animation:crystal-float ${1.6+hi*.25}s ease-in-out infinite;animation-delay:${hi*.12}s;
+      mobsHTML += `<div style="position:absolute;left:${leftPct}%;bottom:14px;z-index:${4-Math.floor(hi/2)};opacity:${op};
+        animation:crystal-float ${1.5+hi*.22}s ease-in-out infinite;animation-delay:${hi*.1}s;
         filter:drop-shadow(0 0 5px ${ac.glow});">
         ${svgArtifact(ai, sz)}
       </div>`;
@@ -3731,76 +3738,217 @@ function startBattleParticles() {
 }
 
 function fcBattleSlash() {
-  // Full projectile attack: warrior → mob (new word = kill)
+  // "Nhớ rồi ✓" — warrior attacks mob: LEFT → RIGHT
   const field   = document.getElementById('fc-battle-field');
   const warrior = document.getElementById('fc-warrior');
   const mobEl   = document.getElementById('fc-mob-active');
   if (!field || !mobEl) return;
 
-  const fR  = field.getBoundingClientRect();
-  const wR  = warrior ? warrior.getBoundingClientRect() : {left:fR.left+20, top:fR.top+20, width:22, height:30};
-  const mR  = mobEl.getBoundingClientRect();
+  const fR = field.getBoundingClientRect();
+  const wR = warrior
+    ? warrior.getBoundingClientRect()
+    : {left:fR.left+8, top:fR.top+10, width:32, height:42};
+  const mR = mobEl.getBoundingClientRect();
 
-  // Start: mob (shoots toward warrior), End: warrior
-  // Projectile flies from mob → warrior (spell from enemy to hero)
-  const sx = mR.left   - fR.left  + mR.width  * 0.5;
-  const sy = mR.top    - fR.top   + mR.height * 0.5;
-  // End: warrior center
-  const ex = wR.left   - fR.left  + wR.width  * 0.5;
-  const ey = wR.top    - fR.top   + wR.height * 0.5;
+  // ── Start: warrior RIGHT edge (sword tip) ──
+  const sx = wR.right  - fR.left + 2;
+  const sy = wR.top    - fR.top  + wR.height * 0.35;
+  // ── End: mob CENTER ──
+  const ex = mR.left   - fR.left + mR.width  * 0.5;
+  const ey = mR.top    - fR.top  + mR.height * 0.5;
 
-  const dx = ex - sx;
-  const dy = ey - sy;
+  const dx   = ex - sx; // positive (going right)
+  const dy   = ey - sy;
   const dist = Math.sqrt(dx*dx + dy*dy);
-  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-  // Pick random effect
-  const effects = ['fireball','ice','lightning','shockwave'];
-  const eff = effects[Math.floor(Math.random() * effects.length)];
+  // Random attack type: sword beam, lightning, fireball, shockwave
+  const attacks = ['sword','lightning','fireball','shockwave'];
+  const atk = attacks[Math.floor(Math.random() * attacks.length)];
 
-  launchProjectile(field, sx, sy, dx, dy, angle, dist, eff, () => {
-    // On hit: spell hits warrior, warrior powers up and counter-kills mob
-    // Impact at warrior
+  // Launch heavy attack projectile warrior→mob
+  launchHeavyAttack(field, sx, sy, dx, dy, dist, atk, () => {
+    // ── IMPACT on mob ──
+    // Red flash + shake
+    mobEl.style.filter = `brightness(4) saturate(0) sepia(1) hue-rotate(-10deg) drop-shadow(0 0 10px #ff0000)`;
+    mobEl.style.animation = 'mob-hit-shake .4s ease';
+    setTimeout(() => {
+      if (mobEl.parentElement) {
+        mobEl.style.filter = '';
+        mobEl.style.animation = 'mob-idle 2.2s ease-in-out infinite';
+      }
+    }, 400);
+
+    // Impact burst SVG
     const burst = document.createElement('div');
     burst.className = 'proj';
-    burst.style.cssText = `left:${ex-16}px;top:${ey-16}px;width:32px;height:32px;animation:impact-burst .5s ease forwards;`;
-    burst.innerHTML = svgImpact(eff);
+    burst.style.cssText = `left:${ex-18}px;top:${ey-18}px;width:36px;height:36px;z-index:28;animation:impact-burst .6s ease forwards;`;
+    burst.innerHTML = svgImpact(atk === 'sword' ? 'ice' : atk === 'lightning' ? 'ice' : atk);
     field.appendChild(burst);
 
-    // Warrior absorbs power → kills mob (warrior glows briefly)
-    const wDiv = document.getElementById('fc-warrior');
-    if (wDiv) {
-      wDiv.style.filter = 'drop-shadow(0 0 8px rgba(200,168,74,1)) brightness(1.5)';
-      setTimeout(() => { if(wDiv) wDiv.style.filter = 'drop-shadow(0 0 4px rgba(200,168,74,.5))'; }, 350);
-    }
-
-    // XP float at mob position (mob origin = sx,sy)
+    // XP float
     const xpF = document.createElement('div');
     xpF.className = 'battle-xp-float';
-    xpF.style.cssText = `left:${sx-8}px;top:${sy-14}px;`;
+    xpF.style.cssText = `left:${ex-10}px;top:${ey-20}px;font-size:11px;`;
     xpF.textContent = '+50XP';
     field.appendChild(xpF);
 
+    // Screen shake
+    field.style.animation = 'field-hit-shake .3s ease';
+    setTimeout(() => { field.style.animation = ''; }, 300);
+
     setTimeout(() => {
       burst.remove(); xpF.remove();
-      // Slash at mob
-      const slash = document.createElement('div');
-      slash.className = 'battle-slash';
-      slash.style.cssText = `left:${sx-14}px;top:${sy-14}px;position:absolute;z-index:8;`;
-      slash.innerHTML = svgSlash();
-      field.appendChild(slash);
-      // Kill mob
-      mobEl.style.animation = 'mob-hit-flash .25s ease';
-      setTimeout(() => {
-        slash.remove();
-        mobEl.style.transition = 'transform .3s,opacity .3s';
-        mobEl.style.transform  = 'scale(0) translateY(8px)';
-        mobEl.style.opacity    = '0';
-        setTimeout(() => renderFCBattle(), 320);
-      }, 250);
-    }, 200);
+      // Kill mob: pixel explosion then remove
+      const mobColor = mobEl.style.filter || '#ff4040';
+      pixelExplosion(field, ex, ey, '#ff6030');
+      mobEl.style.transition = 'transform .25s,opacity .25s';
+      mobEl.style.transform  = 'scale(0.1) translateY(-8px)';
+      mobEl.style.opacity    = '0';
+      setTimeout(() => renderFCBattle(), 350);
+    }, 250);
   });
 }
+
+/* ── Heavy attack: large impressive projectile warrior→mob ── */
+function launchHeavyAttack(field, sx, sy, dx, dy, dist, type, onHit) {
+  const dur = Math.max(0.3, Math.min(0.7, dist / 180));
+
+  // Animated canvas beam
+  const canvas = document.createElement('canvas');
+  const fW = field.offsetWidth || 400;
+  const fH = field.offsetHeight || 88;
+  canvas.width = fW; canvas.height = fH;
+  canvas.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:27;`;
+  field.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  let t = 0;
+  const totalFrames = Math.round(dur * 60);
+  const nx = dx / dist, ny = dy / dist; // normalized direction
+
+  function drawFrame() {
+    ctx.clearRect(0, 0, fW, fH);
+    const progress = t / totalFrames;
+    const headX = sx + dx * progress;
+    const headY = sy + dy * progress;
+
+    if (type === 'sword') {
+      // Sword beam — elongated white streak
+      const tailX = Math.max(sx, headX - 50);
+      const tailY = headY - (headX - tailX) * (dy/Math.max(1,Math.abs(dx)));
+      const grad = ctx.createLinearGradient(tailX, tailY, headX, headY);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(.5, 'rgba(200,230,255,.7)');
+      grad.addColorStop(1, 'rgba(255,255,255,1)');
+      ctx.save();
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 4 + progress * 2;
+      ctx.shadowColor = '#c0e0ff'; ctx.shadowBlur = 14;
+      ctx.beginPath(); ctx.moveTo(tailX, tailY); ctx.lineTo(headX, headY); ctx.stroke();
+      // Head glow
+      ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 20;
+      ctx.beginPath(); ctx.arc(headX, headY, 5, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    } else if (type === 'lightning') {
+      // Lightning chain from warrior to current head
+      ctx.save(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+      ctx.shadowColor = '#60d0ff'; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.moveTo(sx, sy);
+      const steps = 8;
+      for (let i = 1; i <= steps; i++) {
+        const lx = sx + dx * progress * i/steps;
+        const ly = sy + dy * progress * i/steps + (i < steps ? (Math.random()-.5)*10 : 0);
+        ctx.lineTo(lx, ly);
+      }
+      ctx.stroke();
+      // Glow orb at head
+      ctx.fillStyle = '#a0e8ff'; ctx.shadowBlur = 16;
+      ctx.beginPath(); ctx.arc(headX, headY, 6, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    } else {
+      // Fireball / shockwave: glowing orb
+      const colors = type === 'fireball'
+        ? {out:'#ff4400',mid:'#ff8800',core:'#ffe060',shadow:'#ff6600'}
+        : {out:'#8800ff',mid:'#cc60ff',core:'#ffffff', shadow:'#aa40ff'};
+      ctx.save();
+      ctx.shadowColor = colors.shadow; ctx.shadowBlur = 18;
+      // Tail
+      for (let ti = 0; ti < 5; ti++) {
+        const tx = headX - nx * ti * 10;
+        const ty = headY - ny * ti * 10;
+        const ta = (1 - ti/5) * .5;
+        ctx.globalAlpha = ta;
+        ctx.fillStyle = colors.out;
+        ctx.beginPath(); ctx.arc(tx, ty, (5 - ti) * .8, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = colors.mid; ctx.beginPath(); ctx.arc(headX, headY, 7, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = colors.core; ctx.beginPath(); ctx.arc(headX, headY, 3, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    t++;
+    if (t < totalFrames) {
+      requestAnimationFrame(drawFrame);
+    } else {
+      canvas.remove();
+      if (onHit) onHit();
+    }
+  }
+  drawFrame();
+}
+
+/* ── Pixel explosion at mob death ── */
+function pixelExplosion(field, cx, cy, baseColor) {
+  const canvas = document.createElement('canvas');
+  const fW = field.offsetWidth  || 400;
+  const fH = field.offsetHeight || 88;
+  canvas.width = fW; canvas.height = fH;
+  canvas.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:29;`;
+  field.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  const COLORS = ['#ff4040','#ff8020','#ffcc00','#ff60a0','#ffffff','#40aaff'];
+  const particles = Array.from({length:24}, () => {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1.8 + Math.random() * 2.8;
+    return {
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 0.5,
+      life: 0,
+      maxLife: 18 + Math.floor(Math.random() * 10),
+      size: 1 + Math.floor(Math.random() * 3),
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    };
+  });
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, fW, fH);
+    let alive = false;
+    particles.forEach(p => {
+      p.life++;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.12; // gravity
+      if (p.life < p.maxLife) {
+        alive = true;
+        const alpha = 1 - p.life / p.maxLife;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color; ctx.shadowBlur = 4;
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+        ctx.restore();
+      }
+    });
+    frame++;
+    if (alive && frame < 60) requestAnimationFrame(draw);
+    else canvas.remove();
+  }
+  draw();
+}
+
 
 function fcBattleReview() {
   // Ôn lại: both sides shoot but nobody dies
@@ -4191,6 +4339,7 @@ function fcStartTimer() {
   fcTimerLeft = fcTimerDuration;
   fcUpdateTimerUI(fcTimerLeft);
   fcTimerRunning = true;
+  initTimerProjectile(); // start canvas magic projectile
 
   // Reset and show defend zone
   const dz = document.getElementById('fc-defend-zone');
@@ -4220,7 +4369,7 @@ function fcStartTimer() {
 function fcStopTimer() {
   if (fcTimerInterval) { clearInterval(fcTimerInterval); fcTimerInterval = null; }
   fcTimerRunning = false;
-  // Restore timer input to duration (not live countdown)
+  stopTimerProjLoop(); // stop canvas animation
   const inp = document.getElementById('fc-timer-input');
   if (inp) inp.value = fcTimerDuration;
   const label = document.getElementById('fc-timer-label');
@@ -4230,81 +4379,187 @@ function fcStopTimer() {
 }
 
 /* ── Ancient Energy Crystal (timer orb) SVG ── */
-function svgEnergyCrystal(phase) {
-  // Pixel-art diamond crystal, color changes by phase
-  const c = phase === 3
-    ? {out:'#ff2020',mid:'#ff6040',hi:'#ffaa80',core:'#ffffff',glow:'#ff4020'}
-    : phase === 2
-    ? {out:'#ff8800',mid:'#ffbb30',hi:'#ffe880',core:'#ffffff',glow:'#ffaa00'}
-    : {out:'#c0a020',mid:'#f0cc40',hi:'#fff080',core:'#ffffff',glow:'#f0d050'};
-  return `<svg width="20" height="24" viewBox="0 0 10 12" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
-    <!-- Top facet -->
-    <rect x="4" y="0" width="2" height="1" fill="${c.hi}"/>
-    <rect x="3" y="1" width="4" height="1" fill="${c.hi}"/>
-    <rect x="2" y="2" width="6" height="1" fill="${c.mid}"/>
-    <!-- Middle belt -->
-    <rect x="1" y="3" width="8" height="4" fill="${c.mid}"/>
-    <rect x="0" y="4" width="10" height="2" fill="${c.out}"/>
-    <!-- Inner shine -->
-    <rect x="2" y="3" width="3" height="2" fill="${c.hi}" opacity=".7"/>
-    <rect x="2" y="3" width="2" height="1" fill="${c.core}" opacity=".5"/>
-    <!-- Core glow -->
-    <rect x="4" y="4" width="2" height="2" fill="${c.core}" opacity=".6"/>
-    <!-- Bottom taper -->
-    <rect x="1" y="7" width="8" height="2" fill="${c.out}"/>
-    <rect x="2" y="9" width="6" height="1" fill="${c.mid}"/>
-    <rect x="3" y="10" width="4" height="1" fill="${c.mid}"/>
-    <rect x="4" y="11" width="2" height="1" fill="${c.hi}"/>
-  </svg>`;
+/* ══════════════════════════════════════════════════════
+   MAGIC PROJECTILE TIMER SYSTEM
+   Canvas-based: projectile flies right→left continuously
+══════════════════════════════════════════════════════ */
+
+const PROJ_TYPES = ['FIRE','LIGHTNING','SWORD','ICE'];
+let _timerProjType  = 'FIRE';
+let _timerProjAF    = null;
+let _timerProjX     = 0;   // current x position (pixels from left)
+let _timerProjPhase = 1;
+
+function initTimerProjectile() {
+  _timerProjType  = PROJ_TYPES[Math.floor(Math.random() * PROJ_TYPES.length)];
+  _timerProjPhase = 1;
+  const canvas = document.getElementById('fc-timer-canvas');
+  if (canvas) _timerProjX = canvas.offsetWidth || 300; // start at right
+  startTimerProjLoop();
+}
+
+function startTimerProjLoop() {
+  if (_timerProjAF) { cancelAnimationFrame(_timerProjAF); _timerProjAF = null; }
+  const canvas = document.getElementById('fc-timer-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let trail = []; // [{x,y,age,maxAge,size,alpha}]
+
+  function loop() {
+    const hud = document.getElementById('fc-combat-hud');
+    if (!hud || hud.style.display === 'none') { _timerProjAF = null; return; }
+
+    const W = canvas.offsetWidth  || 300;
+    const H = canvas.offsetHeight || 14;
+    if (canvas.width !== W || canvas.height !== H) {
+      canvas.width = W; canvas.height = H;
+    }
+    ctx.clearRect(0, 0, W, H);
+
+    const phase = _timerProjPhase;
+    const speed = phase >= 3 ? 5 : phase >= 2 ? 3.5 : 2.2;
+    const cy    = H / 2;
+    const trailDensity = phase >= 3 ? 5 : phase >= 2 ? 3 : 1;
+
+    // Move projectile right→left
+    _timerProjX -= speed;
+    if (_timerProjX < -20) _timerProjX = W + 10;
+
+    // Spawn trail particles
+    for (let i = 0; i < trailDensity; i++) {
+      trail.push({
+        x:    _timerProjX + Math.random() * 10,
+        y:    cy + (Math.random() - .5) * (H * .6),
+        age:  0,
+        maxAge: phase >= 3 ? 22 : phase >= 2 ? 18 : 14,
+        size:   phase >= 3 ? 2.5 + Math.random()*2 : 1 + Math.random()*1.5,
+      });
+    }
+
+    // Draw trail particles
+    trail.forEach(p => {
+      p.age++;
+      const t = p.age / p.maxAge;
+      const alpha = (1 - t) * .85;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+
+      if (_timerProjType === 'FIRE') {
+        ctx.fillStyle = t < .4 ? '#fff0a0' : t < .7 ? '#ff8820' : '#ff3010';
+        ctx.shadowColor = '#ff6600'; ctx.shadowBlur = phase >= 2 ? 6 : 3;
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.ceil(p.size), Math.ceil(p.size));
+      } else if (_timerProjType === 'LIGHTNING') {
+        ctx.fillStyle = t < .3 ? '#ffffff' : t < .6 ? '#80e0ff' : '#2080ff';
+        ctx.shadowColor = '#40b0ff'; ctx.shadowBlur = phase >= 2 ? 8 : 4;
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.ceil(p.size), Math.ceil(p.size));
+      } else if (_timerProjType === 'SWORD') {
+        ctx.fillStyle = t < .4 ? '#ffffff' : t < .7 ? '#d0e8ff' : '#8090c0';
+        ctx.shadowColor = '#c0d8ff'; ctx.shadowBlur = phase >= 2 ? 6 : 3;
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.ceil(p.size), Math.ceil(p.size));
+      } else { // ICE
+        ctx.fillStyle = t < .4 ? '#e0ffff' : t < .7 ? '#40ddaa' : '#1088aa';
+        ctx.shadowColor = '#20ddbb'; ctx.shadowBlur = phase >= 2 ? 6 : 3;
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.ceil(p.size), Math.ceil(p.size));
+      }
+      ctx.restore();
+    });
+    trail = trail.filter(p => p.age < p.maxAge);
+
+    // Draw projectile head
+    const headSize = phase >= 3 ? 7 : 5;
+    const px = Math.round(_timerProjX);
+    ctx.save();
+
+    if (_timerProjType === 'FIRE') {
+      // Fireball: orange circle with bright core
+      ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#ff6600'; ctx.beginPath();
+      ctx.arc(px, cy, headSize, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ffe060'; ctx.beginPath();
+      ctx.arc(px, cy, headSize*.5, 0, Math.PI*2); ctx.fill();
+    } else if (_timerProjType === 'LIGHTNING') {
+      // Zigzag bolt shape
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.shadowColor = '#60d0ff'; ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(px + headSize, cy - 2);
+      ctx.lineTo(px + 2, cy); ctx.lineTo(px + headSize*.5, cy);
+      ctx.lineTo(px - headSize, cy + 2); ctx.stroke();
+    } else if (_timerProjType === 'SWORD') {
+      // Diamond elongated shape
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#c8e8ff'; ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(px + headSize*1.5, cy);
+      ctx.lineTo(px, cy - headSize*.5);
+      ctx.lineTo(px - headSize*.8, cy);
+      ctx.lineTo(px, cy + headSize*.5);
+      ctx.closePath(); ctx.fill();
+    } else { // ICE
+      // Ice star / cross
+      ctx.strokeStyle = '#a0eedd'; ctx.lineWidth = 2;
+      ctx.shadowColor = '#40ffcc'; ctx.shadowBlur = 10;
+      for (let a = 0; a < 4; a++) {
+        const ang = (a / 4) * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(px + Math.cos(ang)*headSize, cy + Math.sin(ang)*headSize);
+        ctx.lineTo(px - Math.cos(ang)*headSize, cy - Math.sin(ang)*headSize);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    // Phase 3: lightning branch effect
+    if (phase >= 3 && Math.random() < .15) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(180,230,255,.7)'; ctx.lineWidth = .8;
+      ctx.shadowColor = '#80d0ff'; ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.moveTo(px, cy);
+      ctx.lineTo(px + 8 + Math.random()*8, cy - 4 + Math.random()*8);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    _timerProjAF = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+function stopTimerProjLoop() {
+  if (_timerProjAF) { cancelAnimationFrame(_timerProjAF); _timerProjAF = null; }
+  const canvas = document.getElementById('fc-timer-canvas');
+  if (canvas) { const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
 }
 
 function fcUpdateTimerUI(sec) {
   const bar   = document.getElementById('fc-timer-bar');
   const label = document.getElementById('fc-timer-label');
   const inp   = document.getElementById('fc-timer-input');
-  const orb   = document.getElementById('fc-timer-orb');
   if (!bar || !label) return;
+
   const pct = (sec / fcTimerDuration) * 100;
+  // Shrink the dark background to show time remaining
   bar.style.width = pct + '%';
 
-  // 3-phase classes
+  // Phase
   bar.classList.remove('phase2','phase3','urgent');
-  if (orb) orb.classList.remove('phase2','phase3','urgent');
   const phase = pct <= 30 ? 3 : pct <= 60 ? 2 : 1;
-  if (phase === 3) {
-    bar.classList.add('phase3','urgent');
-    if (orb) orb.classList.add('phase3','urgent');
-  } else if (phase === 2) {
-    bar.classList.add('phase2');
-    if (orb) orb.classList.add('phase2');
+  if (phase === 3) { bar.classList.add('phase3','urgent'); }
+  else if (phase === 2) { bar.classList.add('phase2'); }
+
+  if (_timerProjPhase !== phase) {
+    _timerProjPhase = phase;
   }
 
-  // Update crystal SVG
-  if (orb) orb.innerHTML = svgEnergyCrystal(phase);
-
-  // Position orb at leading edge of bar, above track
-  if (orb) {
-    const track = bar.parentElement;
-    if (track) {
-      const trackW = track.offsetWidth;
-      const fillPx = Math.min(trackW, (pct / 100) * trackW);
-      orb.style.left  = Math.max(8, fillPx) + 'px';
-      orb.style.top   = '50%';
-      orb.style.right = 'auto';
-    }
-  }
-
-  // Show live countdown in input
   if (inp && fcTimerRunning && inp.dataset.editing !== '1') inp.value = Math.ceil(sec);
 
-  // Label color by phase
   label.style.color = phase === 3 ? '#ff5050' : phase === 2 ? '#ffa040' : '#e8c060';
   label.style.textShadow = phase === 3
     ? '0 0 10px rgba(255,60,40,.9)'
     : phase === 2 ? '0 0 8px rgba(255,140,40,.7)'
     : '0 0 8px rgba(220,180,60,.7)';
 
-  // Sync battle effect level for particle system
   if (typeof updateBattleEffectLevel === 'function') updateBattleEffectLevel(sec);
 }
 
