@@ -996,6 +996,56 @@ input::placeholder{color:var(--muted)}
   animation:rune-pulse 4s ease-in-out infinite;
 }
 @keyframes rune-pulse{0%,100%{opacity:.12}50%{opacity:.22}}
+
+/* ── Mini Battle Log strip ── */
+.fc-battle-log{
+  display:flex;align-items:center;gap:8px;
+  padding:3px 10px 4px;
+  background:rgba(8,5,2,.7);
+  border-radius:0 0 6px 6px;
+  border-top:1px solid rgba(200,160,60,.12);
+  margin:0 -1px;
+  position:relative;z-index:2;
+}
+.fc-battle-log span{
+  display:inline-flex;align-items:center;gap:2px;
+  font-size:11px;font-family:var(--mono);color:#a09040;
+  cursor:default;
+}
+.fc-battle-log span b{
+  font-size:12px;font-weight:700;color:#e8c060;
+  min-width:14px;text-align:center;
+}
+.fc-battle-log span:hover{color:#f0d070;}
+
+/* ── Copy button on defend input ── */
+.fc-copy-btn{
+  position:absolute;top:4px;right:4px;
+  width:24px;height:24px;
+  background:rgba(30,20,8,.8);
+  border:1px solid #6a4a18;border-radius:4px;
+  color:#c8a040;font-size:12px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.fc-copy-btn:hover{border-color:#e0c060;color:#f0d060;background:rgba(50,35,12,.9);}
+
+/* ── Skill tier indicator (flash on attack) ── */
+.skill-tier-toast{
+  position:absolute;top:6px;left:50%;transform:translateX(-50%);
+  padding:2px 10px;border-radius:12px;
+  font-size:10px;font-weight:700;font-family:var(--mono);
+  pointer-events:none;z-index:30;white-space:nowrap;
+  animation:skill-toast-fade 1.2s ease forwards;
+}
+.skill-tier-toast.t1{background:rgba(40,160,255,.9);color:#fff;box-shadow:0 0 12px rgba(40,160,255,.7);}
+.skill-tier-toast.t2{background:rgba(200,80,255,.9);color:#fff;box-shadow:0 0 12px rgba(200,80,255,.7);}
+.skill-tier-toast.t3{background:rgba(255,200,20,.9);color:#111;box-shadow:0 0 12px rgba(255,200,20,.7);}
+@keyframes skill-toast-fade{
+  0%{opacity:1;transform:translateX(-50%) translateY(0)}
+  70%{opacity:1;transform:translateX(-50%) translateY(-8px)}
+  100%{opacity:0;transform:translateX(-50%) translateY(-16px)}
+}
 /* Level-based field glow */
 .fc-battle-field[data-effect-level="2"]{
   box-shadow:inset 0 2px 12px rgba(0,0,0,.7),inset 0 -2px 8px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.6),0 0 12px rgba(80,180,255,.25);
@@ -1859,6 +1909,14 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <span class="fc-battle-title">⚔ Today's Battle</span>
             <span class="fc-battle-score" id="fc-battle-score">0 / 0</span>
           </div>
+          <!-- Mini Battle Log -->
+          <div class="fc-battle-log" id="fc-battle-log">
+            <span title="Lốc xoáy">🌪️<b>0</b></span>
+            <span title="Liên thanh">☄️<b>0</b></span>
+            <span title="Phi tiêu">💮<b>0</b></span>
+            <span title="Bị đánh">💀<b>0</b></span>
+            <span title="Chống trả">🛡<b>0</b></span>
+          </div>
           <div class="fc-battle-field" id="fc-battle-field">
             <div class="fc-battle-ground"></div>
             <!-- rendered by renderFCBattle() -->
@@ -1868,6 +1926,16 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         </div>
 
         <div id="fc-zone">
+          <!-- Defend zone: active when timer running -->
+          <div class="fc-defend-zone" id="fc-defend-zone">
+            <div style="position:relative;">
+              <textarea class="fc-defend-input" id="fc-defend-input" rows="2"
+                placeholder="Tự đặt câu ví dụ với từ này... ↵ Enter = Phòng thủ"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();fcDefend();}"></textarea>
+              <button class="fc-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('fc-defend-input').value).then(()=>toast('Đã copy!','good'))" title="Copy câu vừa nhập">⎘</button>
+            </div>
+            <button class="fc-defend-btn" onclick="fcDefend()">🛡 Phòng thủ — Ngưng đếm giây</button>
+          </div>
           <div class="fc-card-scene" onclick="flipFC()">
             <div class="fc-card-3d" id="fc-card">
               <div class="fc-face fc-front">
@@ -1897,13 +1965,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
           <div class="fc-rate-note">
             ★ Chỉ "Nhớ rồi ✓" mới tính vào mục tiêu &amp; thống kê · Lặp lại không tính thêm
           </div>
-          <!-- Defend zone: active when timer running -->
-          <div class="fc-defend-zone" id="fc-defend-zone">
-            <textarea class="fc-defend-input" id="fc-defend-input" rows="2"
-              placeholder="Tự đặt câu ví dụ với từ này... ↵ Enter = Phòng thủ"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();fcDefend();}"></textarea>
-            <button class="fc-defend-btn" onclick="fcDefend()">🛡 Phòng thủ — Ngưng đếm giây</button>
-          </div>
+
         </div>
         <div class="fc-done-box" id="fc-done" style="display:none;">
           <div class="done-num" id="fc-done-pct">100%</div>
@@ -3402,7 +3464,34 @@ function svgViciousSlime(colorIdx, sz) {
 
 /* ── Particle & effect state ── */
 let _sparkAF = null;
-let _battleEffectLevel = 1; // 1=normal, 2=dramatic(<10s), 3=kamehameha(<3s)
+let _battleEffectLevel = 1;
+
+/* ── Battle Log Stats (per flashcard session) ── */
+let battleLog = { tornado:0, barrage:0, shuriken:0, hit:0, parry:0 };
+
+function resetBattleLog() {
+  battleLog = { tornado:0, barrage:0, shuriken:0, hit:0, parry:0 };
+  renderBattleLog();
+}
+
+function renderBattleLog() {
+  const el = document.getElementById('fc-battle-log');
+  if (!el) return;
+  el.innerHTML =
+    `<span title="Lốc xoáy (Nhanh)">🌪️<b>${battleLog.tornado}</b></span>` +
+    `<span title="Liên thanh (Vừa)">☄️<b>${battleLog.barrage}</b></span>` +
+    `<span title="Phi tiêu (Chậm)">💮<b>${battleLog.shuriken}</b></span>` +
+    `<span title="Bị đánh/Hết giờ">💀<b>${battleLog.hit}</b></span>` +
+    `<span title="Chống trả (Khó)">🛡<b>${battleLog.parry}</b></span>`;
+}
+
+/* ── Determine skill tier by remaining time ── */
+function getSkillTier() {
+  const pct = fcTimerDuration > 0 ? fcTimerLeft / fcTimerDuration : 0;
+  if (pct > 0.66) return 1; // Tornado
+  if (pct > 0.33) return 2; // Barrage
+  return 3;                  // Shuriken
+} // 1=normal, 2=dramatic(<10s), 3=kamehameha(<3s)
 let _lightningTimer = null;
 
 function updateBattleEffectLevel(secLeft) {
@@ -3994,6 +4083,261 @@ function pixelExplosion(field, cx, cy, baseColor) {
     else canvas.remove();
   }
   draw();
+}
+
+
+function showSkillToast(text, tier) {
+  const field = document.getElementById('fc-battle-field');
+  if (!field) return;
+  const el = document.createElement('div');
+  el.className = `skill-tier-toast t${tier}`;
+  el.textContent = text;
+  field.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+/* ══════════════════════════════════════════════════════
+   TIER ATTACKS — warrior→mob (LEFT→RIGHT)
+   Tier 1: Tornado  | Tier 2: Barrage | Tier 3: Shuriken
+══════════════════════════════════════════════════════ */
+
+function _getWarriorMobPos() {
+  const field   = document.getElementById('fc-battle-field');
+  const warrior = document.getElementById('fc-warrior');
+  const mobEl   = document.getElementById('fc-mob-active');
+  if (!field || !mobEl) return null;
+  const fR = field.getBoundingClientRect();
+  const wR = warrior ? warrior.getBoundingClientRect()
+    : {left:fR.left+8, top:fR.top+10, width:32, height:42};
+  const mR = mobEl.getBoundingClientRect();
+  return {
+    field, fR, wR, mR,
+    sx: wR.right - fR.left + 2,
+    sy: wR.top - fR.top + wR.height * 0.35,
+    ex: mR.left - fR.left + mR.width * 0.5,
+    ey: mR.top - fR.top + mR.height * 0.5,
+    mobEl,
+  };
+}
+
+function _impactMob(p, field) {
+  const { mobEl, ex, ey } = p;
+  mobEl.style.filter = 'brightness(5) saturate(0) sepia(1) hue-rotate(-10deg) drop-shadow(0 0 14px #ff0000)';
+  mobEl.style.animation = 'mob-hit-shake .4s ease';
+  field.style.animation = 'field-hit-shake .35s ease';
+  setTimeout(() => { field.style.animation = ''; }, 350);
+  const xpF = document.createElement('div');
+  xpF.className = 'battle-xp-float';
+  xpF.style.cssText = `left:${ex-12}px;top:${ey-22}px;font-size:12px;`;
+  xpF.textContent = '+50XP';
+  field.appendChild(xpF);
+  pixelExplosion(field, ex, ey, '#ff6030');
+  setTimeout(() => {
+    if (mobEl.parentElement) {
+      mobEl.style.filter = '';
+      mobEl.style.animation = 'mob-idle 2.2s ease-in-out infinite';
+    }
+    xpF.remove();
+    mobEl.style.transition = 'transform .25s,opacity .25s';
+    mobEl.style.transform = 'scale(0.1) translateY(-8px)';
+    mobEl.style.opacity = '0';
+    setTimeout(() => renderFCBattle(), 340);
+  }, 420);
+}
+
+/* ── Tier 1: Massive Tornado ── */
+function fcAttackTornado() {
+  showSkillToast('🌪️ TUYỆT KỸ!', 1);
+  const p = _getWarriorMobPos(); if (!p) return;
+  const { field, sx, sy, ex, ey } = p;
+  const fW = field.offsetWidth  || 400;
+  const fH = field.offsetHeight || 96;
+  const canvas = document.createElement('canvas');
+  canvas.width = fW; canvas.height = fH;
+  canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:27;';
+  field.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const dur = 0.6, totalF = Math.round(dur * 60);
+  const dx = ex - sx, dy = ey - sy;
+  let t = 0;
+  // Tornado particle pool
+  const particles = Array.from({length: 60}, (_, i) => ({
+    angle: (i / 60) * Math.PI * 4,
+    radius: 14 + (i % 3) * 6,
+    speed:  0.22 + (i % 4) * 0.04,
+    size:   1.2 + Math.random() * 1.8,
+    color:  ['#80ffcc','#40d0ff','#c0a0ff','#ffe080','#ffffff'][i % 5],
+    phase:  i / 60,
+  }));
+  function frame() {
+    ctx.clearRect(0, 0, fW, fH);
+    const prog = t / totalF;
+    const cx = sx + dx * prog, cy2 = sy + dy * prog;
+    const scale = 1 + prog * 0.8;
+    // Draw tornado core
+    const grd = ctx.createRadialGradient(cx, cy2, 0, cx, cy2, 22 * scale);
+    grd.addColorStop(0,   'rgba(200,240,255,.9)');
+    grd.addColorStop(.35, 'rgba(80,180,255,.6)');
+    grd.addColorStop(.7,  'rgba(40,80,200,.3)');
+    grd.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.save(); ctx.fillStyle = grd; ctx.shadowColor = '#60d0ff'; ctx.shadowBlur = 18;
+    ctx.beginPath(); ctx.arc(cx, cy2, 22 * scale, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    // Spiral particles
+    particles.forEach(p2 => {
+      p2.angle += p2.speed;
+      const r = p2.radius * scale * (0.6 + 0.4 * Math.sin(t * 0.15 + p2.phase * Math.PI));
+      const px2 = cx + Math.cos(p2.angle) * r;
+      const py2 = cy2 + Math.sin(p2.angle) * r * 0.4;
+      ctx.save();
+      ctx.globalAlpha = 0.7 + 0.3 * Math.sin(t * 0.2 + p2.phase);
+      ctx.fillStyle = p2.color;
+      ctx.shadowColor = p2.color; ctx.shadowBlur = 5;
+      ctx.fillRect(Math.round(px2), Math.round(py2), Math.ceil(p2.size), Math.ceil(p2.size));
+      ctx.restore();
+    });
+    // Lightning branches
+    if (Math.random() < 0.3) {
+      ctx.save(); ctx.strokeStyle = '#c0e8ff'; ctx.lineWidth = 1;
+      ctx.shadowColor = '#80d0ff'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.moveTo(cx, cy2);
+      ctx.lineTo(cx + (Math.random()-.5)*20*scale, cy2 + (Math.random()-.5)*14*scale);
+      ctx.stroke(); ctx.restore();
+    }
+    t++;
+    if (t < totalF) requestAnimationFrame(frame);
+    else {
+      canvas.remove();
+      // Ultra screen shake for tornado
+      const hud = document.getElementById('fc-combat-hud');
+      if (hud) { hud.style.animation='field-hit-shake .5s ease'; setTimeout(()=>{hud.style.animation='';},500); }
+      field.style.animation = 'field-hit-shake .5s ease';
+      setTimeout(()=>{field.style.animation='';},500);
+      _impactMob(p, field);
+    }
+  }
+  frame();
+}
+
+/* ── Tier 2: Energy Barrage (3-5 shots) ── */
+function fcAttackBarrage() {
+  showSkillToast('☄️ LIÊN THANH!', 2);
+  const p = _getWarriorMobPos(); if (!p) return;
+  const { field, sx, sy, ex, ey } = p;
+  const fW = field.offsetWidth || 400;
+  const fH = field.offsetHeight || 96;
+  const COLORS = [
+    '#ff4040','#4080ff','#cc40ff','#ffcc00','#40ffaa'
+  ];
+  const shots = 4 + Math.floor(Math.random() * 2); // 4-5 shots
+  let fired = 0;
+  function fireOne(shotIdx) {
+    const canvas = document.createElement('canvas');
+    canvas.width = fW; canvas.height = fH;
+    canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:27;';
+    field.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const color = COLORS[shotIdx % COLORS.length];
+    const offY  = (shotIdx - shots/2) * 5; // spread vertically
+    const tx = ex, ty = ey + offY;
+    const totalF = 22, dx2 = tx - sx, dy2 = ty - sy;
+    let t = 0;
+    function frame() {
+      ctx.clearRect(0, 0, fW, fH);
+      const prog = t / totalF;
+      const hx = sx + dx2 * prog, hy = sy + dy2 * prog;
+      // Tail
+      for (let ti = 0; ti < 6; ti++) {
+        const ta = (1 - ti/6) * .65;
+        const tr = 4 - ti * .5;
+        ctx.save(); ctx.globalAlpha = ta;
+        ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(hx - (dx2/totalF)*ti*.6, hy - (dy2/totalF)*ti*.6, tr, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      // Head
+      ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 14;
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(hx, hy, 5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(hx, hy, 3.5, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      t++;
+      if (t < totalF) requestAnimationFrame(frame);
+      else {
+        canvas.remove();
+        fired++;
+        if (fired === shots) {
+          field.style.animation = 'field-hit-shake .3s ease';
+          setTimeout(()=>{field.style.animation='';},300);
+          _impactMob(p, field);
+        }
+      }
+    }
+    frame();
+  }
+  for (let i = 0; i < shots; i++) {
+    setTimeout(() => fireOne(i), i * 80);
+  }
+}
+
+/* ── Tier 3: Spinning Shuriken ── */
+function fcAttackShuriken() {
+  showSkillToast('💮 PHI TIÊU', 3);
+  const p = _getWarriorMobPos(); if (!p) return;
+  const { field, sx, sy, ex, ey } = p;
+  const fW = field.offsetWidth || 400;
+  const fH = field.offsetHeight || 96;
+  const canvas = document.createElement('canvas');
+  canvas.width = fW; canvas.height = fH;
+  canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:27;';
+  field.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const dur = 0.45, totalF = Math.round(dur * 60);
+  const dx = ex - sx, dy = ey - sy;
+  let t = 0, spin = 0;
+  function frame() {
+    ctx.clearRect(0, 0, fW, fH);
+    const prog = t / totalF;
+    const hx = sx + dx * prog, hy = sy + dy * prog;
+    spin += 0.35;
+    // Shuriken shape (4-blade star)
+    ctx.save();
+    ctx.translate(hx, hy); ctx.rotate(spin);
+    ctx.shadowColor = '#ffe840'; ctx.shadowBlur = 10;
+    for (let blade = 0; blade < 4; blade++) {
+      ctx.save(); ctx.rotate((blade / 4) * Math.PI * 2);
+      ctx.beginPath();
+      ctx.moveTo(0, -8); ctx.lineTo(2, -2); ctx.lineTo(8, 0);
+      ctx.lineTo(2, 2);  ctx.lineTo(0, 8);  ctx.lineTo(-2, 2);
+      ctx.lineTo(-8, 0); ctx.lineTo(-2, -2); ctx.closePath();
+      ctx.fillStyle = blade % 2 === 0 ? '#ffee20' : '#ff8800';
+      ctx.fill(); ctx.restore();
+    }
+    // Center gem
+    ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI*2);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.restore();
+    // Spin trail
+    if (t % 3 === 0) {
+      ctx.save(); ctx.globalAlpha = .4;
+      ctx.shadowColor = '#ffcc00'; ctx.shadowBlur = 6;
+      ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(hx, hy, 9, spin, spin + Math.PI * 1.2);
+      ctx.stroke(); ctx.restore();
+    }
+    t++;
+    if (t < totalF) requestAnimationFrame(frame);
+    else {
+      canvas.remove();
+      // Small precise impact
+      const burst = document.createElement('div');
+      burst.className = 'proj';
+      burst.style.cssText = `left:${ex-14}px;top:${ey-14}px;width:28px;height:28px;z-index:28;animation:impact-burst .5s ease forwards;`;
+      burst.innerHTML = svgImpact('ice');
+      field.appendChild(burst);
+      setTimeout(() => { burst.remove(); }, 500);
+      _impactMob(p, field);
+    }
+  }
+  frame();
 }
 
 
@@ -4965,6 +5309,8 @@ function fcTimerExpired() {
     sbPushHardWord(w.id, true);
   }
 
+  battleLog.hit++;
+  renderBattleLog();
   toast('⏰ Hết giờ! −1 HP · Từ chuyển vào danh sách khó', 'bad');
 
   // Check dead
@@ -5004,6 +5350,7 @@ function startFC(){
   fcHardWords=[];
   fcNewThisSession=new Set();
   fcHP=10; fcStopTimer();
+  resetBattleLog();
   document.getElementById('fc-zone').style.display='block';
   document.getElementById('fc-done').style.display='none';
   document.getElementById('fc-hard-panel').style.display='none';
@@ -5080,20 +5427,34 @@ function rateFC(r){
     saveState(); pushMetaToSB();
     if(isNew) {
       setTimeout(()=>battleSlashEffect(done), 100);
-      setTimeout(()=>fcBattleSlash(), 80);
+      // Tier-based attack
+      const tier = getSkillTier();
+      if (tier === 1) {
+        battleLog.tornado++;
+        setTimeout(()=>fcAttackTornado(), 80);
+      } else if (tier === 2) {
+        battleLog.barrage++;
+        setTimeout(()=>fcAttackBarrage(), 80);
+      } else {
+        battleLog.shuriken++;
+        setTimeout(()=>fcAttackShuriken(), 80);
+      }
+      renderBattleLog();
     }
   } else if(r==='hard'){
     combo=Math.max(0,combo-1); addXP(5);
-    // Mark as hard — persistent across sessions
     hardWordIds.add(w.id);
     if(!fcHardWords.find(x=>x.id===w.id)) fcHardWords.push(w);
     saveState();
     renderHardWords();
-    // push hard flag to Supabase immediately
     sbPushHardWord(w.id, true);
+    battleLog.parry++;
+    renderBattleLog();
     setTimeout(()=>fcBattleMonsterAttack(), 80);
   } else {
     fcUnknown++; combo=0;
+    battleLog.hit++;
+    renderBattleLog();
     fcQueue.push(fcQueue[fcIdx]);
   }
   fcIdx++;
