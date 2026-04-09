@@ -579,6 +579,18 @@ input::placeholder{color:var(--muted)}
   60%{transform:translateX(-2px)}
   80%{transform:translateX(2px)}
 }
+@keyframes field-hit-shake-heavy{
+  0%,100%{transform:translate(0,0)}
+  10%{transform:translate(-5px,-2px)}
+  20%{transform:translate(5px,2px)}
+  30%{transform:translate(-4px,-3px)}
+  40%{transform:translate(4px,1px)}
+  50%{transform:translate(-3px,-2px)}
+  60%{transform:translate(3px,2px)}
+  70%{transform:translate(-2px,-1px)}
+  80%{transform:translate(2px,1px)}
+  90%{transform:translate(-1px,0)}
+}
 @keyframes mob-hit-flash{
   0%{filter:brightness(1)}
   30%{filter:brightness(3) saturate(0)}
@@ -3469,6 +3481,222 @@ let _battleEffectLevel = 1;
 /* ── Battle Log Stats (per flashcard session) ── */
 let battleLog = { tornado:0, barrage:0, shuriken:0, hit:0, parry:0 };
 
+/* ══════════════════════════════════════════════════════
+   CHESS RANK WARRIOR SYSTEM
+   currentRank: 'pawn'|'knight'|'bishop'|'rook'|'queen'|'king'
+   currentStars: 1|2|3
+   — Override these globals to test any rank+star combo
+══════════════════════════════════════════════════════ */
+let currentRank  = 'pawn';
+let currentStars = 1;
+
+function syncRankFromXP() {
+  const r = getCurrentRank();
+  currentRank  = r.piece;
+  currentStars = r.star || 1;
+}
+
+/* ── Rank config: colors, skills, aura per rank ── */
+const RANK_CONFIG = {
+  pawn:   { color:'#a0a0c0', weapon:'#c0c0e0', aura:'rgba(160,160,220,.35)',
+            skill1:{name:'Lốc xoáy gió',  col:'#80c0ff', col2:'#40e0aa'},
+            skill2:{name:'Liên phi tiêu',  col:'#60aaff', col2:'#20c080'},
+            skill3:{name:'Dao găm',        col:'#aac0ff', col2:'#80d0cc'} },
+  knight: { color:'#40c060', weapon:'#80e090', aura:'rgba(60,200,100,.4)',
+            skill1:{name:'Lốc xoáy xanh', col:'#40ff80', col2:'#20d060'},
+            skill2:{name:'Phóng lao',      col:'#60e080', col2:'#20b050'},
+            skill3:{name:'Mũi giáo',       col:'#80ff60', col2:'#40c040'} },
+  bishop: { color:'#4080ff', weapon:'#80b0ff', aura:'rgba(60,120,255,.4)',
+            skill1:{name:'Lốc xoáy phép', col:'#6080ff', col2:'#8040ff'},
+            skill2:{name:'Mưa tinh thể',  col:'#80a0ff', col2:'#a060ff'},
+            skill3:{name:'Tinh thể',       col:'#a0c0ff', col2:'#c080ff'} },
+  rook:   { color:'#c08040', weapon:'#e0a060', aura:'rgba(180,120,40,.45)',
+            skill1:{name:'Lốc xoáy đá',   col:'#c08030', col2:'#804010'},
+            skill2:{name:'Mưa đá thiên thạch',col:'#d09040',col2:'#a05820'},
+            skill3:{name:'Quả cầu đá',     col:'#b07030', col2:'#804020'} },
+  queen:  { color:'#9040e0', weapon:'#cc60ff', aura:'rgba(160,50,230,.5)',
+            skill1:{name:'Lốc xoáy tím',  col:'#c040ff', col2:'#8020cc'},
+            skill2:{name:'Mưa kiếm tím',  col:'#e060ff', col2:'#a030d0'},
+            skill3:{name:'Cầu năng lượng',col:'#d050ff', col2:'#9020c0'} },
+  king:   { color:'#d4a020', weapon:'#ffe060', aura:'rgba(220,170,20,.6)',
+            skill1:{name:'Lốc xoáy vàng', col:'#ffe040', col2:'#ffa000'},
+            skill2:{name:'Mưa kiếm vàng', col:'#ffd020', col2:'#ff8000'},
+            skill3:{name:'Kiếm khí',      col:'#ffee80', col2:'#ffcc00'} },
+};
+
+/* ── Draw chess piece warrior as SVG string, rank+star aware ── */
+function svgChessWarrior(rank, stars) {
+  rank  = rank  || currentRank  || 'pawn';
+  stars = stars || currentStars || 1;
+  const rc = RANK_CONFIG[rank] || RANK_CONFIG.pawn;
+  const col    = rc.color;
+  const wcol   = rc.weapon;
+  const hasWeapon = stars >= 2;
+  const hasAura   = stars >= 3;
+
+  // Base piece shapes per rank — pixel-art style using SVG rects
+  const aura = hasAura
+    ? `<circle cx="16" cy="21" r="15" fill="${rc.aura}" filter="url(#glow${rank})"/>
+       <circle cx="16" cy="21" r="11" fill="none" stroke="${wcol}" stroke-width=".8" opacity=".6"/>`
+    : '';
+
+  const filterDef = hasAura
+    ? `<defs><filter id="glow${rank}" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter></defs>` : '';
+
+  // Each rank has a distinct chess-piece silhouette
+  const pieces = {
+    pawn: `
+      <!-- Pawn: round head, narrow neck, wide base -->
+      <rect x="12" y="2"  width="8"  height="1"  fill="${col}"/>
+      <rect x="11" y="3"  width="10" height="5"  fill="${col}"/>
+      <rect x="10" y="3"  width="12" height="4"  fill="${col}"/>
+      <rect x="12" y="7"  width="1"  height="1"  fill="${col}" opacity=".5"/>
+      <rect x="19" y="7"  width="1"  height="1"  fill="${col}" opacity=".5"/>
+      <rect x="13" y="8"  width="6"  height="3"  fill="${col}"/><!-- neck -->
+      <rect x="9"  y="11" width="14" height="2"  fill="${col}"/><!-- collar -->
+      <rect x="8"  y="13" width="16" height="8"  fill="${col}"/><!-- body -->
+      <rect x="7"  y="17" width="18" height="2"  fill="${col}" opacity=".7"/><!-- waist -->
+      <rect x="6"  y="21" width="20" height="5"  fill="${col}"/><!-- base -->
+      <rect x="5"  y="24" width="22" height="3"  fill="${col}" opacity=".8"/><!-- base bottom -->
+      <!-- head shine -->
+      <rect x="13" y="4"  width="3"  height="2"  fill="white" opacity=".35"/>
+      ${hasWeapon ? `<!-- Dagger right side -->
+      <rect x="23" y="10" width="2"  height="10" fill="${wcol}"/><!-- blade -->
+      <rect x="22" y="10" width="4"  height="2"  fill="${wcol}" opacity=".6"/><!-- guard -->
+      <rect x="23" y="8"  width="2"  height="3"  fill="white" opacity=".7"/><!-- shine -->` : ''}`,
+
+    knight: `
+      <!-- Knight: horse-head silhouette, angular -->
+      <rect x="13" y="1"  width="7"  height="2"  fill="${col}"/><!-- mane top -->
+      <rect x="12" y="3"  width="10" height="6"  fill="${col}"/><!-- head -->
+      <rect x="10" y="5"  width="12" height="4"  fill="${col}"/><!-- snout area -->
+      <rect x="10" y="9"  width="4"  height="3"  fill="${col}"/><!-- snout protrude -->
+      <rect x="13" y="9"  width="2"  height="1"  fill="#222" opacity=".5"/><!-- nostril -->
+      <!-- eye -->
+      <rect x="15" y="5"  width="2"  height="2"  fill="#111"/>
+      <rect x="15" y="5"  width="1"  height="1"  fill="white" opacity=".8"/>
+      <rect x="14" y="12" width="8"  height="3"  fill="${col}"/><!-- neck -->
+      <rect x="8"  y="13" width="16" height="2"  fill="${col}"/><!-- collar -->
+      <rect x="8"  y="15" width="16" height="7"  fill="${col}"/><!-- body -->
+      <rect x="7"  y="19" width="18" height="1"  fill="${col}" opacity=".6"/>
+      <rect x="6"  y="22" width="20" height="5"  fill="${col}"/><!-- base -->
+      <rect x="5"  y="25" width="22" height="2"  fill="${col}" opacity=".8"/>
+      <!-- highlight -->
+      <rect x="15" y="3"  width="4"  height="2"  fill="white" opacity=".3"/>
+      ${hasWeapon ? `<!-- Spear right side -->
+      <rect x="24" y="4"  width="2"  height="16" fill="${wcol}"/><!-- shaft -->
+      <rect x="24" y="2"  width="2"  height="4"  fill="white" opacity=".8"/><!-- spearhead -->
+      <rect x="23" y="8"  width="4"  height="2"  fill="${wcol}" opacity=".5"/><!-- tassle -->` : ''}`,
+
+    bishop: `
+      <!-- Bishop: tall pointed top, cross -->
+      <rect x="14" y="0"  width="4"  height="2"  fill="${col}"/><!-- tip -->
+      <rect x="13" y="2"  width="6"  height="3"  fill="${col}"/><!-- pointed top -->
+      <rect x="12" y="5"  width="8"  height="4"  fill="${col}"/><!-- head -->
+      <rect x="11" y="7"  width="10" height="3"  fill="${col}"/>
+      <!-- Cross on body -->
+      <rect x="15" y="5"  width="2"  height="6"  fill="white" opacity=".5"/>
+      <rect x="13" y="8"  width="6"  height="2"  fill="white" opacity=".5"/>
+      <rect x="13" y="11" width="6"  height="2"  fill="${col}"/><!-- neck -->
+      <rect x="9"  y="13" width="14" height="2"  fill="${col}"/><!-- collar -->
+      <rect x="8"  y="15" width="16" height="7"  fill="${col}"/><!-- body -->
+      <rect x="7"  y="20" width="18" height="1"  fill="${col}" opacity=".6"/>
+      <rect x="6"  y="22" width="20" height="5"  fill="${col}"/><!-- base -->
+      <rect x="5"  y="25" width="22" height="2"  fill="${col}" opacity=".8"/>
+      <rect x="14" y="6"  width="2"  height="2"  fill="white" opacity=".4"/>
+      ${hasWeapon ? `<!-- Magic staff -->
+      <rect x="24" y="5"  width="2"  height="16" fill="${wcol}"/>
+      <rect x="22" y="3"  width="6"  height="6"  fill="${wcol}" opacity=".7"/><!-- orb -->
+      <rect x="23" y="4"  width="4"  height="4"  fill="white" opacity=".5"/><!-- orb shine -->` : ''}`,
+
+    rook: `
+      <!-- Rook: battlements on top, wide tower -->
+      <rect x="9"  y="1"  width="4"  height="5"  fill="${col}"/><!-- merlon L -->
+      <rect x="15" y="1"  width="4"  height="5"  fill="${col}"/><!-- merlon R -->
+      <rect x="21" y="1"  width="4"  height="5"  fill="${col}"/><!-- merlon far R-->
+      <rect x="8"  y="6"  width="16" height="1"  fill="${col}"/><!-- parapet -->
+      <rect x="8"  y="7"  width="16" height="11" fill="${col}"/><!-- tower walls -->
+      <!-- arrow slit windows -->
+      <rect x="11" y="9"  width="2"  height="4"  fill="#111" opacity=".6"/>
+      <rect x="19" y="9"  width="2"  height="4"  fill="#111" opacity=".6"/>
+      <rect x="15" y="10" width="2"  height="3"  fill="#111" opacity=".4"/>
+      <rect x="7"  y="16" width="18" height="2"  fill="${col}"/><!-- waist -->
+      <rect x="6"  y="18" width="20" height="4"  fill="${col}"/><!-- base -->
+      <rect x="5"  y="22" width="22" height="4"  fill="${col}" opacity=".9"/>
+      <rect x="9"  y="7"  width="4"  height="1"  fill="white" opacity=".2"/>
+      ${hasWeapon ? `<!-- Stone cannon ball -->
+      <rect x="24" y="14" width="6"  height="6"  fill="${wcol}" opacity=".8"/>
+      <rect x="25" y="13" width="4"  height="1"  fill="white" opacity=".4"/>` : ''}`,
+
+    queen: `
+      <!-- Queen: many-pointed crown, elegant -->
+      <rect x="14" y="0"  width="4"  height="3"  fill="${col}"/><!-- center crown -->
+      <rect x="9"  y="1"  width="3"  height="3"  fill="${col}"/><!-- L crown -->
+      <rect x="20" y="1"  width="3"  height="3"  fill="${col}"/><!-- R crown -->
+      <rect x="11" y="4"  width="1"  height="1"  fill="${wcol}" opacity=".8"/><!-- gem L -->
+      <rect x="15" y="3"  width="2"  height="2"  fill="${wcol}"/><!-- gem C -->
+      <rect x="20" y="4"  width="1"  height="1"  fill="${wcol}" opacity=".8"/><!-- gem R -->
+      <rect x="9"  y="5"  width="14" height="5"  fill="${col}"/><!-- head -->
+      <rect x="8"  y="6"  width="16" height="3"  fill="${col}"/>
+      <rect x="13" y="10" width="6"  height="3"  fill="${col}"/><!-- neck -->
+      <rect x="9"  y="13" width="14" height="2"  fill="${col}"/><!-- collar -->
+      <rect x="8"  y="15" width="16" height="7"  fill="${col}"/><!-- body gown -->
+      <rect x="7"  y="19" width="18" height="1"  fill="${col}" opacity=".6"/>
+      <rect x="6"  y="22" width="20" height="5"  fill="${col}"/><!-- base -->
+      <rect x="5"  y="25" width="22" height="2"  fill="${col}" opacity=".8"/>
+      <rect x="14" y="6"  width="4"  height="2"  fill="white" opacity=".35"/>
+      ${hasWeapon ? `<!-- Scepter -->
+      <rect x="24" y="6"  width="2"  height="15" fill="${wcol}"/>
+      <rect x="22" y="3"  width="6"  height="5"  fill="${wcol}"/><!-- top orb -->
+      <rect x="23" y="4"  width="4"  height="3"  fill="white" opacity=".6"/>` : ''}`,
+
+    king: `
+      <!-- King: tall cross crown, regal -->
+      <rect x="15" y="0"  width="2"  height="5"  fill="${col}"/><!-- cross vertical -->
+      <rect x="13" y="1"  width="6"  height="2"  fill="${col}"/><!-- cross horizontal -->
+      <rect x="10" y="5"  width="12" height="5"  fill="${col}"/><!-- crown band -->
+      <rect x="9"  y="6"  width="14" height="3"  fill="${col}"/>
+      <!-- Crown gems -->
+      <rect x="11" y="5"  width="2"  height="2"  fill="${wcol}"/>
+      <rect x="15" y="5"  width="2"  height="2"  fill="white" opacity=".9"/>
+      <rect x="19" y="5"  width="2"  height="2"  fill="${wcol}"/>
+      <rect x="12" y="10" width="8"  height="3"  fill="${col}"/><!-- neck -->
+      <rect x="9"  y="13" width="14" height="2"  fill="${col}"/><!-- collar -->
+      <rect x="8"  y="15" width="16" height="8"  fill="${col}"/><!-- robe -->
+      <rect x="9"  y="16" width="14" height="1"  fill="white" opacity=".15"/><!-- robe shine -->
+      <rect x="7"  y="21" width="18" height="1"  fill="${col}" opacity=".6"/>
+      <rect x="6"  y="22" width="20" height="5"  fill="${col}"/><!-- base -->
+      <rect x="5"  y="25" width="22" height="2"  fill="${col}" opacity=".8"/>
+      <!-- Crown highlight -->
+      <rect x="15" y="1"  width="1"  height="2"  fill="white" opacity=".5"/>
+      ${hasWeapon ? `<!-- Glowing sword -->
+      <rect x="24" y="4"  width="3"  height="18" fill="${wcol}"/><!-- blade -->
+      <rect x="25" y="3"  width="2"  height="3"  fill="white" opacity=".9"/><!-- tip -->
+      <rect x="22" y="12" width="8"  height="2"  fill="${wcol}" opacity=".7"/><!-- guard -->
+      <rect x="24" y="4"  width="1"  height="14" fill="white" opacity=".4"/><!-- edge shine -->` : ''}`,
+  };
+
+  const bodyShape = pieces[rank] || pieces.pawn;
+
+  // Weapon glow effect for star 2+
+  const weaponGlow = hasWeapon
+    ? `<filter id="wglow" x="-80%" y="-80%" width="260%" height="260%">
+         <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="b"/>
+         <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+       </filter>`
+    : '';
+
+  return `<svg viewBox="0 0 32 30" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <defs>${weaponGlow}</defs>
+    ${aura}
+    ${bodyShape}
+  </svg>`;
+}
+
+
 function resetBattleLog() {
   battleLog = { tornado:0, barrage:0, shuriken:0, hit:0, parry:0 };
   renderBattleLog();
@@ -3651,9 +3879,19 @@ function renderFCBattle() {
   }
 
   // ── Warrior (left side, fully visible) ──
-  const warriorHTML = `<div id="fc-warrior" style="position:absolute;left:1%;bottom:12px;z-index:5;">
-    ${svgWarrior().replace('viewBox="0 0 32 42"',
-      'viewBox="0 0 32 42" style="width:32px;height:42px;animation:warrior-breathe 2.4s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(80,140,255,.8)) drop-shadow(0 0 12px rgba(200,168,74,.4));"')}
+  // Sync rank from XP before rendering
+  syncRankFromXP();
+  const rc = RANK_CONFIG[currentRank] || RANK_CONFIG.pawn;
+  const glowCol = rc.color;
+  const starStr = currentStars >= 3 ? '★★★' : currentStars >= 2 ? '★★' : '★';
+  const auraStyle = currentStars >= 3
+    ? `filter:drop-shadow(0 0 8px ${glowCol}) drop-shadow(0 0 16px ${glowCol});`
+    : currentStars >= 2
+    ? `filter:drop-shadow(0 0 5px ${glowCol});`
+    : `filter:drop-shadow(0 0 3px ${glowCol});`;
+
+  const warriorHTML = `<div id="fc-warrior" style="position:absolute;left:1%;bottom:10px;z-index:5;${auraStyle}animation:warrior-breathe 2.4s ease-in-out infinite;">
+    ${svgChessWarrior(currentRank, currentStars).replace('viewBox="0 0 32 30"', 'viewBox="0 0 32 30" style="width:32px;height:30px;"')}
   </div>`;
 
   // ── Mobs ──
@@ -3947,7 +4185,7 @@ function fcBattleSlash() {
 
 /* ── Heavy attack: large impressive projectile warrior→mob ── */
 function launchHeavyAttack(field, sx, sy, dx, dy, dist, type, onHit) {
-  const dur = Math.max(0.3, Math.min(0.7, dist / 180));
+  const dur = Math.max(0.8, Math.min(1.1, dist / 120)); // slow for visibility
 
   // Animated canvas beam
   const canvas = document.createElement('canvas');
@@ -4108,46 +4346,133 @@ function _getWarriorMobPos() {
   if (!field || !mobEl) return null;
   const fR = field.getBoundingClientRect();
   const wR = warrior ? warrior.getBoundingClientRect()
-    : {left:fR.left+8, top:fR.top+10, width:32, height:42};
+    : {left:fR.left+8, top:fR.top+10, width:32, height:30};
   const mR = mobEl.getBoundingClientRect();
   return {
     field, fR, wR, mR,
     sx: wR.right - fR.left + 2,
-    sy: wR.top - fR.top + wR.height * 0.35,
-    ex: mR.left - fR.left + mR.width * 0.5,
-    ey: mR.top - fR.top + mR.height * 0.5,
+    sy: wR.top - fR.top + wR.height * 0.4,
+    ex: mR.left - fR.left + mR.width  * 0.5,
+    ey: mR.top  - fR.top  + mR.height * 0.5,
     mobEl,
   };
 }
 
-function _impactMob(p, field) {
+function _impactMob(p, field, shakeDur, shakeIntensity) {
   const { mobEl, ex, ey } = p;
-  mobEl.style.filter = 'brightness(5) saturate(0) sepia(1) hue-rotate(-10deg) drop-shadow(0 0 14px #ff0000)';
-  mobEl.style.animation = 'mob-hit-shake .4s ease';
-  field.style.animation = 'field-hit-shake .35s ease';
-  setTimeout(() => { field.style.animation = ''; }, 350);
+  const dur = shakeDur || 0.4;
+  const intensity = shakeIntensity || 1;
+
+  mobEl.style.filter = 'brightness(6) saturate(0) sepia(1) hue-rotate(-10deg) drop-shadow(0 0 16px #ff0000)';
+  mobEl.style.animation = `mob-hit-shake ${dur}s ease`;
+
+  // Camera shake — intensity scales shake amount
+  const shakeAnim = intensity >= 2
+    ? `field-hit-shake-heavy ${dur}s ease`
+    : `field-hit-shake ${dur * .8}s ease`;
+  field.style.animation = shakeAnim;
+  setTimeout(() => { field.style.animation = ''; }, dur * 1000);
+
+  // XP float
   const xpF = document.createElement('div');
   xpF.className = 'battle-xp-float';
-  xpF.style.cssText = `left:${ex-12}px;top:${ey-22}px;font-size:12px;`;
+  xpF.style.cssText = `left:${ex-14}px;top:${ey-24}px;font-size:13px;font-weight:700;`;
+  const rc = RANK_CONFIG[currentRank] || RANK_CONFIG.pawn;
+  xpF.style.color = rc.weapon;
+  xpF.style.textShadow = `0 0 8px ${rc.color}`;
   xpF.textContent = '+50XP';
   field.appendChild(xpF);
-  pixelExplosion(field, ex, ey, '#ff6030');
+
+  // Big particle explosion
+  pixelExplosionBig(field, ex, ey, rc.color, rc.weapon, currentStars);
+
   setTimeout(() => {
     if (mobEl.parentElement) {
       mobEl.style.filter = '';
       mobEl.style.animation = 'mob-idle 2.2s ease-in-out infinite';
     }
     xpF.remove();
-    mobEl.style.transition = 'transform .25s,opacity .25s';
-    mobEl.style.transform = 'scale(0.1) translateY(-8px)';
+    mobEl.style.transition = 'transform .3s,opacity .3s';
+    mobEl.style.transform = 'scale(0.05) translateY(-10px)';
     mobEl.style.opacity = '0';
-    setTimeout(() => renderFCBattle(), 340);
-  }, 420);
+    setTimeout(() => renderFCBattle(), 360);
+  }, Math.round(dur * 1000) + 100);
 }
 
-/* ── Tier 1: Massive Tornado ── */
+/* ── Big particle explosion (rank-colored, star-scaled) ── */
+function pixelExplosionBig(field, cx, cy, col1, col2, stars) {
+  const canvas = document.createElement('canvas');
+  const fW = field.offsetWidth  || 400;
+  const fH = field.offsetHeight || 96;
+  canvas.width = fW; canvas.height = fH;
+  canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:29;';
+  field.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  const count = stars >= 3 ? 40 : stars >= 2 ? 28 : 18;
+  const speed = stars >= 3 ? 3.5 : stars >= 2 ? 2.8 : 2.0;
+  const palette = [col1, col2, '#ffffff', col1, col2];
+
+  const particles = Array.from({length: count}, () => {
+    const angle = Math.random() * Math.PI * 2;
+    const sp = (0.5 + Math.random()) * speed;
+    return {
+      x: cx, y: cy,
+      vx: Math.cos(angle) * sp,
+      vy: Math.sin(angle) * sp - 1.2,
+      life: 0,
+      maxLife: 20 + Math.floor(Math.random() * 14),
+      size: 1 + Math.floor(Math.random() * (stars >= 2 ? 3 : 2)),
+      color: palette[Math.floor(Math.random() * palette.length)],
+    };
+  });
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, fW, fH);
+    let alive = false;
+    particles.forEach(p => {
+      p.life++;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.15;
+      if (p.life < p.maxLife) {
+        alive = true;
+        const alpha = 1 - p.life / p.maxLife;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle   = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur  = stars >= 2 ? 5 : 3;
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+        ctx.restore();
+      }
+    });
+    frame++;
+    if (alive && frame < 80) requestAnimationFrame(draw);
+    else canvas.remove();
+  }
+  draw();
+}
+
+function showSkillToast(text, tier) {
+  const field = document.getElementById('fc-battle-field');
+  if (!field) return;
+  const el = document.createElement('div');
+  el.className = `skill-tier-toast t${tier}`;
+  el.textContent = text;
+  field.appendChild(el);
+  setTimeout(() => el.remove(), 1400);
+}
+
+/* ══════════════════════════════════════════════════════
+   TIER 1 — Yasuo Vortex Tornado (rank-colored)
+   Travel time: 0.8–1.1s | Tapered bottom, wide top
+   Spiral bands + leaf/dust particles around axis
+══════════════════════════════════════════════════════ */
 function fcAttackTornado() {
-  showSkillToast('🌪️ TUYỆT KỸ!', 1);
+  const rc = RANK_CONFIG[currentRank] || RANK_CONFIG.pawn;
+  showSkillToast(`🌪️ ${rc.skill1.name}!`, 1);
   const p = _getWarriorMobPos(); if (!p) return;
   const { field, sx, sy, ex, ey } = p;
   const fW = field.offsetWidth  || 400;
@@ -4157,184 +4482,382 @@ function fcAttackTornado() {
   canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:27;';
   field.appendChild(canvas);
   const ctx = canvas.getContext('2d');
-  const dur = 0.6, totalF = Math.round(dur * 60);
+
+  const col1 = rc.skill1.col;
+  const col2 = rc.skill1.col2;
+  const rankScale = {pawn:.7, knight:.85, bishop:1, rook:1.1, queen:1.2, king:1.5}[currentRank] || 1;
+  const starScale = currentStars >= 3 ? 1.4 : currentStars >= 2 ? 1.15 : 1;
+  const totalScale = rankScale * starScale;
+
+  // Slow travel: 0.85–1.1s
+  const travelTime = 0.9 + Math.random() * 0.2;
+  const totalF = Math.round(travelTime * 60);
   const dx = ex - sx, dy = ey - sy;
-  let t = 0;
-  // Tornado particle pool
-  const particles = Array.from({length: 60}, (_, i) => ({
-    angle: (i / 60) * Math.PI * 4,
-    radius: 14 + (i % 3) * 6,
-    speed:  0.22 + (i % 4) * 0.04,
-    size:   1.2 + Math.random() * 1.8,
-    color:  ['#80ffcc','#40d0ff','#c0a0ff','#ffe080','#ffffff'][i % 5],
-    phase:  i / 60,
+
+  // Leaf/dust particles orbit around axis
+  const LEAF_COUNT = Math.round((12 + currentStars * 8) * rankScale);
+  const leaves = Array.from({length: LEAF_COUNT}, (_, i) => ({
+    angle:   (i / LEAF_COUNT) * Math.PI * 2,
+    height:  Math.random(), // 0=bottom, 1=top of vortex
+    orbitR:  3 + Math.random() * 6,
+    speed:   0.18 + Math.random() * 0.12,
+    size:    1 + Math.random() * 1.5,
+    color:   i % 3 === 0 ? col2 : i % 3 === 1 ? col1 : '#ffffff',
+    opacity: 0.5 + Math.random() * 0.5,
   }));
+
+  let t = 0, spin = 0;
+
   function frame() {
     ctx.clearRect(0, 0, fW, fH);
     const prog = t / totalF;
-    const cx = sx + dx * prog, cy2 = sy + dy * prog;
-    const scale = 1 + prog * 0.8;
-    // Draw tornado core
-    const grd = ctx.createRadialGradient(cx, cy2, 0, cx, cy2, 22 * scale);
-    grd.addColorStop(0,   'rgba(200,240,255,.9)');
-    grd.addColorStop(.35, 'rgba(80,180,255,.6)');
-    grd.addColorStop(.7,  'rgba(40,80,200,.3)');
-    grd.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.save(); ctx.fillStyle = grd; ctx.shadowColor = '#60d0ff'; ctx.shadowBlur = 18;
-    ctx.beginPath(); ctx.arc(cx, cy2, 22 * scale, 0, Math.PI*2); ctx.fill(); ctx.restore();
-    // Spiral particles
-    particles.forEach(p2 => {
-      p2.angle += p2.speed;
-      const r = p2.radius * scale * (0.6 + 0.4 * Math.sin(t * 0.15 + p2.phase * Math.PI));
-      const px2 = cx + Math.cos(p2.angle) * r;
-      const py2 = cy2 + Math.sin(p2.angle) * r * 0.4;
+    // Ease-in-out progress for smooth movement
+    const eased = prog < 0.5 ? 2*prog*prog : 1-Math.pow(-2*prog+2,2)/2;
+    const cx = sx + dx * eased;
+    const cy2 = sy + dy * eased;
+    spin += 0.28;
+
+    // ── Vortex cone shape: narrow bottom, wide top ──
+    // Draw multiple spiral bands
+    const baseH = fH * 0.55 * totalScale;
+    const topW  = 20 * totalScale * (0.6 + prog * 0.7);
+    const botW  = 4  * totalScale;
+
+    const bands = Math.round(4 + currentStars * 1.5);
+    for (let b = 0; b < bands; b++) {
+      const bProg = b / bands;
+      const bAngle = spin + bProg * Math.PI * 2;
+
+      // Spiral band as bezier curve
       ctx.save();
-      ctx.globalAlpha = 0.7 + 0.3 * Math.sin(t * 0.2 + p2.phase);
-      ctx.fillStyle = p2.color;
-      ctx.shadowColor = p2.color; ctx.shadowBlur = 5;
-      ctx.fillRect(Math.round(px2), Math.round(py2), Math.ceil(p2.size), Math.ceil(p2.size));
+      ctx.beginPath();
+      const bandAlpha = (0.35 + 0.35 * Math.sin(spin + bProg * Math.PI * 3)) * (0.5 + prog * 0.5);
+      ctx.globalAlpha = bandAlpha;
+      ctx.strokeStyle = b % 2 === 0 ? col1 : col2;
+      ctx.lineWidth   = (1.5 + bProg * 1.5) * totalScale;
+      ctx.shadowColor = col1;
+      ctx.shadowBlur  = 8 * totalScale;
+
+      // Curved line from bottom tip to top, spiraling outward
+      const steps = 12;
+      ctx.moveTo(cx, cy2 + botW * 0.5);
+      for (let s = 1; s <= steps; s++) {
+        const sf = s / steps;
+        const ang = bAngle + sf * Math.PI * 2.2;
+        const ww  = botW + (topW - botW) * sf;
+        const hh  = -baseH * sf;
+        const ox  = Math.cos(ang) * ww * 0.5;
+        ctx.lineTo(cx + ox, cy2 + hh);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // ── Core axis glow (narrow bottom, wide top) ──
+    const axGrd = ctx.createLinearGradient(cx, cy2, cx, cy2 - baseH);
+    axGrd.addColorStop(0,   `${col2}00`);
+    axGrd.addColorStop(0.3, `${col1}88`);
+    axGrd.addColorStop(0.7, `${col1}cc`);
+    axGrd.addColorStop(1,   '#ffffff88');
+    ctx.save();
+    ctx.globalAlpha = 0.55 + 0.3 * Math.sin(spin * 2);
+    ctx.strokeStyle = axGrd;
+    ctx.lineWidth   = (3 + prog * 4) * totalScale;
+    ctx.shadowColor = col1;
+    ctx.shadowBlur  = 14;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy2 + 2);
+    ctx.lineTo(cx, cy2 - baseH * 0.9);
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Leaf/dust particles orbiting the axis ──
+    leaves.forEach(lf => {
+      lf.angle += lf.speed * (1 + prog * 0.5);
+      const heightFrac = (lf.height + prog * 0.3) % 1;
+      const hPos  = cy2 - baseH * heightFrac;
+      // Orbit radius widens with height
+      const wr    = (botW + (topW - botW) * heightFrac) * 0.5 * (0.5 + lf.orbitR / 10);
+      const lx    = cx + Math.cos(lf.angle + spin) * wr;
+      const alpha = lf.opacity * (0.6 + 0.4 * Math.sin(t * 0.1 + lf.angle));
+      ctx.save();
+      ctx.globalAlpha = alpha * Math.min(1, prog * 3);
+      ctx.fillStyle   = lf.color;
+      ctx.shadowColor = lf.color;
+      ctx.shadowBlur  = 4;
+      // Tiny rect (leaf/dust pixel)
+      ctx.fillRect(Math.round(lx), Math.round(hPos), Math.ceil(lf.size), Math.ceil(lf.size));
       ctx.restore();
     });
-    // Lightning branches
-    if (Math.random() < 0.3) {
-      ctx.save(); ctx.strokeStyle = '#c0e8ff'; ctx.lineWidth = 1;
-      ctx.shadowColor = '#80d0ff'; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.moveTo(cx, cy2);
-      ctx.lineTo(cx + (Math.random()-.5)*20*scale, cy2 + (Math.random()-.5)*14*scale);
-      ctx.stroke(); ctx.restore();
-    }
+
+    // ── Front glow at tip of movement ──
+    const auraR = (8 + prog * 14) * totalScale;
+    const fGrd = ctx.createRadialGradient(cx, cy2, 0, cx, cy2, auraR);
+    fGrd.addColorStop(0,   `${col1}cc`);
+    fGrd.addColorStop(0.4, `${col2}66`);
+    fGrd.addColorStop(1,   `${col1}00`);
+    ctx.save();
+    ctx.globalAlpha = 0.65 + 0.25 * Math.sin(spin * 3);
+    ctx.fillStyle = fGrd;
+    ctx.beginPath();
+    ctx.arc(cx, cy2, auraR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
     t++;
-    if (t < totalF) requestAnimationFrame(frame);
-    else {
+    if (t < totalF) {
+      requestAnimationFrame(frame);
+    } else {
       canvas.remove();
-      // Ultra screen shake for tornado
+      // Ultra shake for tornado — longer, more intense
       const hud = document.getElementById('fc-combat-hud');
-      if (hud) { hud.style.animation='field-hit-shake .5s ease'; setTimeout(()=>{hud.style.animation='';},500); }
-      field.style.animation = 'field-hit-shake .5s ease';
-      setTimeout(()=>{field.style.animation='';},500);
-      _impactMob(p, field);
+      const shakeT = currentStars >= 3 ? 700 : 450;
+      const shakeAnim = `field-hit-shake-heavy ${shakeT/1000}s ease`;
+      if (hud) { hud.style.animation = shakeAnim; setTimeout(()=>{hud.style.animation='';}, shakeT); }
+      field.style.animation = shakeAnim;
+      setTimeout(()=>{ field.style.animation=''; }, shakeT);
+      _impactMob(p, field, 0.55, 2);
     }
   }
   frame();
 }
 
-/* ── Tier 2: Energy Barrage (3-5 shots) ── */
+/* ══════════════════════════════════════════════════════
+   TIER 2 — Energy Barrage (rank-colored, slow travel)
+   4–5 shots with aura + particle tail
+   Each shot: 0.8–1.0s travel
+══════════════════════════════════════════════════════ */
 function fcAttackBarrage() {
-  showSkillToast('☄️ LIÊN THANH!', 2);
+  const rc = RANK_CONFIG[currentRank] || RANK_CONFIG.pawn;
+  showSkillToast(`☄️ ${rc.skill2.name}!`, 2);
   const p = _getWarriorMobPos(); if (!p) return;
   const { field, sx, sy, ex, ey } = p;
-  const fW = field.offsetWidth || 400;
+  const fW = field.offsetWidth  || 400;
   const fH = field.offsetHeight || 96;
-  const COLORS = [
-    '#ff4040','#4080ff','#cc40ff','#ffcc00','#40ffaa'
-  ];
-  const shots = 4 + Math.floor(Math.random() * 2); // 4-5 shots
+
+  const col1 = rc.skill2.col;
+  const col2 = rc.skill2.col2;
+  const rankScale = {pawn:.75, knight:.85, bishop:1, rook:1.05, queen:1.15, king:1.35}[currentRank] || 1;
+  const shots = 3 + Math.min(currentStars, 2) + Math.floor(Math.random() * 2);
   let fired = 0;
+
   function fireOne(shotIdx) {
     const canvas = document.createElement('canvas');
     canvas.width = fW; canvas.height = fH;
     canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:27;';
     field.appendChild(canvas);
     const ctx = canvas.getContext('2d');
-    const color = COLORS[shotIdx % COLORS.length];
-    const offY  = (shotIdx - shots/2) * 5; // spread vertically
+
+    const shotColor = shotIdx % 2 === 0 ? col1 : col2;
+    const offY = (shotIdx - shots/2) * 6;
     const tx = ex, ty = ey + offY;
-    const totalF = 22, dx2 = tx - sx, dy2 = ty - sy;
+    const dx2 = tx - sx, dy2 = ty - sy;
+
+    // SLOW: 0.8–1.0s per shot
+    const shotDur = 0.8 + Math.random() * 0.2;
+    const totalF2 = Math.round(shotDur * 60);
+    const headR = (4 + rankScale * 3) * (currentStars >= 2 ? 1.2 : 1);
     let t = 0;
+
     function frame() {
       ctx.clearRect(0, 0, fW, fH);
-      const prog = t / totalF;
-      const hx = sx + dx2 * prog, hy = sy + dy2 * prog;
-      // Tail
-      for (let ti = 0; ti < 6; ti++) {
-        const ta = (1 - ti/6) * .65;
-        const tr = 4 - ti * .5;
-        ctx.save(); ctx.globalAlpha = ta;
-        ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 8;
-        ctx.beginPath(); ctx.arc(hx - (dx2/totalF)*ti*.6, hy - (dy2/totalF)*ti*.6, tr, 0, Math.PI*2); ctx.fill();
+      const prog = t / totalF2;
+      const eased = prog < 0.5 ? 2*prog*prog : 1-Math.pow(-2*prog+2,2)/2;
+      const hx = sx + dx2 * eased;
+      const hy = sy + dy2 * eased;
+
+      // Aura trail
+      for (let ti = 0; ti < 10; ti++) {
+        const tf = ti / 10;
+        const ta = (1 - tf) * 0.5;
+        const tr = headR * (1 - tf * 0.6);
+        const prev_prog = Math.max(0, prog - tf * 0.12);
+        const pe = prev_prog < 0.5 ? 2*prev_prog*prev_prog : 1-Math.pow(-2*prev_prog+2,2)/2;
+        const tx2 = sx + dx2 * pe;
+        const ty2 = sy + dy2 * pe;
+        ctx.save();
+        ctx.globalAlpha = ta;
+        ctx.fillStyle = shotColor;
+        ctx.shadowColor = shotColor;
+        ctx.shadowBlur  = 8;
+        ctx.beginPath(); ctx.arc(tx2, ty2, tr, 0, Math.PI*2); ctx.fill();
         ctx.restore();
       }
-      // Head
-      ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 14;
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(hx, hy, 5, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(hx, hy, 3.5, 0, Math.PI*2); ctx.fill();
+
+      // Outer aura
+      ctx.save();
+      ctx.globalAlpha = 0.3 + 0.2 * Math.sin(t * 0.4);
+      const aGrd = ctx.createRadialGradient(hx, hy, 0, hx, hy, headR * 2.2);
+      aGrd.addColorStop(0,   `${col2}cc`);
+      aGrd.addColorStop(0.5, `${shotColor}44`);
+      aGrd.addColorStop(1,   `${shotColor}00`);
+      ctx.fillStyle = aGrd;
+      ctx.beginPath(); ctx.arc(hx, hy, headR * 2.2, 0, Math.PI*2); ctx.fill();
       ctx.restore();
+
+      // Core + white center
+      ctx.save();
+      ctx.shadowColor = shotColor; ctx.shadowBlur = 14;
+      ctx.fillStyle = shotColor;
+      ctx.beginPath(); ctx.arc(hx, hy, headR, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(hx, hy, headR * 0.45, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+
       t++;
-      if (t < totalF) requestAnimationFrame(frame);
-      else {
+      if (t < totalF2) {
+        requestAnimationFrame(frame);
+      } else {
         canvas.remove();
         fired++;
         if (fired === shots) {
-          field.style.animation = 'field-hit-shake .3s ease';
-          setTimeout(()=>{field.style.animation='';},300);
-          _impactMob(p, field);
+          field.style.animation = 'field-hit-shake .4s ease';
+          setTimeout(()=>{ field.style.animation=''; }, 400);
+          _impactMob(p, field, 0.45, 1.2);
         }
       }
     }
     frame();
   }
+
+  const delay = currentRank === 'king' ? 60 : 80;
   for (let i = 0; i < shots; i++) {
-    setTimeout(() => fireOne(i), i * 80);
+    setTimeout(() => fireOne(i), i * delay);
   }
 }
 
-/* ── Tier 3: Spinning Shuriken ── */
+/* ══════════════════════════════════════════════════════
+   TIER 3 — Projectile (rank-specific: dagger/spear/shuriken)
+   Travel: 0.8–1.0s | Core+aura+trail
+══════════════════════════════════════════════════════ */
 function fcAttackShuriken() {
-  showSkillToast('💮 PHI TIÊU', 3);
+  const rc = RANK_CONFIG[currentRank] || RANK_CONFIG.pawn;
+  showSkillToast(`💮 ${rc.skill3.name}`, 3);
   const p = _getWarriorMobPos(); if (!p) return;
   const { field, sx, sy, ex, ey } = p;
-  const fW = field.offsetWidth || 400;
+  const fW = field.offsetWidth  || 400;
   const fH = field.offsetHeight || 96;
   const canvas = document.createElement('canvas');
   canvas.width = fW; canvas.height = fH;
   canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:27;';
   field.appendChild(canvas);
   const ctx = canvas.getContext('2d');
-  const dur = 0.45, totalF = Math.round(dur * 60);
+
+  const col1 = rc.skill3.col;
+  const col2 = rc.skill3.col2;
   const dx = ex - sx, dy = ey - sy;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const nx = dx/dist, ny = dy/dist;
+
+  // SLOW: 0.8–1.0s
+  const travelTime = 0.85 + Math.random() * 0.15;
+  const totalF = Math.round(travelTime * 60);
+  const rankScale = {pawn:.7, knight:.85, bishop:1, rook:1.05, queen:1.15, king:1.4}[currentRank] || 1;
+  const sz = (7 + rankScale * 4) * (currentStars >= 3 ? 1.3 : currentStars >= 2 ? 1.1 : 1);
+
   let t = 0, spin = 0;
+  const spinSpeed = currentRank === 'king' ? 0.2 : 0.32; // King sword spins slower, majestic
+
   function frame() {
     ctx.clearRect(0, 0, fW, fH);
     const prog = t / totalF;
-    const hx = sx + dx * prog, hy = sy + dy * prog;
-    spin += 0.35;
-    // Shuriken shape (4-blade star)
+    const eased = prog < 0.5 ? 2*prog*prog : 1-Math.pow(-2*prog+2,2)/2;
+    const hx = sx + dx * eased;
+    const hy = sy + dy * eased;
+    spin += spinSpeed;
+
+    // Particle trail
+    if (t % 2 === 0) {
+      const tx2 = hx - nx * sz * 0.8;
+      const ty2 = hy - ny * sz * 0.8;
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = col2;
+      ctx.shadowColor = col2; ctx.shadowBlur = 5;
+      const ts = sz * 0.35;
+      ctx.fillRect(Math.round(tx2 - ts/2), Math.round(ty2 - ts/2), Math.ceil(ts), Math.ceil(ts));
+      ctx.restore();
+    }
+
+    // Outer aura
     ctx.save();
-    ctx.translate(hx, hy); ctx.rotate(spin);
-    ctx.shadowColor = '#ffe840'; ctx.shadowBlur = 10;
-    for (let blade = 0; blade < 4; blade++) {
-      ctx.save(); ctx.rotate((blade / 4) * Math.PI * 2);
-      ctx.beginPath();
-      ctx.moveTo(0, -8); ctx.lineTo(2, -2); ctx.lineTo(8, 0);
-      ctx.lineTo(2, 2);  ctx.lineTo(0, 8);  ctx.lineTo(-2, 2);
-      ctx.lineTo(-8, 0); ctx.lineTo(-2, -2); ctx.closePath();
-      ctx.fillStyle = blade % 2 === 0 ? '#ffee20' : '#ff8800';
-      ctx.fill(); ctx.restore();
-    }
-    // Center gem
-    ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI*2);
-    ctx.fillStyle = '#ffffff'; ctx.fill();
+    const aGrd = ctx.createRadialGradient(hx, hy, 0, hx, hy, sz * 2);
+    aGrd.addColorStop(0,   `${col1}88`);
+    aGrd.addColorStop(0.5, `${col2}33`);
+    aGrd.addColorStop(1,   `${col1}00`);
+    ctx.globalAlpha = 0.4 + 0.2 * Math.sin(spin * 2);
+    ctx.fillStyle = aGrd;
+    ctx.beginPath(); ctx.arc(hx, hy, sz * 2, 0, Math.PI*2); ctx.fill();
     ctx.restore();
-    // Spin trail
-    if (t % 3 === 0) {
-      ctx.save(); ctx.globalAlpha = .4;
-      ctx.shadowColor = '#ffcc00'; ctx.shadowBlur = 6;
-      ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(hx, hy, 9, spin, spin + Math.PI * 1.2);
-      ctx.stroke(); ctx.restore();
+
+    // Draw rank-specific projectile shape
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(spin);
+    ctx.shadowColor = col1; ctx.shadowBlur = 10;
+
+    if (currentRank === 'pawn' || currentRank === 'knight') {
+      // Dagger/spear — elongated diamond
+      ctx.fillStyle = col1;
+      ctx.beginPath();
+      ctx.moveTo(sz, 0); ctx.lineTo(0, sz * .35);
+      ctx.lineTo(-sz * .6, 0); ctx.lineTo(0, -sz * .35);
+      ctx.closePath(); ctx.fill();
+      // Edge shine
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(sz * .9, 0); ctx.lineTo(sz * .3, -sz * .15);
+      ctx.lineTo(-sz * .1, 0); ctx.closePath();
+      ctx.globalAlpha = .5; ctx.fill();
+    } else if (currentRank === 'bishop') {
+      // Crystal star
+      for (let s = 0; s < 6; s++) {
+        const a = (s / 6) * Math.PI * 2;
+        ctx.fillStyle = s % 2 === 0 ? col1 : col2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*sz, Math.sin(a)*sz);
+        ctx.lineTo(Math.cos(a+.5)*sz*.3, Math.sin(a+.5)*sz*.3);
+        ctx.lineTo(Math.cos(a+Math.PI/6)*sz*.9, Math.sin(a+Math.PI/6)*sz*.9);
+        ctx.closePath(); ctx.fill();
+      }
+    } else if (currentRank === 'rook') {
+      // Stone boulder — irregular pixel square
+      ctx.fillStyle = col1;
+      ctx.fillRect(-sz*.7, -sz*.7, sz*1.4, sz*1.4);
+      ctx.fillStyle = col2;
+      ctx.fillRect(-sz*.4, -sz*.5, sz*.8, sz*1);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = .25;
+      ctx.fillRect(-sz*.6, -sz*.6, sz*.5, sz*.4);
+    } else {
+      // Queen/King — 4-blade shuriken with glow
+      for (let blade = 0; blade < 4; blade++) {
+        ctx.save(); ctx.rotate((blade / 4) * Math.PI * 2);
+        ctx.beginPath();
+        ctx.moveTo(0, -sz); ctx.lineTo(sz*.3, -sz*.3);
+        ctx.lineTo(sz, 0); ctx.lineTo(sz*.3, sz*.3);
+        ctx.lineTo(0, sz); ctx.lineTo(-sz*.3, sz*.3);
+        ctx.lineTo(-sz*.5, 0); ctx.lineTo(-sz*.3, -sz*.3);
+        ctx.closePath();
+        ctx.fillStyle = blade % 2 === 0 ? col1 : col2;
+        ctx.globalAlpha = 1;
+        ctx.fill(); ctx.restore();
+      }
+      // Center gem
+      ctx.fillStyle = '#ffffff'; ctx.globalAlpha = .9;
+      ctx.beginPath(); ctx.arc(0, 0, sz * .28, 0, Math.PI*2); ctx.fill();
     }
+
+    ctx.restore();
+
     t++;
-    if (t < totalF) requestAnimationFrame(frame);
-    else {
+    if (t < totalF) {
+      requestAnimationFrame(frame);
+    } else {
       canvas.remove();
-      // Small precise impact
-      const burst = document.createElement('div');
-      burst.className = 'proj';
-      burst.style.cssText = `left:${ex-14}px;top:${ey-14}px;width:28px;height:28px;z-index:28;animation:impact-burst .5s ease forwards;`;
-      burst.innerHTML = svgImpact('ice');
-      field.appendChild(burst);
-      setTimeout(() => { burst.remove(); }, 500);
-      _impactMob(p, field);
+      field.style.animation = 'field-hit-shake .35s ease';
+      setTimeout(() => { field.style.animation = ''; }, 350);
+      _impactMob(p, field, 0.38, 1);
     }
   }
   frame();
@@ -4440,7 +4963,7 @@ function fcBattleMonsterAttack() {
 
 /* ── Monster elemental projectile: canvas-drawn, RIGHT→LEFT ── */
 function launchMonsterAttack(field, sx, sy, dx, dy, dist, type, onHit) {
-  const dur = Math.max(0.3, Math.min(0.65, dist / 200));
+  const dur = Math.max(0.8, Math.min(1.1, dist / 120)); // slow travel for visibility
   const canvas = document.createElement('canvas');
   const fW = field.offsetWidth  || 400;
   const fH = field.offsetHeight || 96;
