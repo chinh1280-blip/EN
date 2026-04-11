@@ -3596,36 +3596,383 @@ function svgChessWarrior(rank, stars) {
 function buildWarriorEl(rank, stars) {
   rank  = rank  || currentRank  || 'pawn';
   stars = Math.max(1, Math.min(3, stars || currentStars || 1));
-  const starKey = ['star1','star2','star3'][stars - 1];
-  const rc  = RANK_CONFIG[rank] || RANK_CONFIG.pawn;
-  const pb  = PIECE_B64[rank] && PIECE_B64[rank][starKey];
-  if (!pb) return `<div style="width:32px;height:52px;background:${rc.color};border-radius:4px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;">${rank[0].toUpperCase()}</div>`;
+  const rc = RANK_CONFIG[rank] || RANK_CONFIG.pawn;
+  const col  = rc.color;
+  const wcol = rc.weapon;
 
-  const glowStr = stars >= 3
-    ? `drop-shadow(0 0 8px ${rc.color}) drop-shadow(0 0 16px ${rc.color})`
-    : stars >= 2
-    ? `drop-shadow(0 0 5px ${rc.color})`
-    : `drop-shadow(0 0 3px ${rc.color})`;
+  // Inject animation CSS once
+  if (!document.getElementById('warrior-anim-css')) {
+    const s2 = document.createElement('style');
+    s2.id = 'warrior-anim-css';
+    s2.textContent = `
+      @keyframes wfloat{0%{transform:translateY(0) rotate(var(--tilt,0deg))}100%{transform:translateY(-4px) rotate(var(--tilt,0deg))}}
+      @keyframes wfloat-fast{0%{transform:translateY(0) rotate(var(--tilt,0deg)) scale(1)}100%{transform:translateY(-5px) rotate(var(--tilt,0deg)) scale(1.06)}}
+      @keyframes worb-spin{0%{transform:rotate(0deg) translateX(9px)}100%{transform:rotate(360deg) translateX(9px)}}
+      @keyframes wpiece-aura{0%,100%{box-shadow:0 0 8px var(--ac),0 0 18px var(--ac)}50%{box-shadow:0 0 15px var(--ac),0 0 32px var(--ac),0 0 50px var(--ac)}}
+      @keyframes wsparkle{0%,100%{opacity:.5;transform:scale(.8)}50%{opacity:1;transform:scale(1.3)}}
+      @keyframes wglow-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4)}}
+      @keyframes wsword-glow{0%,100%{box-shadow:0 0 4px var(--wc),0 0 8px var(--wc)}50%{box-shadow:0 0 8px var(--wc),0 0 20px var(--wc),0 0 36px var(--wc)}}
+    `;
+    document.head.appendChild(s2);
+  }
 
-  const auraDiv = stars >= 3
-    ? `<div style="position:absolute;inset:-8px;border-radius:50%;
-         background:radial-gradient(circle, ${rc.aura} 0%, transparent 68%);
-         animation:warrior-aura-pulse 1.4s ease-in-out infinite;z-index:0;pointer-events:none;"></div>` : '';
+  // ── Scale factors ──
+  const rankScale = {pawn:1.0, knight:1.1, bishop:1.15, rook:1.2, queen:1.3, king:1.5}[rank] || 1;
+  const starScale = stars === 3 ? 1.35 : stars === 2 ? 1.15 : 1.0;
+  const sc = rankScale * starScale;
 
-  const starDots = `<div style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);
-    display:flex;gap:1px;z-index:3;">
-    ${Array.from({length:stars},()=>`<span style="color:${rc.weapon};font-size:6px;text-shadow:0 0 3px ${rc.weapon};">★</span>`).join('')}
-  </div>`;
+  // ── Piece body dimensions (base, pre-scale) ──
+  // Each piece is a mini CSS chess silhouette
+  const pieces = {
+    pawn: () => {
+      const bW=18, bH=6, sW=7, sH=8, hD=12;
+      const bc=`background:${col}`;
+      const aura = stars>=3 ? `box-shadow:0 0 10px ${col},0 0 22px ${col};--ac:${col};animation:wpiece-aura 1.5s ease-in-out infinite;` : '';
+      return `<div style="position:relative;width:${bW}px;height:${bH+sH+hD}px;flex-shrink:0;">
+        <!-- head ball -->
+        <div style="position:absolute;top:0;left:${(bW-hD)/2}px;width:${hD}px;height:${hD}px;border-radius:50%;${bc};${aura}"></div>
+        <!-- neck -->
+        <div style="position:absolute;top:${hD-1}px;left:${(bW-sW)/2}px;width:${sW}px;height:${sH}px;${bc};border-radius:2px;"></div>
+        <!-- shoulder taper -->
+        <div style="position:absolute;top:${hD+sH-3}px;left:${(bW-14)/2}px;width:14px;height:4px;${bc};border-radius:1px;"></div>
+        <!-- base platform -->
+        <div style="position:absolute;bottom:0;left:0;width:${bW}px;height:${bH}px;${bc};border-radius:3px 3px 2px 2px;"></div>
+      </div>`;
+    },
+    knight: () => {
+      const bW=20, h=26;
+      const bc=`background:${col}`;
+      const aura = stars>=3 ? `box-shadow:0 0 10px ${col},0 0 22px ${col};--ac:${col};animation:wpiece-aura 1.4s ease-in-out infinite;` : '';
+      return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;${aura}">
+        <!-- horse head, L-shape stepped -->
+        <div style="position:absolute;top:0;left:6px;width:12px;height:10px;${bc};border-radius:3px 4px 1px 2px;"></div>
+        <!-- snout protrude -->
+        <div style="position:absolute;top:4px;left:2px;width:10px;height:6px;${bc};border-radius:2px 1px 2px 3px;"></div>
+        <!-- mane / neck down -->
+        <div style="position:absolute;top:9px;left:8px;width:9px;height:8px;${bc};border-radius:1px;"></div>
+        <!-- eye -->
+        <div style="position:absolute;top:2px;left:13px;width:3px;height:3px;background:#111;border-radius:50%;"></div>
+        <!-- body column -->
+        <div style="position:absolute;top:14px;left:4px;width:14px;height:8px;${bc};border-radius:2px;"></div>
+        <!-- base -->
+        <div style="position:absolute;bottom:0;left:0;width:${bW}px;height:5px;${bc};border-radius:3px;"></div>
+      </div>`;
+    },
+    bishop: () => {
+      const bW=16, h=30;
+      const bc=`background:${col}`;
+      const aura = stars>=3 ? `box-shadow:0 0 10px ${col},0 0 22px ${col};--ac:${col};animation:wpiece-aura 1.3s ease-in-out infinite;` : '';
+      return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;">
+        <!-- top orb / finial -->
+        <div style="position:absolute;top:0;left:${(bW-7)/2}px;width:7px;height:7px;border-radius:50%;${bc};${aura}"></div>
+        <!-- pointed upper body, diamond-ish -->
+        <div style="position:absolute;top:5px;left:${(bW-9)/2}px;width:9px;height:12px;${bc};border-radius:4px 4px 0 0;clip-path:polygon(50% 0%,100% 40%,80% 100%,20% 100%,0% 40%);"></div>
+        <!-- middle collar ring -->
+        <div style="position:absolute;top:16px;left:${(bW-13)/2}px;width:13px;height:4px;${bc};border-radius:2px;"></div>
+        <!-- body -->
+        <div style="position:absolute;top:19px;left:${(bW-10)/2}px;width:10px;height:6px;${bc};border-radius:1px;"></div>
+        <!-- base -->
+        <div style="position:absolute;bottom:0;left:0;width:${bW}px;height:5px;${bc};border-radius:3px;"></div>
+        <!-- cross lines on body -->
+        <div style="position:absolute;top:10px;left:${(bW-1)/2}px;width:1px;height:7px;background:rgba(255,255,255,.4);"></div>
+        <div style="position:absolute;top:13px;left:${(bW-7)/2}px;width:7px;height:1px;background:rgba(255,255,255,.4);"></div>
+      </div>`;
+    },
+    rook: () => {
+      const bW=22, h=28;
+      const bc=`background:${col}`;
+      const aura = stars>=3 ? `box-shadow:0 0 10px ${col},0 0 22px ${col};--ac:${col};animation:wpiece-aura 1.6s ease-in-out infinite;` : '';
+      // Crenellations: 3 merlons on top
+      const merlons = `
+        <div style="position:absolute;top:0;left:1px;width:5px;height:6px;${bc};"></div>
+        <div style="position:absolute;top:0;left:8px;width:6px;height:6px;${bc};"></div>
+        <div style="position:absolute;top:0;left:16px;width:5px;height:6px;${bc};"></div>`;
+      return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;${aura}">
+        ${merlons}
+        <!-- parapet bar -->
+        <div style="position:absolute;top:5px;left:0;width:${bW}px;height:4px;${bc};"></div>
+        <!-- tower walls -->
+        <div style="position:absolute;top:9px;left:1px;width:${bW-2}px;height:12px;${bc};">
+          <!-- arrow slits -->
+          <div style="position:absolute;top:2px;left:3px;width:2px;height:6px;background:rgba(0,0,0,.4);"></div>
+          <div style="position:absolute;top:2px;left:${bW-7}px;width:2px;height:6px;background:rgba(0,0,0,.4);"></div>
+        </div>
+        <!-- base step -->
+        <div style="position:absolute;top:21px;left:0;width:${bW}px;height:3px;${bc};border-radius:0 0 0 0;"></div>
+        <!-- base platform -->
+        <div style="position:absolute;bottom:0;left:0;width:${bW}px;height:5px;${bc};border-radius:2px;"></div>
+      </div>`;
+    },
+    queen: () => {
+      const bW=20, h=30;
+      const bc=`background:${col}`;
+      const aura = stars>=3 ? `box-shadow:0 0 12px ${col},0 0 28px ${col};--ac:${col};animation:wpiece-aura 1.2s ease-in-out infinite;` : '';
+      // Crown with 5 points
+      return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;">
+        <!-- crown orb center -->
+        <div style="position:absolute;top:0;left:${(bW-5)/2}px;width:5px;height:5px;border-radius:50%;${bc};${aura}"></div>
+        <!-- crown points L R -->
+        <div style="position:absolute;top:1px;left:2px;width:4px;height:4px;border-radius:50%;${bc};"></div>
+        <div style="position:absolute;top:1px;left:${bW-6}px;width:4px;height:4px;border-radius:50%;${bc};"></div>
+        <!-- crown band -->
+        <div style="position:absolute;top:5px;left:1px;width:${bW-2}px;height:4px;${bc};border-radius:1px;"></div>
+        <!-- neck -->
+        <div style="position:absolute;top:9px;left:${(bW-8)/2}px;width:8px;height:7px;${bc};border-radius:1px;"></div>
+        <!-- waist -->
+        <div style="position:absolute;top:15px;left:${(bW-12)/2}px;width:12px;height:2px;${bc};"></div>
+        <!-- gown bell -->
+        <div style="position:absolute;top:17px;left:${(bW-14)/2}px;width:14px;height:7px;${bc};border-radius:1px 1px 3px 3px;clip-path:polygon(10% 0%,90% 0%,100% 100%,0% 100%);"></div>
+        <!-- base -->
+        <div style="position:absolute;bottom:0;left:0;width:${bW}px;height:6px;${bc};border-radius:3px;"></div>
+        <!-- gem on crown center -->
+        <div style="position:absolute;top:1px;left:${(bW-3)/2}px;width:3px;height:3px;border-radius:50%;background:${wcol};"></div>
+      </div>`;
+    },
+    king: () => {
+      const bW=22, h=32;
+      const bc=`background:${col}`;
+      const aura = stars>=3 ? `box-shadow:0 0 14px ${col},0 0 32px ${col},0 0 50px ${col};--ac:${col};animation:wpiece-aura 1.0s ease-in-out infinite;` : '';
+      // Cross on top
+      return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;${aura}">
+        <!-- cross vertical -->
+        <div style="position:absolute;top:0;left:${(bW-3)/2}px;width:3px;height:9px;${bc};"></div>
+        <!-- cross horizontal -->
+        <div style="position:absolute;top:2px;left:${(bW-9)/2}px;width:9px;height:3px;${bc};"></div>
+        <!-- crown band with gems -->
+        <div style="position:absolute;top:9px;left:2px;width:${bW-4}px;height:5px;${bc};border-radius:1px;">
+          <div style="position:absolute;top:1px;left:2px;width:3px;height:3px;background:${wcol};border-radius:50%;"></div>
+          <div style="position:absolute;top:1px;left:${bW/2-6}px;width:3px;height:3px;background:white;border-radius:50%;opacity:.9;"></div>
+          <div style="position:absolute;top:1px;right:2px;width:3px;height:3px;background:${wcol};border-radius:50%;"></div>
+        </div>
+        <!-- body broad -->
+        <div style="position:absolute;top:14px;left:1px;width:${bW-2}px;height:9px;${bc};border-radius:1px;">
+          <!-- horizontal robe band -->
+          <div style="position:absolute;top:3px;left:0;width:100%;height:2px;background:rgba(255,255,255,.25);"></div>
+        </div>
+        <!-- base wide -->
+        <div style="position:absolute;top:23px;left:0;width:${bW}px;height:3px;${bc};"></div>
+        <div style="position:absolute;bottom:0;left:0;width:${bW}px;height:6px;${bc};border-radius:3px;"></div>
+      </div>`;
+    },
+  };
 
-  return `<div style="position:relative;display:inline-block;">
-    ${auraDiv}
-    <img src="${pb.src}" width="${pb.w}" height="${pb.h}"
-      style="display:block;image-rendering:pixelated;filter:${glowStr};position:relative;z-index:1;"
-      alt="${rank} ${stars}★">
-    ${starDots}
+  // ── Weapon definitions ──
+  // Returns an HTML string for the floating weapon
+  function makeWeapon() {
+    const anim = stars >= 3 ? 'wfloat-fast' : 'wfloat';
+    const animDur = stars >= 3 ? '0.6s' : stars >= 2 ? '0.9s' : '1.2s';
+    const glow = stars >= 3
+      ? `filter:drop-shadow(0 0 6px ${wcol}) drop-shadow(0 0 12px ${wcol});--wc:${wcol};animation:${anim} ${animDur} ease-in-out infinite alternate, wsword-glow 1s ease-in-out infinite;`
+      : stars >= 2
+      ? `filter:drop-shadow(0 0 4px ${wcol});animation:${anim} ${animDur} ease-in-out infinite alternate;`
+      : `animation:${anim} ${animDur} ease-in-out infinite alternate;`;
+
+    // Tilt angle per rank
+    const tilt = {pawn:'-15deg', knight:'20deg', bishop:'-10deg', rook:'5deg', queen:'-20deg', king:'-8deg'}[rank] || '0deg';
+    const baseStyle = `--tilt:${tilt};${glow}position:relative;display:inline-block;transform-origin:center;`;
+
+    // Weapon sizes scale with rank × star
+    const ws = sc;
+
+    if (rank === 'pawn') {
+      // Dagger → Short sword → Glowing longsword
+      const bladeH = stars===3 ? Math.round(32*ws) : stars===2 ? Math.round(22*ws) : Math.round(14*ws);
+      const bladeW = stars===3 ? Math.round(4*ws) : stars===2 ? Math.round(3*ws) : Math.round(2*ws);
+      const guardW = stars===3 ? Math.round(10*ws) : stars===2 ? Math.round(8*ws) : Math.round(5*ws);
+      const sparkles = stars>=3 ? `<span style="position:absolute;top:-4px;left:50%;font-size:8px;color:${wcol};animation:wsparkle .8s ease-in-out infinite;">✦</span>` : '';
+      return `<div style="${baseStyle}width:${Math.max(guardW,bladeW)}px;height:${bladeH+6}px;">
+        ${sparkles}
+        <!-- blade -->
+        <div style="position:absolute;top:0;left:${(Math.max(guardW,bladeW)-bladeW)/2}px;width:${bladeW}px;height:${bladeH}px;
+          background:linear-gradient(180deg,white 0%,${wcol} 40%,${col} 100%);border-radius:${bladeW}px ${bladeW}px 0 0;"></div>
+        <!-- guard -->
+        <div style="position:absolute;top:${bladeH-2}px;left:0;width:${guardW}px;height:4px;
+          background:${wcol};border-radius:2px;"></div>
+        <!-- handle -->
+        <div style="position:absolute;top:${bladeH+2}px;left:${(guardW-3)/2}px;width:3px;height:6px;
+          background:${col};border-radius:0 0 2px 2px;"></div>
+      </div>`;
+    }
+
+    if (rank === 'knight') {
+      if (stars === 1) {
+        // Lance (long diagonal)
+        const lL = Math.round(30*ws);
+        return `<div style="${baseStyle}--tilt:20deg;width:6px;height:${lL}px;">
+          <div style="width:4px;height:${lL}px;background:linear-gradient(180deg,${wcol},${col});border-radius:2px;margin:0 auto;"></div>
+          <div style="position:absolute;top:-3px;left:0;border-left:3px solid transparent;border-right:3px solid transparent;border-bottom:8px solid ${wcol};"></div>
+        </div>`;
+      } else if (stars === 2) {
+        // Battle axe
+        const aH = Math.round(24*ws), aW = Math.round(18*ws);
+        return `<div style="${baseStyle}width:${aW}px;height:${aH+10}px;">
+          <div style="position:absolute;top:0;left:${(aW-10)/2}px;width:10px;height:${aH}px;
+            background:linear-gradient(to bottom,${wcol} 0%,${col} 100%);
+            border-radius:5px 5px 2px 2px;clip-path:polygon(30% 0%,70% 0%,100% 35%,80% 100%,20% 100%,0% 35%);"></div>
+          <div style="position:absolute;top:${aH-4}px;left:${(aW-3)/2}px;width:3px;height:14px;background:${col};border-radius:1px;"></div>
+        </div>`;
+      } else {
+        // Golden lance + lightning
+        const lL = Math.round(36*ws);
+        return `<div style="${baseStyle}--tilt:18deg;width:8px;height:${lL}px;">
+          <div style="width:5px;height:${lL}px;background:linear-gradient(180deg,white,${wcol},${col});border-radius:2px;margin:0 auto;"></div>
+          <div style="position:absolute;top:-4px;left:-2px;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:10px solid white;"></div>
+          <span style="position:absolute;top:2px;left:8px;font-size:9px;color:#80e0ff;animation:wsparkle .5s ease-in-out infinite;">⚡</span>
+        </div>`;
+      }
+    }
+
+    if (rank === 'bishop') {
+      if (stars === 1) {
+        // Magic orb
+        const oD = Math.round(14*ws);
+        return `<div style="${baseStyle}width:${oD}px;height:${oD}px;border-radius:50%;background:radial-gradient(circle,white 20%,${wcol} 60%,${col} 100%);"></div>`;
+      } else if (stars === 2) {
+        // Staff + orb
+        const sH = Math.round(28*ws), oD = Math.round(10*ws);
+        return `<div style="${baseStyle}width:${oD+4}px;height:${sH+oD}px;">
+          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:${oD}px;height:${oD}px;border-radius:50%;background:radial-gradient(circle,white,${wcol},${col});"></div>
+          <div style="position:absolute;top:${oD-2}px;left:50%;transform:translateX(-50%);width:3px;height:${sH}px;background:linear-gradient(${wcol},${col});border-radius:2px;"></div>
+        </div>`;
+      } else {
+        // Dual orbs orbiting staff
+        const sH = Math.round(30*ws), oD = Math.round(10*ws);
+        return `<div style="${baseStyle}width:${oD+18}px;height:${sH+oD}px;">
+          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:${oD}px;height:${oD}px;border-radius:50%;background:radial-gradient(circle,white,${wcol},${col});box-shadow:0 0 8px ${wcol};"></div>
+          <div style="position:absolute;top:${oD-2}px;left:50%;transform:translateX(-50%);width:3px;height:${sH}px;background:linear-gradient(${wcol},${col});border-radius:2px;"></div>
+          <div style="position:absolute;top:${oD+4}px;left:50%;width:8px;height:8px;border-radius:50%;background:${wcol};animation:worb-spin 1.2s linear infinite;transform-origin:-2px center;box-shadow:0 0 6px ${wcol};"></div>
+          <div style="position:absolute;top:${oD+12}px;left:50%;width:7px;height:7px;border-radius:50%;background:white;animation:worb-spin 1.8s linear infinite reverse;transform-origin:-3px center;opacity:.8;"></div>
+        </div>`;
+      }
+    }
+
+    if (rank === 'rook') {
+      if (stars === 1) {
+        // Hammer
+        const hH = Math.round(28*ws);
+        return `<div style="${baseStyle}width:${Math.round(16*ws)}px;height:${hH}px;">
+          <div style="width:${Math.round(16*ws)}px;height:${Math.round(10*ws)}px;background:${wcol};border-radius:3px;"></div>
+          <div style="width:4px;height:${hH-10}px;background:${col};margin:0 auto;border-radius:0 0 2px 2px;"></div>
+        </div>`;
+      } else if (stars === 2) {
+        // Stone boulder
+        const bD = Math.round(20*ws);
+        return `<div style="${baseStyle}width:${bD}px;height:${bD}px;border-radius:${bD/3}px;
+          background:radial-gradient(circle at 35% 35%,${wcol},${col} 60%,#6a4a20);
+          box-shadow:2px 2px 4px rgba(0,0,0,.4);"></div>`;
+      } else {
+        // Cannon barrel with fire
+        const cW = Math.round(32*ws), cH = Math.round(14*ws);
+        return `<div style="${baseStyle}--tilt:5deg;width:${cW}px;height:${cH+8}px;">
+          <div style="width:${cW}px;height:${cH}px;background:linear-gradient(180deg,${wcol},${col},#5a3a10);
+            border-radius:${cH/2}px;border:1px solid rgba(255,255,255,.2);"></div>
+          <!-- fire at muzzle -->
+          <div style="position:absolute;top:-2px;left:-6px;font-size:12px;animation:wsparkle .4s ease-in-out infinite;">🔥</div>
+          <!-- wheel -->
+          <div style="position:absolute;bottom:0;left:${cW*0.25-6}px;width:12px;height:12px;border-radius:50%;background:${col};border:2px solid ${wcol};"></div>
+          <div style="position:absolute;bottom:0;left:${cW*0.65-6}px;width:12px;height:12px;border-radius:50%;background:${col};border:2px solid ${wcol};"></div>
+        </div>`;
+      }
+    }
+
+    if (rank === 'queen') {
+      if (stars === 1) {
+        // Magic wand
+        const wH = Math.round(26*ws);
+        return `<div style="${baseStyle}width:8px;height:${wH}px;">
+          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:${Math.round(10*ws)}px;color:${wcol};">★</div>
+          <div style="position:absolute;top:${Math.round(10*ws)}px;left:50%;transform:translateX(-50%);width:2px;height:${wH-10}px;background:linear-gradient(${wcol},${col});border-radius:1px;"></div>
+        </div>`;
+      } else if (stars === 2) {
+        // Scepter with gem
+        const sH = Math.round(30*ws), gD = Math.round(9*ws);
+        return `<div style="${baseStyle}width:${gD+4}px;height:${sH+gD}px;">
+          <div style="position:absolute;top:0;left:50%;transform:translate(-50%,-0%);width:${gD}px;height:${gD}px;
+            background:${wcol};clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);
+            box-shadow:0 0 6px ${wcol};"></div>
+          <div style="position:absolute;top:${gD}px;left:50%;transform:translateX(-50%);width:4px;height:${sH}px;
+            background:linear-gradient(${wcol},${col});border-radius:2px;"></div>
+          <!-- side gems -->
+          <div style="position:absolute;top:${gD+4}px;left:0;width:4px;height:4px;border-radius:50%;background:${col};"></div>
+          <div style="position:absolute;top:${gD+4}px;right:0;width:4px;height:4px;border-radius:50%;background:${col};"></div>
+        </div>`;
+      } else {
+        // Triple wand fan
+        const wH = Math.round(28*ws);
+        return `<div style="${baseStyle}width:28px;height:${wH}px;position:relative;">
+          ${['#ff88ff','#cc44ff','#ffffff'].map((sc2, i) => {
+            const angles = ['-18deg','0deg','18deg'];
+            const lefts  = ['0px','8px','16px'];
+            return `<div style="position:absolute;left:${lefts[i]};top:0;width:3px;height:${wH-4}px;
+              background:${sc2};border-radius:2px;transform:rotate(${angles[i]});transform-origin:bottom center;
+              box-shadow:0 0 4px ${sc2};">
+              <div style="position:absolute;top:-3px;left:-2px;font-size:7px;color:${sc2};animation:wsparkle ${.5+i*.2}s ease-in-out infinite alternate;">✦</div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }
+    }
+
+    if (rank === 'king') {
+      if (stars === 1) {
+        // Short royal sword
+        const blH = Math.round(20*ws);
+        return `<div style="${baseStyle}width:10px;height:${blH+8}px;">
+          <div style="position:absolute;top:0;left:3px;width:4px;height:${blH}px;background:linear-gradient(white,${wcol},${col});border-radius:2px 2px 0 0;"></div>
+          <div style="position:absolute;top:${blH-2}px;left:0;width:10px;height:3px;background:${wcol};border-radius:1px;"></div>
+          <div style="position:absolute;top:${blH+1}px;left:4px;width:3px;height:7px;background:${col};border-radius:0 0 1px 1px;"></div>
+        </div>`;
+      } else if (stars === 2) {
+        // Broadsword
+        const blH = Math.round(30*ws), blW = Math.round(7*ws);
+        return `<div style="${baseStyle}width:${blW+6}px;height:${blH+10}px;">
+          <div style="position:absolute;top:0;left:${(blW+6-blW)/2}px;width:${blW}px;height:${blH}px;
+            background:linear-gradient(180deg,white 0%,${wcol} 30%,${col} 100%);
+            clip-path:polygon(30% 0%,70% 0%,100% 80%,50% 100%,0% 80%);"></div>
+          <div style="position:absolute;top:${blH-2}px;left:0;width:${blW+6}px;height:4px;background:${wcol};border-radius:2px;box-shadow:0 0 4px ${wcol};"></div>
+          <div style="position:absolute;top:${blH+2}px;left:${(blW+6-4)/2}px;width:4px;height:8px;background:${col};border-radius:2px;"></div>
+        </div>`;
+      } else {
+        // Legendary Greatsword with radiant aura
+        const blH = Math.round(44*ws), blW = Math.round(9*ws);
+        const sparkleArr = ['✦','✦','✦','★'].map((ch, i) => {
+          const tops  = ['-6px','10px','22px','36px'];
+          const lefts = [`${blW+8}px`,`${-10}px`,`${blW+10}px`,`${-8}px`];
+          const spd   = ['.5s','.7s','.4s','.8s'];
+          return `<span style="position:absolute;top:${tops[i]};left:${lefts[i]};font-size:9px;color:${wcol};animation:wsparkle ${spd[i]} ease-in-out infinite alternate;opacity:.9;">${ch}</span>`;
+        }).join('');
+        return `<div style="${baseStyle}width:${blW+22}px;height:${blH+14}px;position:relative;">
+          <!-- blade -->
+          <div style="position:absolute;top:0;left:${(blW+22-blW)/2}px;width:${blW}px;height:${blH}px;
+            background:linear-gradient(180deg,white 0%,${wcol} 25%,${wcol} 60%,${col} 100%);
+            clip-path:polygon(35% 0%,65% 0%,100% 75%,50% 100%,0% 75%);
+            box-shadow:0 0 10px ${wcol},0 0 24px ${wcol};"></div>
+          <!-- crossguard -->
+          <div style="position:absolute;top:${blH-3}px;left:0;width:${blW+22}px;height:6px;
+            background:linear-gradient(90deg,${col},${wcol},${col});
+            border-radius:3px;box-shadow:0 0 8px ${wcol};"></div>
+          <!-- handle -->
+          <div style="position:absolute;top:${blH+3}px;left:${(blW+22-5)/2}px;width:5px;height:11px;
+            background:${col};border-radius:0 0 2px 2px;"></div>
+          ${sparkleArr}
+        </div>`;
+      }
+    }
+
+    return `<div style="${baseStyle}width:8px;height:${Math.round(20*ws)}px;background:${wcol};border-radius:2px;"></div>`;
+  }
+
+  const pieceHTML   = pieces[rank] ? pieces[rank]() : pieces.pawn();
+  const weaponHTML  = makeWeapon();
+
+  // Outer wrapper: piece left, weapon right
+  return `<div style="position:relative;display:inline-flex;align-items:flex-end;gap:5px;overflow:visible;">
+    ${pieceHTML}
+    <div style="padding-bottom:4px;overflow:visible;">
+      ${weaponHTML}
+    </div>
   </div>`;
 }
-
 
 
 function resetBattleLog() {
