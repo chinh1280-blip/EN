@@ -761,17 +761,7 @@ input::placeholder{color:var(--muted)}
   50%{filter:drop-shadow(0 0 12px rgba(255,100,100,1)) brightness(2)}
 }
 
-/* ── HP floating above warrior (in battle field) ── */
-#fc-warrior-hp{
-  position:absolute;left:1%;bottom:56px;z-index:8;
-  display:flex;gap:2px;align-items:center;
-  padding:2px 4px;
-  background:rgba(10,6,2,.6);
-  border-radius:4px;
-  border:1px solid rgba(200,80,60,.4);
-  backdrop-filter:blur(2px);
-}
-#fc-warrior-hp .fc-hp-pip{display:block;}
+/* HP is now in battle header */
 
 /* ── Timer bar background ── */
 .fc-timer-bar-bg{
@@ -1923,6 +1913,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         <div class="fc-battle" id="fc-battle" style="display:none;">
           <div class="fc-battle-header">
             <span class="fc-battle-title">⚔ Today's Battle</span>
+            <div id="fc-warrior-hp" style="display:flex;gap:1px;align-items:center;flex-wrap:nowrap;"></div>
             <span class="fc-battle-score" id="fc-battle-score">0 / 0</span>
           </div>
           <!-- Mini Battle Log -->
@@ -2597,12 +2588,12 @@ CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);<
 <!-- More menu (mobile) -->
 <div id="more-menu" style="display:none;position:fixed;bottom:64px;left:0;right:0;z-index:91;background:rgba(255,255,255,.98);backdrop-filter:blur(16px);border-top:1px solid var(--rule);padding:10px 12px 6px;box-shadow:0 -4px 20px rgba(0,0,0,.08);">
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+    <button onclick="go('goal');closeMoreMenu()" class="more-item"><span style="font-size:20px;">▷</span><span>Mục tiêu</span></button>
     <button onclick="go('listen');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◉</span><span>Nghe</span></button>
     <button onclick="go('sentences');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◎</span><span>Ngữ pháp</span></button>
     <button onclick="go('families');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◈</span><span>Word Family</span></button>
     <button onclick="go('topics');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◉</span><span>Chủ đề</span></button>
     <button onclick="go('setup');closeMoreMenu()" class="more-item"><span style="font-size:20px;">⊡</span><span>Supabase</span></button>
-    <button onclick="go('github');closeMoreMenu()" class="more-item"><span style="font-size:20px;">◬</span><span>GitHub</span></button>
   </div>
 </div>
 <div id="more-overlay" onclick="closeMoreMenu()" style="display:none;position:fixed;inset:0;z-index:90;"></div>
@@ -2614,8 +2605,8 @@ CREATE POLICY "public_all" ON user_meta FOR ALL USING (true) WITH CHECK (true);<
     <button class="bn-btn"        id="bn-flashcard" onclick="go('flashcard',null,'bn-flashcard')"><span class="bni">◫</span>Cards</button>
     <button class="bn-btn"        id="bn-quiz"      onclick="go('quiz',null,'bn-quiz')"><span class="bni">◈</span>Quiz</button>
     <button class="bn-btn"        id="bn-wordbank"  onclick="go('wordbank',null,'bn-wordbank')"><span class="bni">▦</span>Kho từ</button>
+    <button class="bn-btn"        id="bn-rank"      onclick="go('rank',null,'bn-rank')"><span class="bni">♛</span>Cấp độ</button>
     <button class="bn-btn"        id="bn-stats"     onclick="go('stats',null,'bn-stats')"><span class="bni">▣</span>Thành tích</button>
-    <button class="bn-btn"        id="bn-goal"      onclick="go('goal',null,'bn-goal')"><span class="bni">▷</span>Mục tiêu</button>
     <button class="bn-btn"        id="bn-more"      onclick="toggleMoreMenu()"><span class="bni">⋯</span>Thêm</button>
   </div>
 </div>
@@ -3640,22 +3631,47 @@ function buildWarriorEl(rank, stars) {
       </div>`;
     },
     knight: () => {
-      const bW=20, h=26;
-      const bc=`background:${col}`;
-      const aura = stars>=3 ? `box-shadow:0 0 10px ${col},0 0 22px ${col};--ac:${col};animation:wpiece-aura 1.4s ease-in-out infinite;` : '';
-      return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;${aura}">
-        <!-- horse head, L-shape stepped -->
-        <div style="position:absolute;top:0;left:6px;width:12px;height:10px;${bc};border-radius:3px 4px 1px 2px;"></div>
-        <!-- snout protrude -->
-        <div style="position:absolute;top:4px;left:2px;width:10px;height:6px;${bc};border-radius:2px 1px 2px 3px;"></div>
-        <!-- mane / neck down -->
-        <div style="position:absolute;top:9px;left:8px;width:9px;height:8px;${bc};border-radius:1px;"></div>
-        <!-- eye -->
-        <div style="position:absolute;top:2px;left:13px;width:3px;height:3px;background:#111;border-radius:50%;"></div>
-        <!-- body column -->
-        <div style="position:absolute;top:14px;left:4px;width:14px;height:8px;${bc};border-radius:2px;"></div>
-        <!-- base -->
-        <div style="position:absolute;bottom:0;left:0;width:${bW}px;height:5px;${bc};border-radius:3px;"></div>
+      const bW=26, h=32;
+      const glowStr = stars>=3 ? `filter:drop-shadow(0 0 6px ${col}) drop-shadow(0 0 12px ${col});animation:wpiece-aura 1.4s ease-in-out infinite;` : '';
+      // Full horse head + body as inline SVG — recognizable chess knight
+      return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;${glowStr}">
+        <svg width="${bW}" height="${h}" viewBox="0 0 26 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" style="display:block;">
+          <!-- Mane spikes on top -->
+          <rect x="14" y="0" width="3" height="3" fill="${col}"/>
+          <rect x="17" y="1" width="2" height="4" fill="${col}"/>
+          <rect x="19" y="0" width="2" height="5" fill="${col}"/>
+          <!-- Head (skull area) -->
+          <rect x="11" y="3" width="12" height="9" fill="${col}"/>
+          <!-- Snout / muzzle protruding left -->
+          <rect x="5"  y="7" width="10" height="7" fill="${col}"/>
+          <rect x="3"  y="9" width="7"  height="5" fill="${col}"/>
+          <!-- nostril -->
+          <rect x="4"  y="10" width="2" height="2" fill="rgba(0,0,0,.35)"/>
+          <!-- Eye -->
+          <rect x="17" y="5" width="3" height="3" fill="#111"/>
+          <rect x="17" y="5" width="1" height="1" fill="rgba(255,255,255,.7)"/>
+          <!-- Neck sweeping down-right -->
+          <rect x="13" y="11" width="10" height="4" fill="${col}"/>
+          <rect x="14" y="14" width="9"  height="4" fill="${col}"/>
+          <rect x="15" y="17" width="8"  height="4" fill="${col}"/>
+          <!-- Collar plate -->
+          <rect x="8"  y="20" width="16" height="3" fill="${col}"/>
+          <!-- Body -->
+          <rect x="7"  y="22" width="17" height="5" fill="${col}"/>
+          <!-- Base platform -->
+          <rect x="4"  y="27" width="22" height="5" fill="${col}" rx="2"/>
+          <!-- Head highlight -->
+          <rect x="15" y="4" width="5"  height="2" fill="rgba(255,255,255,.25)"/>
+          <!-- Snout highlight -->
+          <rect x="5"  y="8" width="4"  height="2" fill="rgba(255,255,255,.2)"/>
+          ${stars>=2 ? `<!-- Armor plate on neck -->
+          <rect x="14" y="14" width="8" height="1" fill="rgba(255,255,255,.3)"/>
+          <rect x="15" y="17" width="7" height="1" fill="rgba(255,255,255,.3)"/>` : ''}
+          ${stars>=3 ? `<!-- Crown on mane -->
+          <rect x="20" y="0" width="2" height="2" fill="#ffe060"/>
+          <rect x="22" y="1" width="2" height="3" fill="#ffe060"/>
+          <rect x="24" y="0" width="2" height="4" fill="#ffe060"/>` : ''}
+        </svg>
       </div>`;
     },
     bishop: () => {
@@ -3775,49 +3791,109 @@ function buildWarriorEl(rank, stars) {
     const ws = sc;
 
     if (rank === 'pawn') {
-      // Dagger → Short sword → Glowing longsword
-      const bladeH = stars===3 ? Math.round(32*ws) : stars===2 ? Math.round(22*ws) : Math.round(14*ws);
-      const bladeW = stars===3 ? Math.round(4*ws) : stars===2 ? Math.round(3*ws) : Math.round(2*ws);
-      const guardW = stars===3 ? Math.round(10*ws) : stars===2 ? Math.round(8*ws) : Math.round(5*ws);
-      const sparkles = stars>=3 ? `<span style="position:absolute;top:-4px;left:50%;font-size:8px;color:${wcol};animation:wsparkle .8s ease-in-out infinite;">✦</span>` : '';
-      return `<div style="${baseStyle}width:${Math.max(guardW,bladeW)}px;height:${bladeH+6}px;">
-        ${sparkles}
-        <!-- blade -->
-        <div style="position:absolute;top:0;left:${(Math.max(guardW,bladeW)-bladeW)/2}px;width:${bladeW}px;height:${bladeH}px;
-          background:linear-gradient(180deg,white 0%,${wcol} 40%,${col} 100%);border-radius:${bladeW}px ${bladeW}px 0 0;"></div>
-        <!-- guard -->
-        <div style="position:absolute;top:${bladeH-2}px;left:0;width:${guardW}px;height:4px;
-          background:${wcol};border-radius:2px;"></div>
-        <!-- handle -->
-        <div style="position:absolute;top:${bladeH+2}px;left:${(guardW-3)/2}px;width:3px;height:6px;
-          background:${col};border-radius:0 0 2px 2px;"></div>
+      // Sword: angled 45° like reference — blade pointing top-right
+      // Star1=short dagger, Star2=sword, Star3=longsword with glow
+      const szBase = stars===3 ? Math.round(34*ws) : stars===2 ? Math.round(26*ws) : Math.round(18*ws);
+      const glowStr = stars>=3 ? `filter:drop-shadow(0 0 4px ${wcol}) drop-shadow(0 0 8px ${wcol});` : stars>=2 ? `filter:drop-shadow(0 0 3px ${wcol});` : '';
+      const sparkle = stars>=3 ? `<span style="position:absolute;top:-2px;right:-2px;font-size:8px;color:${wcol};animation:wsparkle .7s ease-in-out infinite;">✦</span>` : '';
+      const bladeW  = stars>=2 ? 5 : 4;
+      // Tilted sword drawn as rotated SVG inline
+      return `<div style="${baseStyle}--tilt:0deg;width:${szBase+8}px;height:${szBase+8}px;${glowStr}">
+        ${sparkle}
+        <svg width="${szBase+8}" height="${szBase+8}" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg"
+             style="display:block;overflow:visible;">
+          <!-- blade: diagonal top-right to bottom-left -->
+          <line x1="36" y1="4" x2="10" y2="32" stroke="${wcol}" stroke-width="${bladeW}" stroke-linecap="round"/>
+          <!-- blade edge highlight -->
+          <line x1="38" y1="6" x2="12" y2="34" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".55"/>
+          <!-- blade fuller (fuller groove) -->
+          <line x1="34" y1="7" x2="14" y2="27" stroke="${col}" stroke-width="1" stroke-linecap="round" opacity=".6"/>
+          <!-- blade tip -->
+          <polygon points="36,4 42,2 40,10" fill="${wcol}" opacity=".9"/>
+          <!-- crossguard perpendicular to blade -->
+          <line x1="14" y1="24" x2="22" y2="32" stroke="${wcol}" stroke-width="4" stroke-linecap="round"/>
+          <line x1="15" y1="25" x2="23" y2="33" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
+          <!-- pommel -->
+          <circle cx="8" cy="36" r="3.5" fill="${wcol}"/>
+          <circle cx="8" cy="36" r="2" fill="white" opacity=".4"/>
+          <!-- handle -->
+          <line x1="10" y1="32" x2="8" y2="36" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
+          <!-- wrap lines on handle -->
+          <line x1="9.5" y1="33.5" x2="12" y2="31" stroke="${wcol}" stroke-width="1" opacity=".7"/>
+          <line x1="8.8" y1="34.8" x2="11.2" y2="32.4" stroke="${wcol}" stroke-width="1" opacity=".7"/>
+          ${stars>=3 ? `<circle cx="36" cy="4" r="3" fill="white" opacity=".9"/>
+          <circle cx="36" cy="4" r="6" fill="${wcol}" opacity=".25"/>` : ''}
+        </svg>
       </div>`;
     }
 
     if (rank === 'knight') {
+      // Spears — all stars use spear shape, escalating in number/glow
+      const spearLen = stars===3 ? Math.round(38*ws) : stars===2 ? Math.round(30*ws) : Math.round(24*ws);
+      const glowStr  = stars>=3 ? `filter:drop-shadow(0 0 4px ${wcol}) drop-shadow(0 0 10px ${wcol});` : stars>=2 ? `filter:drop-shadow(0 0 3px ${wcol});` : '';
+      const animStr  = stars>=3 ? 'wfloat-fast 0.6s ease-in-out infinite alternate' : 'wfloat 1.0s ease-in-out infinite alternate';
+      const boxSz    = Math.round(spearLen * 0.85);
+
       if (stars === 1) {
-        // Lance (long diagonal)
-        const lL = Math.round(30*ws);
-        return `<div style="${baseStyle}--tilt:20deg;width:6px;height:${lL}px;">
-          <div style="width:4px;height:${lL}px;background:linear-gradient(180deg,${wcol},${col});border-radius:2px;margin:0 auto;"></div>
-          <div style="position:absolute;top:-3px;left:0;border-left:3px solid transparent;border-right:3px solid transparent;border-bottom:8px solid ${wcol};"></div>
+        // Single spear, angled 45° top-right to bottom-left
+        return `<div style="${baseStyle}--tilt:0deg;width:${boxSz}px;height:${boxSz}px;${glowStr}">
+          <svg width="${boxSz}" height="${boxSz}" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"
+               style="display:block;overflow:visible;">
+            <!-- shaft -->
+            <line x1="34" y1="4" x2="6" y2="34" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
+            <!-- shaft highlight -->
+            <line x1="33" y1="5" x2="8" y2="32" stroke="rgba(255,255,255,.4)" stroke-width="1.2" stroke-linecap="round"/>
+            <!-- spearhead tip (leaf shape) -->
+            <polygon points="34,4 38,0 38,8 34,10 32,6" fill="${wcol}"/>
+            <line x1="34" y1="4" x2="37" y2="2" stroke="white" stroke-width="1" opacity=".6"/>
+            <!-- butt cap -->
+            <rect x="4" y="32" width="5" height="5" rx="1" fill="${wcol}" transform="rotate(-45,6.5,34.5)"/>
+          </svg>
         </div>`;
       } else if (stars === 2) {
-        // Battle axe
-        const aH = Math.round(24*ws), aW = Math.round(18*ws);
-        return `<div style="${baseStyle}width:${aW}px;height:${aH+10}px;">
-          <div style="position:absolute;top:0;left:${(aW-10)/2}px;width:10px;height:${aH}px;
-            background:linear-gradient(to bottom,${wcol} 0%,${col} 100%);
-            border-radius:5px 5px 2px 2px;clip-path:polygon(30% 0%,70% 0%,100% 35%,80% 100%,20% 100%,0% 35%);"></div>
-          <div style="position:absolute;top:${aH-4}px;left:${(aW-3)/2}px;width:3px;height:14px;background:${col};border-radius:1px;"></div>
+        // Two spears side by side, slightly offset
+        return `<div style="${baseStyle}--tilt:0deg;width:${boxSz+6}px;height:${boxSz}px;${glowStr}">
+          <svg width="${boxSz+6}" height="${boxSz}" viewBox="0 0 44 38" xmlns="http://www.w3.org/2000/svg"
+               style="display:block;overflow:visible;">
+            <!-- spear 1 (behind) -->
+            <line x1="38" y1="2" x2="10" y2="34" stroke="${col}" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+            <polygon points="38,2 42,0 42,7 38,8 36,5" fill="${col}" opacity=".8"/>
+            <!-- spear 2 (front) -->
+            <line x1="34" y1="4" x2="6" y2="34" stroke="${wcol}" stroke-width="3" stroke-linecap="round"/>
+            <line x1="33" y1="5" x2="8" y2="32" stroke="rgba(255,255,255,.4)" stroke-width="1.2" stroke-linecap="round"/>
+            <polygon points="34,4 38,0 38,8 34,10 32,6" fill="${wcol}"/>
+            <line x1="34" y1="4" x2="37" y2="2" stroke="white" stroke-width="1" opacity=".6"/>
+            <!-- butt caps -->
+            <rect x="3" y="31" width="5" height="5" rx="1" fill="${col}" opacity=".7" transform="rotate(-45,5.5,33.5)"/>
+            <rect x="6" y="32" width="5" height="5" rx="1" fill="${wcol}" transform="rotate(-45,8.5,34.5)"/>
+          </svg>
         </div>`;
       } else {
-        // Golden lance + lightning
-        const lL = Math.round(36*ws);
-        return `<div style="${baseStyle}--tilt:18deg;width:8px;height:${lL}px;">
-          <div style="width:5px;height:${lL}px;background:linear-gradient(180deg,white,${wcol},${col});border-radius:2px;margin:0 auto;"></div>
-          <div style="position:absolute;top:-4px;left:-2px;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:10px solid white;"></div>
-          <span style="position:absolute;top:2px;left:8px;font-size:9px;color:#80e0ff;animation:wsparkle .5s ease-in-out infinite;">⚡</span>
+        // Crossed spears (X pattern) like reference image, golden glow
+        const sparkle = `<span style="position:absolute;top:-4px;right:-2px;font-size:8px;color:${wcol};animation:wsparkle .5s ease-in-out infinite;">⚡</span>`;
+        return `<div style="${baseStyle}--tilt:0deg;width:${boxSz+4}px;height:${boxSz}px;${glowStr}position:relative;">
+          ${sparkle}
+          <svg width="${boxSz+4}" height="${boxSz}" viewBox="0 0 42 40" xmlns="http://www.w3.org/2000/svg"
+               style="display:block;overflow:visible;">
+            <!-- spear 1: top-left to bottom-right -->
+            <line x1="4"  y1="4"  x2="38" y2="36" stroke="${col}"  stroke-width="3" stroke-linecap="round" opacity=".8"/>
+            <!-- spear 2: top-right to bottom-left -->
+            <line x1="38" y1="4"  x2="4"  y2="36" stroke="${wcol}" stroke-width="3" stroke-linecap="round"/>
+            <!-- shaft highlights -->
+            <line x1="4"  y1="4"  x2="36" y2="34" stroke="rgba(255,255,255,.35)" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="38" y1="4"  x2="6"  y2="34" stroke="rgba(255,255,255,.35)" stroke-width="1.2" stroke-linecap="round"/>
+            <!-- spearhead top-right -->
+            <polygon points="38,4 42,0 42,8 38,9 36,6" fill="${wcol}"/>
+            <line x1="38" y1="4" x2="41" y2="2" stroke="white" stroke-width="1" opacity=".7"/>
+            <!-- spearhead top-left -->
+            <polygon points="4,4 0,0 0,8 4,9 6,6" fill="${wcol}"/>
+            <!-- butt caps bottom -->
+            <rect x="35" y="32" width="5" height="6" rx="1" fill="${wcol}" transform="rotate(45,37.5,35)"/>
+            <rect x="1"  y="32" width="5" height="6" rx="1" fill="${col}" opacity=".8" transform="rotate(-45,3.5,35)"/>
+            <!-- center bind -->
+            <circle cx="21" cy="20" r="3.5" fill="${wcol}"/>
+            <circle cx="21" cy="20" r="2"   fill="white" opacity=".7"/>
+          </svg>
         </div>`;
       }
     }
@@ -4231,14 +4307,12 @@ function renderFCBattle() {
     ${deadMarks}
     ${mobsHTML}
     ${warriorHTML}
-    <div id="fc-warrior-hp" style="display:flex;gap:2px;position:absolute;left:1%;bottom:58px;z-index:8;
-      padding:2px 4px;background:rgba(10,6,2,.65);border-radius:4px;
-      border:1px solid rgba(200,80,60,.5);backdrop-filter:blur(2px);"></div>
+
     <canvas id="fc-spark-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:25;"></canvas>
     <canvas id="fc-effect-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:26;"></canvas>
   `;
   startBattleParticles();
-  // Re-render HP into floating container
+  // Re-render HP into header container
   setTimeout(() => fcRenderHP(), 10);
 }
 
@@ -5626,11 +5700,11 @@ function svgHeart() {
   </svg>`;
 }
 function fcRenderHP() {
-  // Render into floating hp above warrior in battle field
+  // Render into battle header HP container
   const floatEl = document.getElementById('fc-warrior-hp');
   if (floatEl) {
     floatEl.innerHTML = Array.from({length:10}, (_,i) =>
-      `<div class="fc-hp-pip${i >= fcHP ? ' dead' : ''}" id="hp-pip-${i}">${svgHeart()}</div>`
+      `<div class="fc-hp-pip${i >= fcHP ? ' dead' : ''}" id="hp-pip-${i}" style="width:11px;height:10px;">${svgHeart()}</div>`
     ).join('');
   }
   // Also update old pips container if visible
