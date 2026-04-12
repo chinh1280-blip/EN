@@ -3879,95 +3879,73 @@ function buildWarriorEl(rank, stars) {
     // Weapon sizes scale with rank × star
     const ws = sc;
 
-        if (rank === 'pawn') {
+            if (rank === 'pawn') {
       // Gilded Rapier — thin elegant blade, complex swept hilt, gold accents
-      const szBase = stars===3 ? 40 : stars===2 ? 32 : 24;
+      const szBase = stars===3 ? 30 : stars===2 ? 24 : 18;  // smaller scale
       const sc2 = Math.round(szBase * ws);
       const gold   = '#d4a020';
       const silver = wcol;
       const glow   = stars>=3
         ? `filter:drop-shadow(0 0 5px ${gold}) drop-shadow(0 0 10px ${gold}) drop-shadow(0 0 2px white);`
         : stars>=2 ? `filter:drop-shadow(0 0 3px ${gold});` : '';
-      // Canvas size: blade goes NE, hilt SW, 50×50 viewport
-      const vb = 50;
-      return `<div style="${baseStyle}--tilt:0deg;width:${sc2}px;height:${sc2}px;${glow}">
+      return `<div style="${baseStyle}--tilt:0deg;${glow}background:none;border:none;line-height:0;display:inline-block;">
         <svg width="${sc2}" height="${sc2}" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"
-             style="display:block;overflow:visible;" shape-rendering="geometricPrecision">
+             style="display:block;overflow:visible;background:none;" shape-rendering="geometricPrecision">
 
-          <!-- ═══ BLADE — thin rapier taper ═══ -->
-          <!-- main blade edge (slightly off-white, silver sheen) -->
+          <!-- ═══ BLADE ═══ -->
           <line x1="40" y1="6"  x2="16" y2="34" stroke="${silver}" stroke-width="${stars>=2?2:1.5}" stroke-linecap="round"/>
-          <!-- secondary edge (true rapier has two edges) -->
           <line x1="42" y1="8"  x2="17" y2="36" stroke="${silver}" stroke-width="${stars>=2?1.5:1}" stroke-linecap="round" opacity=".7"/>
-          <!-- blade flat / fuller (center groove, darker) -->
           <line x1="41" y1="7"  x2="17" y2="35" stroke="white"    stroke-width=".8" stroke-linecap="round" opacity=".4"/>
-          <!-- blade taper to needle tip -->
+          <!-- needle tip -->
           <path d="M 40,6 L 42,4 L 44,2 L 43,5 L 41,7 Z" fill="${silver}" opacity=".95"/>
-          <line x1="43" y1="3"  x2="44" y2="2"  stroke="white"    stroke-width=".8" opacity=".8"/>
-          ${stars>=2 ? `<!-- fuller groove (second channel) -->
-          <line x1="39" y1="8"  x2="18" y2="33" stroke="rgba(0,0,0,.25)" stroke-width=".8" stroke-linecap="round"/>` : ''}
-          ${stars>=3 ? `<!-- blade etching / decorative line near forte -->
-          <line x1="22" y1="28" x2="28" y2="22" stroke="${gold}" stroke-width=".7" opacity=".6"/>
+          <line x1="43" y1="3"  x2="44" y2="2" stroke="white" stroke-width=".8" opacity=".8"/>
+          ${stars>=2 ? `<line x1="39" y1="8" x2="18" y2="33" stroke="rgba(0,0,0,.25)" stroke-width=".8" stroke-linecap="round"/>` : ''}
+          ${stars>=3 ? `<line x1="22" y1="28" x2="28" y2="22" stroke="${gold}" stroke-width=".7" opacity=".6"/>
           <line x1="23" y1="30" x2="27" y2="24" stroke="${gold}" stroke-width=".5" opacity=".4"/>` : ''}
 
-          <!-- ═══ SWEPT HILT / GUARD — the complex gilded cage ═══ -->
-          <!-- ricasso (flat part before guard) -->
+          <!-- ═══ SWEPT HILT ═══ -->
           <line x1="16" y1="34" x2="14" y2="36" stroke="${silver}" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- main crossguard -->
+          <line x1="10" y1="32" x2="20" y2="40" stroke="${gold}" stroke-width="3"  stroke-linecap="round"/>
+          <line x1="10" y1="32" x2="20" y2="40" stroke="white"  stroke-width=".8" stroke-linecap="round" opacity=".5"/>
 
-          <!-- main crossguard bar (diagonal, perpendicular to blade) -->
-          <line x1="10" y1="32" x2="20" y2="40" stroke="${gold}" stroke-width="3"   stroke-linecap="round"/>
-          <line x1="10" y1="32" x2="20" y2="40" stroke="white"   stroke-width=".8" stroke-linecap="round" opacity=".5"/>
-
-          ${stars>=2 ? `<!-- swept quillon (curving arm, top) -->
+          ${stars>=2 ? `<!-- swept quillons -->
           <path d="M 10,32 Q 6,26 9,22" stroke="${gold}" stroke-width="2" fill="none" stroke-linecap="round"/>
           <path d="M 10,32 Q 6,26 9,22" stroke="white"  stroke-width=".6" fill="none" stroke-linecap="round" opacity=".5"/>
-          <!-- swept quillon (curving arm, bottom) -->
           <path d="M 20,40 Q 24,44 21,47" stroke="${gold}" stroke-width="2" fill="none" stroke-linecap="round"/>
           <path d="M 20,40 Q 24,44 21,47" stroke="white"  stroke-width=".6" fill="none" stroke-linecap="round" opacity=".5"/>
-          <!-- knuckle bow (curved arch protecting knuckles) -->
+          <!-- knuckle bow -->
           <path d="M 10,32 Q 7,38 12,43" stroke="${gold}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-          <path d="M 10,32 Q 7,38 12,43" stroke="white"  stroke-width=".5" fill="none" stroke-linecap="round" opacity=".45"/>` : ''}
+          <path d="M 10,32 Q 7,38 12,43" stroke="white"  stroke-width=".5"  fill="none" stroke-linecap="round" opacity=".45"/>` : ''}
 
-          ${stars>=3 ? `<!-- side ring (pas d'âne ring) left -->
+          ${stars>=3 ? `<!-- pas d'âne rings -->
           <circle cx="11" cy="33" r="3.5" stroke="${gold}" stroke-width="1.8" fill="none"/>
           <circle cx="11" cy="33" r="3.5" stroke="white"  stroke-width=".6"  fill="none" opacity=".4"/>
-          <!-- side ring right -->
           <circle cx="19" cy="39" r="3"   stroke="${gold}" stroke-width="1.5" fill="none"/>
-          <!-- shell guard (small curved plate) -->
+          <!-- shell guard -->
           <path d="M 13,36 Q 15,34 17,36 Q 15,38 13,36 Z" fill="${gold}" opacity=".8"/>
           <path d="M 13,36 Q 15,34 17,36 Q 15,38 13,36 Z" fill="white"  opacity=".25"/>` : ''}
 
-          <!-- ═══ GRIP / HANDLE ═══ -->
-          <!-- grip (wrapped with wire) -->
+          <!-- ═══ GRIP ═══ -->
           <line x1="14" y1="36" x2="9"  y2="42" stroke="${col}" stroke-width="2.8" stroke-linecap="round"/>
-          <!-- wire wrapping marks -->
           <line x1="13" y1="37" x2="11" y2="39" stroke="${gold}" stroke-width=".9" opacity=".8"/>
           <line x1="12" y1="38.5" x2="10" y2="40.5" stroke="${gold}" stroke-width=".9" opacity=".7"/>
           <line x1="11" y1="40"   x2="9.5" y2="41.5" stroke="${gold}" stroke-width=".9" opacity=".6"/>
-          ${stars>=2 ? `<!-- grip mid wrap ring -->
-          <line x1="11.5" y1="39.5" x2="13.5" y2="37.5" stroke="${gold}" stroke-width="1.5" opacity=".9"/>` : ''}
+          ${stars>=2 ? `<line x1="11.5" y1="39.5" x2="13.5" y2="37.5" stroke="${gold}" stroke-width="1.5" opacity=".9"/>` : ''}
 
           <!-- ═══ POMMEL ═══ -->
-          ${stars>=3 ? `<!-- ★3: ornate pear pommel with gem -->
-          <ellipse cx="7" cy="44" rx="4.5" ry="4" fill="${gold}"/>
-          <ellipse cx="7" cy="44" rx="4.5" ry="4" fill="none" stroke="${gold}" stroke-width="1"/>
+          ${stars>=3 ? `<ellipse cx="7" cy="44" rx="4.5" ry="4" fill="${gold}"/>
           <ellipse cx="7" cy="44" rx="2.5" ry="2.2" fill="${col}" opacity=".4"/>
-          <!-- gem in center -->
           <ellipse cx="7" cy="44" rx="1.5" ry="1.3" fill="white" opacity=".9"/>
           <ellipse cx="7" cy="43" rx=".7"  ry=".5"  fill="white"/>
-          <!-- pommel edge highlight -->
-          <path d="M 4,42 Q 3.5,44 5,46" stroke="white" stroke-width=".7" fill="none" opacity=".5"/>` :
-          stars>=2 ? `<!-- ★2: round gilded pommel -->
-          <circle cx="7.5" cy="44" r="3.5" fill="${gold}"/>
+          <path d="M 4,42 Q 3.5,44 5,46" stroke="white" stroke-width=".7" fill="none" opacity=".5"/>
+          <circle cx="43" cy="2" r="3" fill="${gold}" opacity=".4"/>
+          <circle cx="43" cy="2" r="1.5" fill="white" opacity=".7"/>` :
+          stars>=2 ? `<circle cx="7.5" cy="44" r="3.5" fill="${gold}"/>
           <circle cx="7.5" cy="44" r="2"   fill="${col}" opacity=".3"/>
           <circle cx="6.5" cy="43" r="1"   fill="white" opacity=".6"/>` :
-          `<!-- ★1: simple round pommel -->
-          <circle cx="8" cy="43" r="2.5" fill="${silver}"/>
+          `<circle cx="8" cy="43" r="2.5" fill="${silver}"/>
           <circle cx="7" cy="42" r=".8"  fill="white" opacity=".5"/>`}
-
-          ${stars>=3 ? `<!-- glow at tip -->
-          <circle cx="43" cy="2" r="3" fill="${gold}" opacity=".4"/>
-          <circle cx="43" cy="2" r="1.5" fill="white" opacity=".7"/>` : ''}
         </svg>
       </div>`;
     }
