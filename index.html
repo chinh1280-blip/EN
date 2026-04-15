@@ -3631,136 +3631,34 @@ function buildWarriorEl(rank, stars) {
       </div>`;
     },
     knight: () => {
-      const bW=30, h=36;
-      const glow3 = stars>=3
-        ? `filter:drop-shadow(0 0 5px ${col}) drop-shadow(0 0 12px ${col});`
-        : stars>=2 ? `filter:drop-shadow(0 0 3px ${col});` : '';
-      // Classic Staunton knight — carved horse head, flowing mane, barding
-      // Drawn with SVG paths for smooth, sculptural look
-      return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;${glow3}">
-        <svg width="${bW}" height="${h}" viewBox="0 0 30 36" xmlns="http://www.w3.org/2000/svg"
-             style="display:block;" shape-rendering="geometricPrecision">
-          <defs>
-            <linearGradient id="kgA${stars}" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%"   stop-color="${col}" stop-opacity="1"/>
-              <stop offset="60%"  stop-color="${col}" stop-opacity="0.85"/>
-              <stop offset="100%" stop-color="${col}" stop-opacity="0.65"/>
-            </linearGradient>
-            <linearGradient id="kgB${stars}" x1="0%" y1="0%" x2="80%" y2="100%">
-              <stop offset="0%"  stop-color="white" stop-opacity="0.35"/>
-              <stop offset="100%" stop-color="white" stop-opacity="0"/>
-            </linearGradient>
-            ${stars>=2 ? `<linearGradient id="kgC${stars}" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#d4a020" stop-opacity="0.9"/>
-              <stop offset="50%"  stop-color="#f0d060" stop-opacity="1"/>
-              <stop offset="100%" stop-color="#d4a020" stop-opacity="0.9"/>
-            </linearGradient>` : ''}
-          </defs>
-
-          <!-- ═══ BASE PLATFORM ═══ -->
-          <rect x="2"  y="30" width="26" height="6" rx="3" fill="url(#kgA${stars})"/>
-          <rect x="2"  y="30" width="26" height="2" rx="2" fill="white" opacity=".18"/>
-
-          <!-- ═══ BODY / CHEST ═══ -->
-          <!-- main torso block -->
-          <path d="M 6,30 L 7,22 L 9,17 L 21,17 L 23,22 L 24,30 Z"
-                fill="url(#kgA${stars})"/>
-          <path d="M 6,30 L 7,22 L 9,17 L 21,17 L 23,22 L 24,30 Z"
-                fill="url(#kgB${stars})"/>
-
-          <!-- ═══ NECK ═══ -->
-          <path d="M 10,17 Q 9,13 11,10 L 20,10 Q 22,13 20,17 Z"
-                fill="url(#kgA${stars})"/>
-          <path d="M 10,17 Q 9,13 11,10 L 20,10 Q 22,13 20,17 Z"
-                fill="url(#kgB${stars})" opacity=".7"/>
-
-          <!-- ═══ HEAD — classic horse profile facing right ═══ -->
-          <!-- skull / cranium (large rounded mass) -->
-          <path d="M 11,10 Q 10,5 13,3 Q 17,1 22,3 Q 27,5 27,9 Q 27,13 24,14 L 20,14 L 20,10 Z"
-                fill="url(#kgA${stars})"/>
-          <path d="M 11,10 Q 10,5 13,3 Q 17,1 22,3 Q 27,5 27,9 Q 27,13 24,14 L 20,14 L 20,10 Z"
-                fill="url(#kgB${stars})"/>
-
-          <!-- ═══ MUZZLE / SNOUT ═══ -->
-          <!-- muzzle protrudes forward (right) -->
-          <path d="M 22,12 Q 27,11 29,14 Q 29,18 26,19 Q 22,20 20,18 L 20,14 Z"
-                fill="url(#kgA${stars})"/>
-          <path d="M 22,12 Q 27,11 29,14 Q 29,18 26,19 Q 22,20 20,18 L 20,14 Z"
-                fill="url(#kgB${stars})" opacity=".5"/>
-          <!-- nostril (dark curved indent) -->
-          <path d="M 27,16 Q 28,17 27,18" stroke="rgba(0,0,0,.5)" stroke-width="1.2"
-                fill="none" stroke-linecap="round"/>
-
-          <!-- ═══ EYE ═══ -->
-          <circle cx="24" cy="9" r="2"   fill="rgba(0,0,0,.7)"/>
-          <circle cx="24" cy="9" r="1.2" fill="#1a1a2a"/>
-          <!-- eye highlight -->
-          <circle cx="23.3" cy="8.3" r=".5" fill="white" opacity=".9"/>
-
-          <!-- ═══ MOUTH LINE ═══ -->
-          <path d="M 28,17 Q 27,18.5 25,19" stroke="rgba(0,0,0,.4)" stroke-width=".8"
-                fill="none" stroke-linecap="round"/>
-
-          <!-- ═══ FLOWING MANE ═══ -->
-          <!-- mane: cascades from poll (top of head) down the back (left side) -->
-          <path d="M 13,3 Q 10,0 8,2 Q 6,4 8,7 Q 6,8 7,11 Q 5,12 6,15 Q 4,16 5,19"
-                stroke="${col}" stroke-width="3.5" fill="none" stroke-linecap="round"
-                opacity="${stars>=2?'0.95':'0.75'}"/>
-          <!-- mane highlight strand -->
-          <path d="M 12,3 Q 9,1 8,4 Q 7,7 8,10 Q 6,12 7,15"
-                stroke="white" stroke-width="1" fill="none" stroke-linecap="round" opacity=".3"/>
-          <!-- secondary mane strand -->
-          <path d="M 14,2 Q 11,1 10,4 Q 8,7 9,11 Q 7,13 8,16"
-                stroke="${col}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".6"/>
-          ${stars>=2 ? `<!-- longer mane strands for ★2+ -->
-          <path d="M 7,14 Q 5,16 6,19 Q 4,21 5,24" stroke="${col}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".85"/>
-          <path d="M 6,14 Q 4.5,17 5.5,20" stroke="white" stroke-width=".8" fill="none" opacity=".25"/>
-          <path d="M 8,15 Q 6,18 7,22" stroke="${col}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".5"/>` : ''}
-
-          <!-- ═══ FORELOCK (tuft between ears) ═══ -->
-          <path d="M 14,2 Q 15,0 16,1 Q 17,0 18,2" stroke="${col}" stroke-width="2.5"
-                fill="none" stroke-linecap="round"/>
-
-          <!-- ═══ EAR (small triangular point) ═══ -->
-          <path d="M 17,2 L 19,0 L 21,2" stroke="${col}" stroke-width="1.5"
-                fill="${col}" stroke-linejoin="round"/>
-
-          <!-- ═══ BARDING ARMOR (neck & chest) ═══ -->
-          ${stars>=2 ? `<!-- crinet: articulated neck armor plates -->
-          <path d="M 9,17 L 11,14 L 19,14 L 21,17" stroke="url(#kgC${stars})" stroke-width="1.5" fill="none" opacity=".9"/>
-          <path d="M 8,19 L 10,16 L 20,16 L 22,19" stroke="url(#kgC${stars})" stroke-width="1.2" fill="none" opacity=".7"/>
-          <!-- chamfron: nose armor trim on muzzle -->
-          <path d="M 22,12 Q 24,11 26,12 Q 27,13 26,14" stroke="url(#kgC${stars})" stroke-width="1.5" fill="none" opacity=".8"/>
-          <!-- peytral: chest plate horizontal band -->
-          <path d="M 7,23 Q 15,21 23,23" stroke="url(#kgC${stars})" stroke-width="2" fill="none" opacity=".85"/>
-          <path d="M 7,23 Q 15,21 23,23" stroke="white" stroke-width=".5" fill="none" opacity=".3"/>
-          <!-- lower chest rivet lines -->
-          <line x1="10" y1="25" x2="20" y2="25" stroke="url(#kgC${stars})" stroke-width=".8" opacity=".6"/>
-          <circle cx="12" cy="25" r=".8" fill="#d4a020" opacity=".8"/>
-          <circle cx="15" cy="25" r=".8" fill="#d4a020" opacity=".8"/>
-          <circle cx="18" cy="25" r=".8" fill="#d4a020" opacity=".8"/>` : ''}
-
-          <!-- ═══ STAR 3 EXTRAS ═══ -->
-          ${stars>=3 ? `<!-- crown / battle crest on poll -->
-          <path d="M 14,2 L 13,0 L 15,1 L 16,0 L 17,1 L 19,0 L 18,2"
-                fill="#ffe060" stroke="#d4a020" stroke-width=".5"/>
-          <!-- full barding: flank armor continuation -->
-          <path d="M 6,28 Q 7,26 8,28" stroke="#d4a020" stroke-width="1.5" fill="none" opacity=".8"/>
-          <path d="M 22,28 Q 23,26 24,28" stroke="#d4a020" stroke-width="1.5" fill="none" opacity=".8"/>
-          <!-- eyepiece guard arch -->
-          <path d="M 21,8 Q 22,6 23,8" stroke="#d4a020" stroke-width="1.2" fill="none" opacity=".7"/>
-          <!-- mane golden highlight strand -->
-          <path d="M 9,3 Q 7,6 8,9 Q 6,12 7,16 Q 5,18 6,22"
-                stroke="#ffe060" stroke-width="1" fill="none" stroke-linecap="round" opacity=".5"/>` : ''}
-
-          <!-- ═══ SURFACE HIGHLIGHTS ═══ -->
-          <!-- cranium highlight (top light catch) -->
-          <path d="M 13,3 Q 17,2 21,4" stroke="white" stroke-width=".8" fill="none" opacity=".4"/>
-          <!-- muzzle top highlight -->
-          <path d="M 23,12 Q 26,12 28,14" stroke="white" stroke-width=".6" fill="none" opacity=".35"/>
-          <!-- neck front highlight -->
-          <path d="M 14,10 Q 15,8 17,8" stroke="white" stroke-width=".7" fill="none" opacity=".3"/>
-        </svg>
+      const bW=28, h=34;
+      // ♞ Unicode chess knight — universally recognizable, crisp at any size
+      // Glow escalates with stars; base platform matches all other pieces
+      const fontSize = Math.round(bW * 0.78);
+      const glowStr = stars >= 3
+        ? `text-shadow:0 0 6px ${col},0 0 14px ${col},0 0 28px ${col},1px 1px 0 rgba(0,0,0,.5);filter:drop-shadow(0 0 4px ${col});`
+        : stars >= 2
+        ? `text-shadow:0 0 4px ${col},0 0 10px ${col},1px 1px 0 rgba(0,0,0,.4);`
+        : `text-shadow:1px 1px 2px rgba(0,0,0,.5);`;
+      // Colour: use RANK_CONFIG color for tint
+      const pieceColor = col;
+      return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;">
+        <!-- unicode knight icon, vertically stacked above base -->
+        <div style="position:absolute;top:0;left:0;width:${bW}px;height:${h-6}px;
+                    display:flex;align-items:center;justify-content:center;overflow:visible;">
+          <span style="font-size:${fontSize}px;line-height:1;color:${pieceColor};
+                       display:block;${glowStr}
+                       ${stars>=3?`animation:wpiece-aura 1.4s ease-in-out infinite;`:''}">♞</span>
+        </div>
+        <!-- base platform — same height/style as other pieces -->
+        <div style="position:absolute;bottom:0;left:0;width:${bW}px;height:6px;
+                    background:${pieceColor};border-radius:3px;
+                    box-shadow:0 1px 0 rgba(255,255,255,.2) inset;">
+          ${stars>=2?`<div style="height:2px;background:rgba(255,255,255,.2);border-radius:3px 3px 0 0;"></div>`:''}
+        </div>
+        ${stars>=3?`<!-- crown sparkle top -->
+        <div style="position:absolute;top:-4px;left:50%;transform:translateX(-50%);
+                    font-size:7px;color:#ffe060;animation:wsparkle .8s ease-in-out infinite;">✦</div>`:''}
       </div>`;
     },
         bishop: () => {
@@ -3880,75 +3778,71 @@ function buildWarriorEl(rank, stars) {
     const ws = sc;
 
             if (rank === 'pawn') {
-      // Gilded Rapier — thin elegant blade, complex swept hilt, gold accents
-      const szBase = stars===3 ? 30 : stars===2 ? 24 : 18;  // smaller scale
-      const sc2 = Math.round(szBase * ws);
+      // Gilded Rapier — scale down 30%, glow on SVG element, no wrapper box
+      const szBase = stars===3 ? 21 : stars===2 ? 17 : 13;
+      const sc2    = Math.round(szBase * ws);
       const gold   = '#d4a020';
       const silver = wcol;
-      const glow   = stars>=3
-        ? `filter:drop-shadow(0 0 5px ${gold}) drop-shadow(0 0 10px ${gold}) drop-shadow(0 0 2px white);`
-        : stars>=2 ? `filter:drop-shadow(0 0 3px ${gold});` : '';
-      return `<div style="${baseStyle}--tilt:0deg;${glow}background:none;border:none;line-height:0;display:inline-block;">
-        <svg width="${sc2}" height="${sc2}" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"
-             style="display:block;overflow:visible;background:none;" shape-rendering="geometricPrecision">
+      // glow on the SVG itself — hugs the strokes, no square halo
+      const svgGlow = stars>=3
+        ? `filter:drop-shadow(0 0 4px ${gold}) drop-shadow(0 0 8px ${gold});`
+        : stars>=2 ? `filter:drop-shadow(0 0 2px ${gold});` : '';
+      return `<div style="${baseStyle}--tilt:0deg;">
+        <svg width="${sc2}" height="${sc2}" viewBox="0 0 50 50"
+             xmlns="http://www.w3.org/2000/svg"
+             style="display:block;overflow:visible;${svgGlow}"
+             shape-rendering="geometricPrecision">
 
-          <!-- ═══ BLADE ═══ -->
+          <!-- BLADE — two thin edges converging to needle tip -->
           <line x1="40" y1="6"  x2="16" y2="34" stroke="${silver}" stroke-width="${stars>=2?2:1.5}" stroke-linecap="round"/>
-          <line x1="42" y1="8"  x2="17" y2="36" stroke="${silver}" stroke-width="${stars>=2?1.5:1}" stroke-linecap="round" opacity=".7"/>
-          <line x1="41" y1="7"  x2="17" y2="35" stroke="white"    stroke-width=".8" stroke-linecap="round" opacity=".4"/>
-          <!-- needle tip -->
+          <line x1="42" y1="8"  x2="17" y2="36" stroke="${silver}" stroke-width="${stars>=2?1.5:1}" stroke-linecap="round" opacity=".65"/>
+          <line x1="41" y1="7"  x2="17" y2="35" stroke="white"    stroke-width=".7" stroke-linecap="round" opacity=".35"/>
           <path d="M 40,6 L 42,4 L 44,2 L 43,5 L 41,7 Z" fill="${silver}" opacity=".95"/>
-          <line x1="43" y1="3"  x2="44" y2="2" stroke="white" stroke-width=".8" opacity=".8"/>
-          ${stars>=2 ? `<line x1="39" y1="8" x2="18" y2="33" stroke="rgba(0,0,0,.25)" stroke-width=".8" stroke-linecap="round"/>` : ''}
-          ${stars>=3 ? `<line x1="22" y1="28" x2="28" y2="22" stroke="${gold}" stroke-width=".7" opacity=".6"/>
-          <line x1="23" y1="30" x2="27" y2="24" stroke="${gold}" stroke-width=".5" opacity=".4"/>` : ''}
+          ${stars>=2 ? `<line x1="39" y1="8" x2="18" y2="33" stroke="rgba(0,0,0,.2)" stroke-width=".7" stroke-linecap="round"/>` : ''}
+          ${stars>=3 ? `<line x1="22" y1="28" x2="28" y2="22" stroke="${gold}" stroke-width=".7" opacity=".55"/>` : ''}
 
-          <!-- ═══ SWEPT HILT ═══ -->
-          <line x1="16" y1="34" x2="14" y2="36" stroke="${silver}" stroke-width="2.5" stroke-linecap="round"/>
-          <!-- main crossguard -->
-          <line x1="10" y1="32" x2="20" y2="40" stroke="${gold}" stroke-width="3"  stroke-linecap="round"/>
-          <line x1="10" y1="32" x2="20" y2="40" stroke="white"  stroke-width=".8" stroke-linecap="round" opacity=".5"/>
+          <!-- RICASSO + MAIN CROSSGUARD -->
+          <line x1="16" y1="34" x2="14" y2="36" stroke="${silver}" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="10" y1="32" x2="20" y2="40" stroke="${gold}"   stroke-width="2.8" stroke-linecap="round"/>
+          <line x1="10" y1="32" x2="20" y2="40" stroke="white"     stroke-width=".7"  stroke-linecap="round" opacity=".45"/>
 
           ${stars>=2 ? `<!-- swept quillons -->
-          <path d="M 10,32 Q 6,26 9,22" stroke="${gold}" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <path d="M 10,32 Q 6,26 9,22" stroke="white"  stroke-width=".6" fill="none" stroke-linecap="round" opacity=".5"/>
-          <path d="M 20,40 Q 24,44 21,47" stroke="${gold}" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <path d="M 20,40 Q 24,44 21,47" stroke="white"  stroke-width=".6" fill="none" stroke-linecap="round" opacity=".5"/>
+          <path d="M 10,32 Q 6,26 9,22" stroke="${gold}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M 20,40 Q 24,44 21,47" stroke="${gold}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
           <!-- knuckle bow -->
-          <path d="M 10,32 Q 7,38 12,43" stroke="${gold}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-          <path d="M 10,32 Q 7,38 12,43" stroke="white"  stroke-width=".5"  fill="none" stroke-linecap="round" opacity=".45"/>` : ''}
+          <path d="M 10,32 Q 7,38 12,43" stroke="${gold}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M 10,32 Q 7,38 12,43" stroke="white"  stroke-width=".4"  fill="none" stroke-linecap="round" opacity=".4"/>` : ''}
 
-          ${stars>=3 ? `<!-- pas d'âne rings -->
-          <circle cx="11" cy="33" r="3.5" stroke="${gold}" stroke-width="1.8" fill="none"/>
-          <circle cx="11" cy="33" r="3.5" stroke="white"  stroke-width=".6"  fill="none" opacity=".4"/>
-          <circle cx="19" cy="39" r="3"   stroke="${gold}" stroke-width="1.5" fill="none"/>
+          ${stars>=3 ? `<!-- pas d'âne rings (stroke-only, no fill = no box) -->
+          <circle cx="11" cy="33" r="3.5" stroke="${gold}" stroke-width="1.6" fill="none"/>
+          <circle cx="19" cy="39" r="2.8" stroke="${gold}" stroke-width="1.4" fill="none"/>
           <!-- shell guard -->
-          <path d="M 13,36 Q 15,34 17,36 Q 15,38 13,36 Z" fill="${gold}" opacity=".8"/>
-          <path d="M 13,36 Q 15,34 17,36 Q 15,38 13,36 Z" fill="white"  opacity=".25"/>` : ''}
+          <path d="M 13,36 Q 15,34 17,36 Q 15,38 13,36 Z" fill="${gold}" opacity=".75"/>` : ''}
 
-          <!-- ═══ GRIP ═══ -->
-          <line x1="14" y1="36" x2="9"  y2="42" stroke="${col}" stroke-width="2.8" stroke-linecap="round"/>
-          <line x1="13" y1="37" x2="11" y2="39" stroke="${gold}" stroke-width=".9" opacity=".8"/>
-          <line x1="12" y1="38.5" x2="10" y2="40.5" stroke="${gold}" stroke-width=".9" opacity=".7"/>
-          <line x1="11" y1="40"   x2="9.5" y2="41.5" stroke="${gold}" stroke-width=".9" opacity=".6"/>
-          ${stars>=2 ? `<line x1="11.5" y1="39.5" x2="13.5" y2="37.5" stroke="${gold}" stroke-width="1.5" opacity=".9"/>` : ''}
+          <!-- GRIP -->
+          <line x1="14" y1="36" x2="9"  y2="42" stroke="${col}" stroke-width="2.6" stroke-linecap="round"/>
+          <line x1="13" y1="37" x2="11" y2="39" stroke="${gold}" stroke-width=".8" opacity=".8"/>
+          <line x1="12" y1="38.5" x2="10" y2="40.5" stroke="${gold}" stroke-width=".8" opacity=".7"/>
+          <line x1="11" y1="40"   x2="9.5" y2="41.5" stroke="${gold}" stroke-width=".8" opacity=".6"/>
+          ${stars>=2 ? `<line x1="11.5" y1="39.5" x2="13.5" y2="37.5" stroke="${gold}" stroke-width="1.4" opacity=".85"/>` : ''}
 
-          <!-- ═══ POMMEL ═══ -->
-          ${stars>=3 ? `<ellipse cx="7" cy="44" rx="4.5" ry="4" fill="${gold}"/>
-          <ellipse cx="7" cy="44" rx="2.5" ry="2.2" fill="${col}" opacity=".4"/>
-          <ellipse cx="7" cy="44" rx="1.5" ry="1.3" fill="white" opacity=".9"/>
-          <ellipse cx="7" cy="43" rx=".7"  ry=".5"  fill="white"/>
-          <path d="M 4,42 Q 3.5,44 5,46" stroke="white" stroke-width=".7" fill="none" opacity=".5"/>
-          <circle cx="43" cy="2" r="3" fill="${gold}" opacity=".4"/>
-          <circle cx="43" cy="2" r="1.5" fill="white" opacity=".7"/>` :
-          stars>=2 ? `<circle cx="7.5" cy="44" r="3.5" fill="${gold}"/>
-          <circle cx="7.5" cy="44" r="2"   fill="${col}" opacity=".3"/>
-          <circle cx="6.5" cy="43" r="1"   fill="white" opacity=".6"/>` :
-          `<circle cx="8" cy="43" r="2.5" fill="${silver}"/>
-          <circle cx="7" cy="42" r=".8"  fill="white" opacity=".5"/>`}
+          <!-- POMMEL (stroke-only circles never make a box) -->
+          ${stars>=3
+            ? `<ellipse cx="7" cy="44" rx="4" ry="3.5" fill="${gold}"/>
+               <ellipse cx="7" cy="44" rx="2" ry="1.8" fill="${col}" opacity=".35"/>
+               <ellipse cx="7" cy="44" rx="1.2" ry="1"  fill="white" opacity=".85"/>
+               <path d="M 4,42 Q 3.5,44 5,46" stroke="white" stroke-width=".6" fill="none" opacity=".45"/>
+               <circle cx="43" cy="2" r="2.5" fill="${gold}" opacity=".35"/>
+               <circle cx="43" cy="2" r="1.2" fill="white"  opacity=".65"/>`
+            : stars>=2
+            ? `<circle cx="7.5" cy="44" r="3" fill="${gold}"/>
+               <circle cx="6.5" cy="43" r=".9" fill="white" opacity=".55"/>`
+            : `<circle cx="8"   cy="43" r="2.2" fill="${silver}"/>
+               <circle cx="7.2" cy="42.2" r=".7" fill="white" opacity=".45"/>`}
         </svg>
       </div>`;
     }
+
 
     if (rank === 'knight') {
       // Spears — all stars use spear shape, escalating in number/glow
