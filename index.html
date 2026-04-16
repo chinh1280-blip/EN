@@ -226,6 +226,26 @@ input::placeholder{color:var(--muted)}
 .fc-face{position:absolute;inset:0;border-radius:var(--r3);backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center}
 .fc-front{background:var(--white);border:1px solid var(--rule);box-shadow:var(--shadow2)}
 .fc-back{background:var(--paper);border:1px solid var(--rule2);box-shadow:var(--shadow2);transform:rotateY(180deg)}
+.fc-note-face{
+  background:#fdf8f0;border:1px solid #e8dfc8;
+  box-shadow:var(--shadow2);transform:rotateY(360deg);
+  padding:18px 20px;
+}
+.fc-note-face-inner{
+  width:100%;font-size:13px;line-height:1.8;color:#5a4a30;
+  overflow-y:auto;max-height:100%;
+}
+.fc-note-face-label{
+  font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  color:#a08060;margin-bottom:10px;display:flex;align-items:center;gap:5px;
+}
+.fc-card{ transition:transform .45s cubic-bezier(.4,0,.2,1); }
+.fc-card.flipped{ transform:rotateY(180deg); }
+.fc-card.noted{ transform:rotateY(0deg) !important; transition:none; }
+.fc-note-face{ display:none; }
+.fc-card.noted .fc-front{ opacity:0; pointer-events:none; }
+.fc-card.noted .fc-back{ opacity:0; pointer-events:none; }
+.fc-card.noted .fc-note-face{ display:flex; transform:none; opacity:1; }
 .fc-eng{font-family:var(--serif);font-size:44px;line-height:1;color:var(--ink);margin-bottom:8px}
 .fc-phon{font-family:var(--mono);font-size:15px;color:var(--muted);margin-bottom:14px}
 .fc-tap-hint{font-size:12px;color:var(--muted)}
@@ -285,12 +305,50 @@ input::placeholder{color:var(--muted)}
 .speed-btn.on{background:var(--ink);color:white;border-color:var(--ink)}
 
 /* ── SENTENCES ── */
-.sent-card{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:20px;margin-bottom:10px;box-shadow:var(--shadow)}
+.sent-card{background:var(--white);border:1px solid var(--rule);border-radius:var(--r2);padding:18px 20px;margin-bottom:10px;box-shadow:var(--shadow)}
 .sent-viet{font-size:17px;font-weight:500;color:var(--ink);margin-bottom:8px}
 .sent-eng{font-family:var(--serif);font-size:19px;color:var(--accent);margin-bottom:6px}
 .sent-note{font-size:12px;color:var(--muted);padding:8px 12px;background:var(--paper);border-radius:var(--r)}
 .sent-reveal-btn{background:none;border:1px dashed var(--rule2);border-radius:var(--r);padding:9px 14px;font-size:13px;color:var(--muted);cursor:pointer;margin-bottom:8px;transition:all .15s}
 .sent-reveal-btn:hover{border-color:var(--ink);color:var(--ink)}
+/* ── Ngữ pháp form rework ── */
+.sent-form-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:14px;letter-spacing:.3px}
+.sn-rte-wrap{background:var(--white);border:1.5px solid var(--rule2);border-radius:var(--r);overflow:hidden}
+.sn-rte-toolbar{display:flex;align-items:center;gap:2px;padding:5px 8px;background:#f7f6f3;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.sn-rte-btn{background:none;border:1px solid transparent;border-radius:4px;padding:2px 7px;font-size:12px;cursor:pointer;color:var(--ink);font-weight:600;transition:all .12s;line-height:1.5}
+.sn-rte-btn:hover{background:var(--rule);border-color:var(--rule2)}
+.sn-rte-btn.active{background:var(--accent-lt);border-color:var(--accent);color:var(--accent)}
+.sn-rte-sep{width:1px;height:16px;background:var(--rule2);margin:0 3px;flex-shrink:0}
+.sn-rte-color{width:18px;height:18px;border-radius:3px;border:1.5px solid rgba(0,0,0,.15);cursor:pointer;flex-shrink:0}
+.sn-note-editor{min-height:70px;max-height:200px;padding:9px 12px;font-size:13px;line-height:1.7;color:var(--ink);overflow-y:auto;outline:none;white-space:pre-wrap}
+.sn-note-editor:empty:before{content:attr(data-placeholder);color:var(--muted);pointer-events:none}
+/* Note preview box — vintage warm background */
+.sent-note-preview{
+  margin-top:10px;padding:10px 14px;
+  background:#fdf8f0;border:1px solid #e8dfc8;border-radius:var(--r);
+  font-size:13px;line-height:1.75;color:#5a4a30;
+  font-style:italic;position:relative;
+}
+.sent-note-preview::before{
+  content:'💡';position:absolute;top:8px;left:10px;font-style:normal;font-size:12px;
+}
+.sent-note-preview-inner{padding-left:22px}
+/* TTS controls rework */
+.sent-tts-row{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:#f9f8f6;border:1px solid var(--rule);border-radius:var(--r2);
+  padding:10px 14px;margin-bottom:12px;
+}
+.sent-tts-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;white-space:nowrap}
+.sent-tts-select{flex:1;min-width:140px;max-width:300px;font-size:12px;padding:5px 8px;border:1px solid var(--rule2);border-radius:var(--r);background:var(--white);color:var(--ink)}
+.sent-tts-speed-group{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sent-tts-speed-group input[type=range]{width:90px;accent-color:var(--accent)}
+.sent-tts-speed-val{font-size:12px;font-weight:600;color:var(--accent);min-width:28px}
+.note-only-btn{font-size:11px;padding:5px 10px;background:none;border:1px solid var(--rule2);border-radius:var(--r);color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.note-only-btn.active,.note-only-btn:hover{background:var(--accent-lt);color:var(--accent);border-color:var(--accent)}
+/* Cancel edit btn */
+.sn-cancel-btn{font-size:12px;padding:7px 14px;background:none;border:1px solid var(--rule2);border-radius:var(--r);color:var(--muted);cursor:pointer}
+.sn-cancel-btn:hover{border-color:var(--red);color:var(--red)}
 .sentence-type-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
 .add-sent-form{background:var(--paper);border:1px solid var(--rule2);border-radius:var(--r2);padding:18px;margin-bottom:18px}
 .add-sent-form h4{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--ink)}
@@ -1672,6 +1730,33 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         </select>
       </div>
       <div class="field modal-full"><label>Câu ví dụ</label><input type="text" id="aw-e" placeholder="Finding that café was pure serendipity."></div>
+      <div class="field modal-full">
+        <label>Ghi chú (hiện ở mặt thứ 3 flashcard)</label>
+        <div class="sn-rte-wrap">
+          <div class="sn-rte-toolbar">
+            <button class="sn-rte-btn" onclick="document.getElementById('aw-note').focus();rteCmd('bold')"><b>B</b></button>
+            <button class="sn-rte-btn" onclick="document.getElementById('aw-note').focus();rteCmd('italic')"><i>I</i></button>
+            <button class="sn-rte-btn" onclick="document.getElementById('aw-note').focus();rteCmd('underline')"><u>U</u></button>
+            <div class="sn-rte-sep"></div>
+            <span style="font-size:10px;color:var(--muted);margin-right:2px;">Màu:</span>
+            <div class="sn-rte-color" style="background:#e03030;" onclick="document.getElementById('aw-note').focus();rteClr('#e03030')"></div>
+            <div class="sn-rte-color" style="background:#1a7ad4;" onclick="document.getElementById('aw-note').focus();rteClr('#1a7ad4')"></div>
+            <div class="sn-rte-color" style="background:#16a34a;" onclick="document.getElementById('aw-note').focus();rteClr('#16a34a')"></div>
+            <div class="sn-rte-color" style="background:#d97706;" onclick="document.getElementById('aw-note').focus();rteClr('#d97706')"></div>
+            <div class="sn-rte-color" style="background:#7c3aed;" onclick="document.getElementById('aw-note').focus();rteClr('#7c3aed')"></div>
+            <div class="sn-rte-sep"></div>
+            <span style="font-size:10px;color:var(--muted);margin-right:2px;">Nền:</span>
+            <div class="sn-rte-color" style="background:#fef08a;" onclick="document.getElementById('aw-note').focus();rteHl('#fef08a')"></div>
+            <div class="sn-rte-color" style="background:#bbf7d0;" onclick="document.getElementById('aw-note').focus();rteHl('#bbf7d0')"></div>
+            <div class="sn-rte-color" style="background:#fecaca;" onclick="document.getElementById('aw-note').focus();rteHl('#fecaca')"></div>
+            <div class="sn-rte-sep"></div>
+            <button class="sn-rte-btn" onclick="document.getElementById('aw-note').focus();rteCmd('removeFormat')" style="font-weight:400;font-size:11px;">✕</button>
+          </div>
+          <div class="sn-note-editor" id="aw-note" contenteditable="true"
+               data-placeholder="Ghi chú ngữ pháp, cách dùng, ví dụ mở rộng..."
+               onkeydown="rteKey(event)"></div>
+        </div>
+      </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;">
       <button class="btn btn-ghost" onclick="closeModal('addModal')">Hủy</button>
@@ -1711,6 +1796,33 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         </select>
       </div>
       <div class="field modal-full"><label>Câu ví dụ</label><input type="text" id="ew-e"></div>
+      <div class="field modal-full">
+        <label>Ghi chú (mặt thứ 3 flashcard)</label>
+        <div class="sn-rte-wrap">
+          <div class="sn-rte-toolbar">
+            <button class="sn-rte-btn" onclick="document.getElementById('ew-note').focus();rteCmd('bold')"><b>B</b></button>
+            <button class="sn-rte-btn" onclick="document.getElementById('ew-note').focus();rteCmd('italic')"><i>I</i></button>
+            <button class="sn-rte-btn" onclick="document.getElementById('ew-note').focus();rteCmd('underline')"><u>U</u></button>
+            <div class="sn-rte-sep"></div>
+            <span style="font-size:10px;color:var(--muted);margin-right:2px;">Màu:</span>
+            <div class="sn-rte-color" style="background:#e03030;" onclick="document.getElementById('ew-note').focus();rteClr('#e03030')"></div>
+            <div class="sn-rte-color" style="background:#1a7ad4;" onclick="document.getElementById('ew-note').focus();rteClr('#1a7ad4')"></div>
+            <div class="sn-rte-color" style="background:#16a34a;" onclick="document.getElementById('ew-note').focus();rteClr('#16a34a')"></div>
+            <div class="sn-rte-color" style="background:#d97706;" onclick="document.getElementById('ew-note').focus();rteClr('#d97706')"></div>
+            <div class="sn-rte-color" style="background:#7c3aed;" onclick="document.getElementById('ew-note').focus();rteClr('#7c3aed')"></div>
+            <div class="sn-rte-sep"></div>
+            <span style="font-size:10px;color:var(--muted);margin-right:2px;">Nền:</span>
+            <div class="sn-rte-color" style="background:#fef08a;" onclick="document.getElementById('ew-note').focus();rteHl('#fef08a')"></div>
+            <div class="sn-rte-color" style="background:#bbf7d0;" onclick="document.getElementById('ew-note').focus();rteHl('#bbf7d0')"></div>
+            <div class="sn-rte-color" style="background:#fecaca;" onclick="document.getElementById('ew-note').focus();rteHl('#fecaca')"></div>
+            <div class="sn-rte-sep"></div>
+            <button class="sn-rte-btn" onclick="document.getElementById('ew-note').focus();rteCmd('removeFormat')" style="font-weight:400;font-size:11px;">✕</button>
+          </div>
+          <div class="sn-note-editor" id="ew-note" contenteditable="true"
+               data-placeholder="Ghi chú ngữ pháp, cách dùng..."
+               onkeydown="rteKey(event)"></div>
+        </div>
+      </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;">
       <button class="btn btn-ghost" onclick="closeModal('editModal')">Hủy</button>
@@ -1954,7 +2066,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
                 <div class="fc-eng"  id="fc-word">Serendipity</div>
                 <div class="fc-phon" id="fc-phon">/ˌser.ənˈdɪp.ɪ.ti/</div>
                 <div class="fc-eg-front" id="fc-eg-front" style="font-size:12px;color:rgba(0,0,0,.35);font-style:italic;margin-top:6px;padding:0 8px;max-width:100%;text-align:center;line-height:1.5;"></div>
-                <div class="fc-tap-hint" style="margin-top:8px;">Nhấn để xem nghĩa · nhấn lại để lật về ↺</div>
+                <div class="fc-tap-hint" style="margin-top:8px;">Nhấn để xem nghĩa → lại để ghi chú 📝 → lại về ↺</div>
               </div>
               <div class="fc-face fc-back">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;justify-content:center;">
@@ -1962,6 +2074,14 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
                   <span id="fc-pos-tag" class="chip chip-blue" style="font-size:11px;display:none;"></span>
                 </div>
                 <div class="fc-eg"   id="fc-eg">"Finding that café was pure serendipity."</div>
+                <div style="margin-top:10px;font-size:11px;color:var(--muted);opacity:.6;">Nhấn lại để xem ghi chú 📝</div>
+              </div>
+              <!-- NOTE FACE: 3rd flip -->
+              <div class="fc-face fc-note-face" id="fc-note-face">
+                <div class="fc-note-face-label">📝 Ghi chú</div>
+                <div class="fc-note-face-inner" id="fc-note-content">
+                  <span style="color:#b0a090;font-style:italic;">Chưa có ghi chú cho từ này.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -2068,34 +2188,80 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
         <div class="page-title">Ngữ pháp &amp; Giao tiếp</div>
         <div class="page-sub">Câu mẫu · cấu trúc · tình huống hàng ngày</div>
         <div class="add-sent-form">
-          <h4>+ Thêm câu mẫu mới</h4>
-          <div class="sent-form-grid">
-            <div class="field"><label>Câu tiếng Việt *</label><input type="text" id="sn-viet" placeholder="Bạn có thể nói chậm hơn không?"></div>
-            <div class="field"><label>Câu tiếng Anh *</label><input type="text" id="sn-eng"  placeholder="Could you speak more slowly?"></div>
-            <div class="field sent-form-full"><label>Ghi chú ngữ pháp</label><input type="text" id="sn-note" placeholder='Could you...? lịch sự hơn Can you...?'></div>
-            <div class="field"><label>Chủ đề</label>
+          <input type="hidden" id="sn-edit-id" value="">
+          <div class="sent-form-title" id="sent-form-title">+ Thêm câu mẫu mới</div>
+          <div class="sent-form-grid" style="margin-bottom:10px;">
+            <div class="field">
+              <label>Câu tiếng Việt *</label>
+              <input type="text" id="sn-viet" placeholder="Bạn có thể nói chậm hơn không?">
+            </div>
+            <div class="field">
+              <label>Câu tiếng Anh *</label>
+              <input type="text" id="sn-eng" placeholder="Could you speak more slowly?">
+            </div>
+          </div>
+          <div class="field sent-form-full" style="margin-bottom:10px;">
+            <label>Ghi chú ngữ pháp</label>
+            <div class="sn-rte-wrap">
+              <div class="sn-rte-toolbar">
+                <button class="sn-rte-btn" onclick="rteCmd('bold')" title="Đậm (Ctrl+B)"><b>B</b></button>
+                <button class="sn-rte-btn" onclick="rteCmd('italic')" title="Nghiêng (Ctrl+I)"><i>I</i></button>
+                <button class="sn-rte-btn" onclick="rteCmd('underline')" title="Gạch chân (Ctrl+U)"><u>U</u></button>
+                <div class="sn-rte-sep"></div>
+                <span style="font-size:10px;color:var(--muted);margin-right:2px;">Màu:</span>
+                <div class="sn-rte-color" style="background:#e03030;" onclick="rteClr('#e03030')" title="Đỏ"></div>
+                <div class="sn-rte-color" style="background:#1a7ad4;" onclick="rteClr('#1a7ad4')" title="Xanh dương"></div>
+                <div class="sn-rte-color" style="background:#16a34a;" onclick="rteClr('#16a34a')" title="Xanh lá"></div>
+                <div class="sn-rte-color" style="background:#d97706;" onclick="rteClr('#d97706')" title="Cam"></div>
+                <div class="sn-rte-color" style="background:#7c3aed;" onclick="rteClr('#7c3aed')" title="Tím"></div>
+                <div class="sn-rte-sep"></div>
+                <span style="font-size:10px;color:var(--muted);margin-right:2px;">Nền:</span>
+                <div class="sn-rte-color" style="background:#fef08a;" onclick="rteHl('#fef08a')" title="Vàng"></div>
+                <div class="sn-rte-color" style="background:#bbf7d0;" onclick="rteHl('#bbf7d0')" title="Xanh nhạt"></div>
+                <div class="sn-rte-color" style="background:#fecaca;" onclick="rteHl('#fecaca')" title="Hồng"></div>
+                <div class="sn-rte-color" style="background:#e0e7ff;" onclick="rteHl('#e0e7ff')" title="Tím nhạt"></div>
+                <div class="sn-rte-sep"></div>
+                <button class="sn-rte-btn" onclick="rteCmd('removeFormat')" title="Xoá định dạng" style="font-weight:400;font-size:11px;">✕ Xoá</button>
+              </div>
+              <div class="sn-note-editor" id="sn-note-editor"
+                   contenteditable="true"
+                   data-placeholder="Ghi chú ngữ pháp... Bôi đen text rồi bấm nút màu/đậm để định dạng"
+                   onkeydown="rteKey(event)"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="flex:1;min-width:140px;">
+              <label>Chủ đề</label>
               <select id="sn-type">
-                <option value="daily">Hàng ngày</option><option value="travel">Du lịch</option>
-                <option value="business">Công việc</option><option value="grammar">Ngữ pháp</option>
+                <option value="daily">Hàng ngày</option>
+                <option value="travel">Du lịch</option>
+                <option value="business">Công việc</option>
+                <option value="grammar">Ngữ pháp</option>
               </select>
             </div>
-            <div class="field" style="justify-content:flex-end;"><button class="btn btn-primary" onclick="addSentence()" style="margin-top:auto;">Thêm câu</button></div>
+            <div style="display:flex;gap:8px;padding-bottom:1px;">
+              <button class="sn-cancel-btn" id="sn-cancel-btn" style="display:none;" onclick="cancelEditSent()">Huỷ</button>
+              <button class="btn btn-primary" id="sn-submit-btn" onclick="addSentence()">Thêm câu</button>
+            </div>
           </div>
         </div>
+        
         <!-- TTS + speed + note-only -->
-        <div class="sent-controls">
-          <label>Giong doc</label>
-          <select id="sent-voice-select" onchange="setSentVoice(this.value)">
-            <option value="">Mac dinh (US)</option>
+        <div class="sent-tts-row">
+          <span class="sent-tts-label">🔊 Giọng</span>
+          <select class="sent-tts-select" id="sent-voice-select" onchange="setSentVoice(this.value)">
+            <option value="">Mặc định (US)</option>
           </select>
-          <span class="sent-speed-wrap">
-            <label>Toc do</label>
+          <div class="sn-rte-sep" style="height:20px;"></div>
+          <span class="sent-tts-label">Tốc độ</span>
+          <div class="sent-tts-speed-group">
             <input type="range" id="sent-speed-slider" min="0.5" max="1.5" step="0.1" value="0.9" oninput="setSentSpeed(this.value)">
-            <span class="sent-speed-val" id="sent-speed-val">0.9x</span>
-          </span>
-          <button class="note-only-btn" id="note-only-btn" onclick="toggleNoteOnly()">Chi ghi chu</button>
+            <span class="sent-tts-speed-val" id="sent-speed-val">0.9×</span>
+          </div>
+          <div class="sn-rte-sep" style="height:20px;"></div>
+          <button class="note-only-btn" id="note-only-btn" onclick="toggleNoteOnly()">📋 Chỉ ghi chú</button>
         </div>
-        <div class="sentence-type-row">
+                <div class="sentence-type-row">
           <button class="f-chip on" onclick="setSentType('all',this)">Tất cả</button>
           <button class="f-chip" onclick="setSentType('daily',this)">Hàng ngày</button>
           <button class="f-chip" onclick="setSentType('travel',this)">Du lịch</button>
@@ -6740,21 +6906,39 @@ function showFC(){
   // Reset flip — force a reflow to ensure transition plays correctly
   const card=document.getElementById('fc-card');
   card.style.transition='none';
-  card.classList.remove('flipped');
-  fcFlipped=false;
+  card.classList.remove('flipped','noted');
+  fcFlipped=false; fcNoted=false;
   requestAnimationFrame(()=>{ card.style.transition=''; });
   // Start defend timer for this word
   setTimeout(()=>fcStartTimer(), 50);
 }
 function flipFC(){
   const card=document.getElementById('fc-card');
-  if(!fcFlipped){
+  const w=fcQueue[fcIdx];
+  if(!fcFlipped && !fcNoted){
+    // State 0 → 1: show back (meaning)
+    card.classList.remove('noted');
     card.classList.add('flipped');
-    fcFlipped=true;
-    speak(fcQueue[fcIdx]?.word);
+    fcFlipped=true; fcNoted=false;
+    speak(w?.word);
+  } else if(fcFlipped && !fcNoted){
+    // State 1 → 2: show note face (if note exists)
+    const noteContent=document.getElementById('fc-note-content');
+    const hasNote=w?.note && w.note.trim() && w.note!=='<br>';
+    if(hasNote){
+      if(noteContent) noteContent.innerHTML=w.note;
+      card.classList.remove('flipped');
+      card.classList.add('noted');
+      fcFlipped=false; fcNoted=true;
+    } else {
+      // No note — skip back to front
+      card.classList.remove('flipped','noted');
+      fcFlipped=false; fcNoted=false;
+    }
   } else {
-    card.classList.remove('flipped');
-    fcFlipped=false;
+    // State 2 → 0: back to front
+    card.classList.remove('flipped','noted');
+    fcFlipped=false; fcNoted=false;
   }
 }
 function rateFC(r){
@@ -6817,8 +7001,8 @@ function rateFC(r){
   }
   fcIdx++;
   // Reset flip state visually before showing next card
-  document.getElementById('fc-card').classList.remove('flipped');
-  fcFlipped=false;
+  document.getElementById('fc-card').classList.remove('flipped','noted');
+  fcFlipped=false; fcNoted=false;
   showFC();
 }
 function doneFC(){
@@ -7077,6 +7261,10 @@ function addSentence(){
   document.getElementById('sn-viet').value='';
   document.getElementById('sn-eng').value='';
   rteClear();
+  document.getElementById('sn-edit-id').value='';
+  const _ft=document.getElementById('sent-form-title'); if(_ft) _ft.textContent='+ Thêm câu mẫu mới';
+  const _sb=document.getElementById('sn-submit-btn');   if(_sb) _sb.textContent='Thêm câu';
+  const _cb=document.getElementById('sn-cancel-btn');   if(_cb) _cb.style.display='none';
   toast('\u2713 \u0110\xe3 th\xeam c\xe2u m\u1eabu','good'); addXP(3); renderSentences();
 }
 function openEditSent(id){
@@ -7086,19 +7274,19 @@ function openEditSent(id){
   document.getElementById('sn-eng').value=s.eng;
   rteSet(s.note||'');
   document.getElementById('sn-type').value=s.type||'daily';
-  const t=document.getElementById('sent-form-title'); if(t) t.textContent='\u270e Ch\u1ec9nh s\u1eeda c\xe2u m\u1eabu';
-  const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='L\u01b0u thay \u0111\u1ed5i';
-  const c=document.getElementById('sn-cancel-btn');   if(c) c.style.display='inline-flex';
-  document.getElementById('sent-add-form')?.scrollIntoView({behavior:'smooth'});
+  const t=document.getElementById('sent-form-title'); if(t) t.textContent='✎ Chỉnh sửa câu mẫu';
+  const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='Lưu thay đổi';
+  const cancel=document.getElementById('sn-cancel-btn'); if(cancel) cancel.style.display='inline-flex';
+  document.getElementById('sn-viet').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function cancelEditSent(){
   document.getElementById('sn-edit-id').value='';
   document.getElementById('sn-viet').value='';
   document.getElementById('sn-eng').value='';
   rteClear();
-  const t=document.getElementById('sent-form-title'); if(t) t.textContent='+ Th\xeam c\xe2u m\u1eabu m\u1edbi';
-  const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='Th\xeam c\xe2u';
-  const c=document.getElementById('sn-cancel-btn');   if(c) c.style.display='none';
+  const t=document.getElementById('sent-form-title'); if(t) t.textContent='+ Thêm câu mẫu mới';
+  const b=document.getElementById('sn-submit-btn');   if(b) b.textContent='Thêm câu';
+  const cancel=document.getElementById('sn-cancel-btn'); if(cancel) cancel.style.display='none';
 }
 function updateSentence(){
   const id=parseInt(document.getElementById('sn-edit-id').value);
@@ -7120,23 +7308,26 @@ function deleteSentence(id){
 function renderSentences(){
   const list=sentType==='all'?sentences:sentences.filter(s=>s.type===sentType);
   const el=document.getElementById('sent-list'); if(!el) return;
-  if(list.length===0){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Th\xeam c\xe2u m\u1eabu ph\xeda tr\xean!</div>';return;}
+  if(list.length===0){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Thêm câu mẫu phía trên!</div>';return;}
   el.innerHTML=list.map((s,i)=>{
     const hasNote=s.note&&s.note.trim()&&s.note!=='<br>';
     const engSafe=s.eng.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const noteHtml = hasNote
+      ? `<div class="sent-note-preview"><div class="sent-note-preview-inner">${s.note}</div></div>`
+      : '';
     return `<div class="sent-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <div class="sent-viet">${s.viet}</div>
         <div style="display:flex;gap:4px;flex-shrink:0;margin-top:2px;">
-          <button class="wr-btn" style="color:var(--blue);" onclick="openEditSent(${s.id})" title="S\u1eeda">\u270e</button>
-          <button class="wr-btn" onclick="deleteSentence(${s.id})" title="X\xf3a">\u00d7</button>
+          <button class="wr-btn" style="color:var(--blue);" onclick="openEditSent(${s.id})" title="Sửa">✎</button>
+          <button class="wr-btn" onclick="deleteSentence(${s.id})" title="Xóa">×</button>
         </div>
       </div>
-      <button class="sent-reveal-btn" id="srb-${i}" onclick="revealSent(${i},this)">Nh\u1ea5n \u0111\u1ec3 xem c\xe2u ti\u1ebfng Anh</button>
+      ${noteHtml}
+      <button class="sent-reveal-btn" id="srb-${i}" onclick="revealSent(${i},this)">Nhấn để xem câu tiếng Anh</button>
       <div id="sent-eng-${i}" style="display:none;">
         <div class="sent-eng">${s.eng}</div>
-        ${hasNote?`<div class="sent-note-html">\ud83d\udca1 ${s.note}</div>`:''}
-        <button class="wr-btn wr-btn-speak" style="margin-top:8px;width:auto;padding:5px 10px;font-size:12px;" onclick="speakSent('${engSafe}')">\ud83d\udd0a Nghe</button>
+        <button class="wr-btn wr-btn-speak" style="margin-top:8px;width:auto;padding:5px 12px;font-size:12px;" onclick="speakSent('${engSafe}')">🔊 Nghe</button>
       </div>
     </div>`;
   }).join('');
@@ -7187,300 +7378,28 @@ function renderWB(){
     return;
   }
 
-  el.innerHTML = list.map(w => `
-    <div class="wb-card">
+  el.innerHTML = list.map(w => {
+    const hasNote = w.note && w.note.trim() && w.note !== '<br>';
+    const noteHtml = hasNote
+      ? `<div class="sent-note-preview" style="margin-top:8px;font-size:12px;"><div class="sent-note-preview-inner">${w.note}</div></div>`
+      : '';
+    return `<div class="wb-card">
       <div class="wb-row1">
         <span class="wb-word">${w.word}</span>
         ${w.partOfSpeech ? `<span class="wb-pos">${w.partOfSpeech}</span>` : ''}
         ${showIPA && w.phonetic ? `<span class="wb-ipa">${w.phonetic}</span>` : ''}
       </div>
       <div class="wb-meaning">${w.meaning}</div>
+      ${noteHtml}
       <div class="wb-row3">
         <span class="chip ${topicChipClass(w.topic)} wb-topic">${topicLabel(w.topic)}</span>
         <div class="wb-actions">
-          <button class="wr-btn" onclick="speak('${w.word.replace(/'/g,"\\'")}')">🔊</button>
+          <button class="wr-btn" onclick="speak('${w.word.replace(/'/g,"\'")}')">🔊</button>
           <button class="wr-btn wb-edit" onclick="openEditWord(${w.id})">✎</button>
           <button class="wr-btn wb-del"  onclick="deleteWord(${w.id})">×</button>
         </div>
       </div>
-    </div>
-  `).join('');
-}
-
-/* ════════════════════════════════════════════
-   EXCEL EXPORT / IMPORT
-════════════════════════════════════════════ */
-function exportWordsXLSX() {
-  if (typeof XLSX === 'undefined') { toast('Đang tải thư viện...', ''); return; }
-  const header = ['word','meaning','phonetic','partOfSpeech','example','topic','level'];
-  const rows = words.map(w => [
-    w.word||'', w.meaning||'', w.phonetic||'',
-    w.partOfSpeech||'', w.example||'', w.topic||'general', w.level||3
-  ]);
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-  // Column widths
-  ws['!cols'] = [{wch:20},{wch:30},{wch:16},{wch:10},{wch:40},{wch:12},{wch:6}];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Từ vựng');
-  XLSX.writeFile(wb, 'lingo-words.xlsx');
-  toast('✓ Đã tải ' + words.length + ' từ ra Excel', 'good');
-}
-
-function importWordsXLSX(input) {
-  const file = input.files[0]; if (!file) return;
-  if (typeof XLSX === 'undefined') { toast('Đang tải thư viện Excel...', 'bad'); return; }
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const wb   = XLSX.read(e.target.result, { type: 'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-      if (!rows || rows.length < 2) { toast('File không có dữ liệu!', 'bad'); return; }
-
-      // Find header row (flexible: first row with 'word' column)
-      let headerRow = 0;
-      const possibleHeader = rows[0].map(c => String(c).toLowerCase().trim());
-      const wordCol    = possibleHeader.indexOf('word');
-      const meaningCol = possibleHeader.indexOf('meaning');
-      if (wordCol === -1 || meaningCol === -1) {
-        toast('⚠ Không tìm thấy cột "word" hoặc "meaning"', 'bad'); return;
-      }
-      const phoneticCol    = possibleHeader.indexOf('phonetic');
-      const posCol         = possibleHeader.findIndex(h => h.includes('pos') || h.includes('part'));
-      const exampleCol     = possibleHeader.indexOf('example');
-      const topicCol       = possibleHeader.indexOf('topic');
-      const levelCol       = possibleHeader.indexOf('level');
-
-      let added = 0, skipped = 0, errors = 0;
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        const word    = String(row[wordCol]   || '').trim();
-        const meaning = String(row[meaningCol] || '').trim();
-        if (!word || !meaning) { if (word || meaning) errors++; continue; }
-        // Skip duplicates (case-insensitive)
-        if (words.find(w => w.word.toLowerCase() === word.toLowerCase())) { skipped++; continue; }
-
-        const nw = {
-          id:           Date.now() + added,
-          word,
-          meaning,
-          phonetic:     phoneticCol >= 0 ? String(row[phoneticCol]||'').trim() : '',
-          partOfSpeech: posCol      >= 0 ? String(row[posCol]     ||'').trim() : '',
-          example:      exampleCol  >= 0 ? String(row[exampleCol] ||'').trim() : '',
-          topic:        topicCol    >= 0 ? (String(row[topicCol]  ||'general').trim()||'general') : 'general',
-          level:        levelCol    >= 0 ? (parseInt(row[levelCol])||3) : 3,
-        };
-        words.unshift(nw);
-        if (sbUrl && sbKey) saveWordToSB(nw);
-        added++;
-      }
-      saveState(); renderWB(); renderWordStats();
-      toast(`✓ Import: ${added} từ mới · ${skipped} trùng · ${errors} lỗi`, added > 0 ? 'good' : '');
-    } catch(err) {
-      console.error('XLSX import error:', err);
-      toast('⚠ Lỗi đọc file: ' + err.message, 'bad');
-    }
-  };
-  reader.readAsArrayBuffer(file);
-  input.value = '';
-}
-
-function importWordsFile(input){
-  const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    const rawLines=e.target.result.split(/\r?\n/).filter(l=>l.trim()&&!l.startsWith('#'));
-    let added=0,skipped=0,errors=0;
-    for(const line of rawLines){
-      const sep=line.includes('\t')?'\t':line.includes('|')?'|':',';
-      const p=line.split(sep).map(x=>x.trim().replace(/^"|"$/g,''));
-      if(p[0].toLowerCase()==='word') continue;
-      const word=p[0]||'',meaning=p[1]||'';
-      if(!word||!meaning){errors++;continue;}
-      if(words.find(w=>w.word.toLowerCase()===word.toLowerCase())){skipped++;continue;}
-      const nw={id:Date.now()+added,word,phonetic:p[2]||'',partOfSpeech:'',meaning,example:p[3]||'',topic:p[4]||'general',level:parseInt(p[5])||3};
-      words.unshift(nw);
-      if(sbUrl&&sbKey) saveWordToSB(nw);
-      added++;
-    }
-    saveState(); renderWB(); renderWordStats();
-    toast('Import: '+added+' tu moi'+(skipped?' · '+skipped+' trung':'')+(errors?' · '+errors+' loi':''),added>0?'good':'');
-  };
-  reader.readAsText(file,'UTF-8');
-  input.value='';
-}
-
-function topicLabel(key) {
-  const t = topics.find(t=>t.key===key);
-  return t ? t.label : key;
-}
-function topicChipClass(key) {
-  const map = {general:'chip-muted',travel:'chip-blue',food:'chip-amber',business:'chip-green',tech:'chip-green',daily:'chip-blue'};
-  return map[key] || 'chip-muted';
-}
-function populateTopicSelects() {
-  // Populate all topic selects: aw-t, ew-t, wb-top, fc filters, etc.
-  const opts = topics.map(t=>`<option value="${t.key}">${t.label}</option>`).join('');
-  const awT=document.getElementById('aw-t'); if(awT) awT.innerHTML=opts;
-  const ewT=document.getElementById('ew-t'); if(ewT) ewT.innerHTML=opts;
-  const snT=document.getElementById('sn-type');
-  // don't override sentence type select (it has different options)
-}
-function populateTopicFilters() {
-  // wordbank filter
-  const sel = document.getElementById('wb-top');
-  if (!sel) return;
-  sel.innerHTML = '<option value="all">Tất cả chủ đề</option>' +
-    topics.map(t=>`<option value="${t.key}">${t.label}</option>`).join('');
-  // flashcard filter chips
-  const fcf = document.getElementById('fc-filters');
-  if (fcf) {
-    fcf.innerHTML = '<button class="f-chip on" onclick="setFC(\'all\',this)">Tất cả</button>' +
-      topics.map(t=>`<button class="f-chip" onclick="setFC('${t.key}',this)">${t.label}</button>`).join('');
-  }
-}
-function addTopic() {
-  const key   = document.getElementById('new-topic-key').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
-  const label = document.getElementById('new-topic-label').value.trim();
-  if (!key||!label) { toast('Nhập mã và tên chủ đề!','bad'); return; }
-  if (topics.find(t=>t.key===key)) { toast('Mã chủ đề đã tồn tại!','bad'); return; }
-  topics.push({key,label});
-  saveState();
-  document.getElementById('new-topic-key').value='';
-  document.getElementById('new-topic-label').value='';
-  toast('✓ Đã thêm chủ đề "'+label+'"','good');
-  renderTopics();
-}
-function deleteTopic(key) {
-  if (['general','travel','food','business','tech','daily'].includes(key)) {
-    toast('Không thể xóa chủ đề mặc định!','bad'); return;
-  }
-  if (!confirm('Xóa chủ đề này? Các từ thuộc chủ đề này sẽ chuyển sang "general".')) return;
-  words = words.map(w=>w.topic===key?{...w,topic:'general'}:w);
-  topics = topics.filter(t=>t.key!==key);
-  saveState();
-  renderTopics();
-  toast('Đã xóa chủ đề','');
-}
-function renderTopics() {
-  const el = document.getElementById('topics-list');
-  if (!el) return;
-  el.innerHTML = topics.map(t=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--white);border:1px solid var(--rule);border-radius:var(--r);margin-bottom:6px;box-shadow:var(--shadow);">
-      <div style="flex:1;">
-        <div style="font-weight:600;font-size:14px;">${t.label}</div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);">${t.key} · ${words.filter(w=>w.topic===t.key).length} từ</div>
-      </div>
-      <span class="chip ${topicChipClass(t.key)}">${t.label}</span>
-      ${!['general','travel','food','business','tech','daily'].includes(t.key)
-        ? `<button class="wr-btn" onclick="deleteTopic('${t.key}')">×</button>` : '<span style="width:28px"></span>'}
-    </div>
-  `).join('');
-}
-
-function saveWord(){
-  const w=document.getElementById('aw-w').value.trim();
-  const m=document.getElementById('aw-m').value.trim();
-  if(!w||!m){toast('Nhập từ và nghĩa!','bad');return;}
-  const nw={
-    id:Date.now(), word:w,
-    phonetic:document.getElementById('aw-p').value.trim()||'/'+w+'/',
-    partOfSpeech:document.getElementById('aw-pos').value,
-    meaning:m,
-    example:document.getElementById('aw-e').value.trim()||w+' is useful.',
-    topic:document.getElementById('aw-t').value,
-    level:parseInt(document.getElementById('aw-l').value)
-  };
-  words.unshift(nw); saveState(); saveWordToSB(nw); pushMetaToSB();
-  closeModal('addModal');
-  toast('✓ Đã thêm "'+w+'"','good'); addXP(5);
-  ['aw-w','aw-p','aw-m','aw-e'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('aw-pos').value='';
-  renderWB(); renderWordStats();
-}
-function openEditWord(id) {
-  const w = words.find(x=>x.id===id); if(!w) return;
-  populateTopicSelects();
-  document.getElementById('ew-id').value  = id;
-  document.getElementById('ew-w').value   = w.word;
-  document.getElementById('ew-p').value   = w.phonetic||'';
-  document.getElementById('ew-pos').value = w.partOfSpeech||'';
-  document.getElementById('ew-m').value   = w.meaning;
-  document.getElementById('ew-e').value   = w.example||'';
-  document.getElementById('ew-t').value   = w.topic||'general';
-  document.getElementById('ew-l').value   = w.level||3;
-  openModal('editModal');
-}
-function updateWord() {
-  const id  = parseInt(document.getElementById('ew-id').value);
-  const wrd = document.getElementById('ew-w').value.trim();
-  const mng = document.getElementById('ew-m').value.trim();
-  if(!wrd||!mng){toast('Nhập từ và nghĩa!','bad');return;}
-  const idx = words.findIndex(x=>x.id===id);
-  if(idx===-1){toast('Không tìm thấy từ!','bad');return;}
-  words[idx]={
-    ...words[idx],
-    word:wrd,
-    phonetic:document.getElementById('ew-p').value.trim(),
-    partOfSpeech:document.getElementById('ew-pos').value,
-    meaning:mng,
-    example:document.getElementById('ew-e').value.trim(),
-    topic:document.getElementById('ew-t').value,
-    level:parseInt(document.getElementById('ew-l').value),
-  };
-  saveState(); closeModal('editModal');
-  // Cập nhật Supabase ngay
-  updateWordOnSB(words[idx]);
-  pushMetaToSB();
-  toast('✓ Đã cập nhật "'+wrd+'"','good');
-  renderWB();
-}
-function deleteWord(id){
-  if(!confirm('Xóa từ này?')) return;
-  // Xóa khỏi Supabase TRƯỚC (source of truth)
-  deleteWordFromSB(id);
-  // Rồi mới xóa local
-  words=words.filter(w=>w.id!==id);
-  learnedEver.delete(id);
-  Object.keys(learnedLog).forEach(d=>{ learnedLog[d]=learnedLog[d].filter(x=>x!==id); });
-  families=families.map(f=>({...f,wordIds:f.wordIds.filter(x=>x!==id)})).filter(f=>f.wordIds.length>0);
-  saveState(); pushMetaToSB(); renderWB(); renderWordStats();
-  toast('Đã xóa','');
-}
-
-/* ════════════════════════════════════════════
-   WORD FAMILIES
-════════════════════════════════════════════ */
-function populateWFSearch() {
-  renderWFSearch();
-}
-function renderWFSearch() {
-  const q = (document.getElementById('wf-search')?.value||'').toLowerCase();
-  const box = document.getElementById('wf-search-results'); if(!box) return;
-  const filtered = q.length<1 ? words.slice(0,20) : words.filter(w=>w.word.toLowerCase().includes(q)||w.meaning.toLowerCase().includes(q));
-  box.innerHTML = filtered.slice(0,30).map(w=>`
-    <button onclick="toggleWFWord(${w.id},'${w.word.replace(/'/g,"\\'")}','${w.meaning.replace(/'/g,"\\'")}',this)"
-      class="f-chip ${wfSelected.includes(w.id)?'on':''}"
-      id="wf-btn-${w.id}" style="font-size:12px;">${w.word}</button>
-  `).join('');
-}
-function toggleWFWord(id, word, meaning, btn) {
-  const idx = wfSelected.indexOf(id);
-  if (idx===-1) {
-    wfSelected.push(id);
-    btn.classList.add('on');
-  } else {
-    wfSelected.splice(idx,1);
-    btn.classList.remove('on');
-  }
-  renderWFSelected();
-}
-function renderWFSelected() {
-  const box = document.getElementById('wf-selected'); if(!box) return;
-  if(wfSelected.length===0){box.innerHTML='<span style="font-size:12px;color:var(--muted);">Chưa chọn từ nào</span>';return;}
-  box.innerHTML = wfSelected.map(id=>{
-    const w=words.find(x=>x.id===id);
-    return w?`<span class="chip chip-green" style="font-size:12px;gap:4px;">${w.word} <button onclick="toggleWFWord(${id},null,null,document.getElementById('wf-btn-${id}'))" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);padding:0;line-height:1;">×</button></span>`:'';
+    </div>`;
   }).join('');
 }
 function saveWordFamily() {
