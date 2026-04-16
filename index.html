@@ -7353,6 +7353,204 @@ function toggleIPA() {
   renderWB();
 }
 
+function addTopic() {
+  const key   = document.getElementById('new-topic-key').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const label = document.getElementById('new-topic-label').value.trim();
+  if (!key||!label) { toast('Nhập mã và tên chủ đề!','bad'); return; }
+  if (topics.find(t=>t.key===key)) { toast('Mã chủ đề đã tồn tại!','bad'); return; }
+  topics.push({key,label});
+  saveState();
+  document.getElementById('new-topic-key').value='';
+  document.getElementById('new-topic-label').value='';
+  toast('✓ Đã thêm chủ đề "'+label+'"','good');
+  renderTopics();
+}
+function deleteTopic(key) {
+  if (['general','travel','food','business','tech','daily'].includes(key)) {
+    toast('Không thể xóa chủ đề mặc định!','bad'); return;
+  }
+  if (!confirm('Xóa chủ đề này? Các từ thuộc chủ đề này sẽ chuyển sang "general".')) return;
+  words = words.map(w=>w.topic===key?{...w,topic:'general'}:w);
+  topics = topics.filter(t=>t.key!==key);
+  saveState();
+  renderTopics();
+  toast('Đã xóa chủ đề','');
+}
+function exportWordsXLSX() {
+  if (typeof XLSX === 'undefined') { toast('Đang tải thư viện...', ''); return; }
+  const header = ['word','meaning','phonetic','partOfSpeech','example','topic','level'];
+  const rows = words.map(w => [
+    w.word||'', w.meaning||'', w.phonetic||'',
+    w.partOfSpeech||'', w.example||'', w.topic||'general', w.level||3
+  ]);
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  // Column widths
+  ws['!cols'] = [{wch:20},{wch:30},{wch:16},{wch:10},{wch:40},{wch:12},{wch:6}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Từ vựng');
+  XLSX.writeFile(wb, 'lingo-words.xlsx');
+  toast('✓ Đã tải ' + words.length + ' từ ra Excel', 'good');
+}
+function importWordsFile(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const rawLines=e.target.result.split(/\r?\n/).filter(l=>l.trim()&&!l.startsWith('#'));
+    let added=0,skipped=0,errors=0;
+    for(const line of rawLines){
+      const sep=line.includes('\t')?'\t':line.includes('|')?'|':',';
+      const p=line.split(sep).map(x=>x.trim().replace(/^"|"$/g,''));
+      if(p[0].toLowerCase()==='word') continue;
+      const word=p[0]||'',meaning=p[1]||'';
+      if(!word||!meaning){errors++;continue;}
+      if(words.find(w=>w.word.toLowerCase()===word.toLowerCase())){skipped++;continue;}
+      const nw={id:Date.now()+added,word,phonetic:p[2]||'',partOfSpeech:'',meaning,example:p[3]||'',topic:p[4]||'general',level:parseInt(p[5])||3};
+      words.unshift(nw);
+      if(sbUrl&&sbKey) saveWordToSB(nw);
+      added++;
+    }
+    saveState(); renderWB(); renderWordStats();
+    toast('Import: '+added+' tu moi'+(skipped?' · '+skipped+' trung':'')+(errors?' · '+errors+' loi':''),added>0?'good':'');
+  };
+  reader.readAsText(file,'UTF-8');
+  input.value='';
+}
+function importWordsXLSX(input) {
+  const file = input.files[0]; if (!file) return;
+  if (typeof XLSX === 'undefined') { toast('Đang tải thư viện Excel...', 'bad'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb   = XLSX.read(e.target.result, { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+      if (!rows || rows.length < 2) { toast('File không có dữ liệu!', 'bad'); return; }
+
+      // Find header row (flexible: first row with 'word' column)
+      let headerRow = 0;
+      const possibleHeader = rows[0].map(c => String(c).toLowerCase().trim());
+      const wordCol    = possibleHeader.indexOf('word');
+      const meaningCol = possibleHeader.indexOf('meaning');
+      if (wordCol === -1 || meaningCol === -1) {
+        toast('⚠ Không tìm thấy cột "word" hoặc "meaning"', 'bad'); return;
+      }
+      const phoneticCol    = possibleHeader.indexOf('phonetic');
+      const posCol         = possibleHeader.findIndex(h => h.includes('pos') || h.includes('part'));
+      const exampleCol     = possibleHeader.indexOf('example');
+      const topicCol       = possibleHeader.indexOf('topic');
+      const levelCol       = possibleHeader.indexOf('level');
+
+      let added = 0, skipped = 0, errors = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const word    = String(row[wordCol]   || '').trim();
+        const meaning = String(row[meaningCol] || '').trim();
+        if (!word || !meaning) { if (word || meaning) errors++; continue; }
+        // Skip duplicates (case-insensitive)
+        if (words.find(w => w.word.toLowerCase() === word.toLowerCase())) { skipped++; continue; }
+
+        const nw = {
+          id:           Date.now() + added,
+          word,
+          meaning,
+          phonetic:     phoneticCol >= 0 ? String(row[phoneticCol]||'').trim() : '',
+          partOfSpeech: posCol      >= 0 ? String(row[posCol]     ||'').trim() : '',
+          example:      exampleCol  >= 0 ? String(row[exampleCol] ||'').trim() : '',
+          topic:        topicCol    >= 0 ? (String(row[topicCol]  ||'general').trim()||'general') : 'general',
+          level:        levelCol    >= 0 ? (parseInt(row[levelCol])||3) : 3,
+        };
+        words.unshift(nw);
+        if (sbUrl && sbKey) saveWordToSB(nw);
+        added++;
+      }
+      saveState(); renderWB(); renderWordStats();
+      toast(`✓ Import: ${added} từ mới · ${skipped} trùng · ${errors} lỗi`, added > 0 ? 'good' : '');
+    } catch(err) {
+      console.error('XLSX import error:', err);
+      toast('⚠ Lỗi đọc file: ' + err.message, 'bad');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  input.value = '';
+}
+function populateTopicFilters() {
+  // wordbank filter
+  const sel = document.getElementById('wb-top');
+  if (!sel) return;
+  sel.innerHTML = '<option value="all">Tất cả chủ đề</option>' +
+    topics.map(t=>`<option value="${t.key}">${t.label}</option>`).join('');
+  // flashcard filter chips
+  const fcf = document.getElementById('fc-filters');
+  if (fcf) {
+    fcf.innerHTML = '<button class="f-chip on" onclick="setFC(\'all\',this)">Tất cả</button>' +
+      topics.map(t=>`<button class="f-chip" onclick="setFC('${t.key}',this)">${t.label}</button>`).join('');
+  }
+}
+function populateTopicSelects() {
+  // Populate all topic selects: aw-t, ew-t, wb-top, fc filters, etc.
+  const opts = topics.map(t=>`<option value="${t.key}">${t.label}</option>`).join('');
+  const awT=document.getElementById('aw-t'); if(awT) awT.innerHTML=opts;
+  const ewT=document.getElementById('ew-t'); if(ewT) ewT.innerHTML=opts;
+  const snT=document.getElementById('sn-type');
+  // don't override sentence type select (it has different options)
+}
+function populateWFSearch() {
+  renderWFSearch();
+}
+function renderTopics() {
+  const el = document.getElementById('topics-list');
+  if (!el) return;
+  el.innerHTML = topics.map(t=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--white);border:1px solid var(--rule);border-radius:var(--r);margin-bottom:6px;box-shadow:var(--shadow);">
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:14px;">${t.label}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);">${t.key} · ${words.filter(w=>w.topic===t.key).length} từ</div>
+      </div>
+      <span class="chip ${topicChipClass(t.key)}">${t.label}</span>
+      ${!['general','travel','food','business','tech','daily'].includes(t.key)
+        ? `<button class="wr-btn" onclick="deleteTopic('${t.key}')">×</button>` : '<span style="width:28px"></span>'}
+    </div>
+  `).join('');
+}
+function renderWFSearch() {
+  const q = (document.getElementById('wf-search')?.value||'').toLowerCase();
+  const box = document.getElementById('wf-search-results'); if(!box) return;
+  const filtered = q.length<1 ? words.slice(0,20) : words.filter(w=>w.word.toLowerCase().includes(q)||w.meaning.toLowerCase().includes(q));
+  box.innerHTML = filtered.slice(0,30).map(w=>`
+    <button onclick="toggleWFWord(${w.id},'${w.word.replace(/'/g,"\\'")}','${w.meaning.replace(/'/g,"\\'")}',this)"
+      class="f-chip ${wfSelected.includes(w.id)?'on':''}"
+      id="wf-btn-${w.id}" style="font-size:12px;">${w.word}</button>
+  `).join('');
+}
+function renderWFSelected() {
+  const box = document.getElementById('wf-selected'); if(!box) return;
+  if(wfSelected.length===0){box.innerHTML='<span style="font-size:12px;color:var(--muted);">Chưa chọn từ nào</span>';return;}
+  box.innerHTML = wfSelected.map(id=>{
+    const w=words.find(x=>x.id===id);
+    return w?`<span class="chip chip-green" style="font-size:12px;gap:4px;">${w.word} <button onclick="toggleWFWord(${id},null,null,document.getElementById('wf-btn-${id}'))" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);padding:0;line-height:1;">×</button></span>`:'';
+  }).join('');
+}
+function toggleWFWord(id, word, meaning, btn) {
+  const idx = wfSelected.indexOf(id);
+  if (idx===-1) {
+    wfSelected.push(id);
+    btn.classList.add('on');
+  } else {
+    wfSelected.splice(idx,1);
+    btn.classList.remove('on');
+  }
+  renderWFSelected();
+}
+
+function topicLabel(key) {
+  const t = topics.find(t=>t.key===key);
+  return t ? t.label : key;
+}
+function topicChipClass(key) {
+  const map = {general:'chip-muted',travel:'chip-blue',food:'chip-amber',business:'chip-green',tech:'chip-green',daily:'chip-blue'};
+  return map[key] || 'chip-muted';
+}
+
 function renderWB(){
   const q   = (document.getElementById('wb-s')?.value||'').toLowerCase();
   const top = document.getElementById('wb-top')?.value||'all';
@@ -8446,4 +8644,17 @@ function closeMoreMenu() {
 }
 </script>
 </body>
-</html>
+</htmlfunction openEditWord(id) {
+  const w = words.find(x=>x.id===id); if(!w) return;
+  populateTopicSelects();
+  document.getElementById('ew-id').value  = id;
+  document.getElementById('ew-w').value   = w.word;
+  document.getElementById('ew-p').value   = w.phonetic||'';
+  document.getElementById('ew-pos').value = w.partOfSpeech||'';
+  document.getElementById('ew-m').value   = w.meaning;
+  document.getElementById('ew-e').value   = w.example||'';
+  document.getElementById('ew-t').value   = w.topic||'general';
+  document.getElementById('ew-l').value   = w.level||3;
+  openModal('editModal');
+}
+>
