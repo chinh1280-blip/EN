@@ -3631,34 +3631,51 @@ function buildWarriorEl(rank, stars) {
       </div>`;
     },
     knight: () => {
-      const bW=28, h=34;
-      // ♞ Unicode chess knight — universally recognizable, crisp at any size
-      // Glow escalates with stars; base platform matches all other pieces
-      const fontSize = Math.round(bW * 0.78);
-      const glowStr = stars >= 3
-        ? `text-shadow:0 0 6px ${col},0 0 14px ${col},0 0 28px ${col},1px 1px 0 rgba(0,0,0,.5);filter:drop-shadow(0 0 4px ${col});`
+      // ♞ Unicode knight — large, facing RIGHT (scaleX flip), imposing
+      const bW = 34, h = 40;
+      const fontSize = Math.round(bW * 1.0); // bigger than container = imposing
+      // Escalating glow per star
+      const glow = stars >= 3
+        ? `text-shadow:
+            0 0 6px ${col},
+            0 0 14px ${col},
+            0 0 28px ${col},
+            0 0 40px ${col},
+            2px 2px 0 rgba(0,0,0,.6);
+           filter:drop-shadow(0 0 5px ${col});`
         : stars >= 2
-        ? `text-shadow:0 0 4px ${col},0 0 10px ${col},1px 1px 0 rgba(0,0,0,.4);`
-        : `text-shadow:1px 1px 2px rgba(0,0,0,.5);`;
-      // Colour: use RANK_CONFIG color for tint
-      const pieceColor = col;
+        ? `text-shadow:
+            0 0 5px ${col},
+            0 0 12px ${col},
+            2px 2px 0 rgba(0,0,0,.5);`
+        : `text-shadow:2px 2px 3px rgba(0,0,0,.5);`;
       return `<div style="position:relative;width:${bW}px;height:${h}px;flex-shrink:0;">
-        <!-- unicode knight icon, vertically stacked above base -->
-        <div style="position:absolute;top:0;left:0;width:${bW}px;height:${h-6}px;
+        <!-- knight icon: scaleX(-1) flips ♞ to face RIGHT toward enemy -->
+        <div style="position:absolute;top:-2px;left:-2px;width:${bW+4}px;height:${h-6}px;
                     display:flex;align-items:center;justify-content:center;overflow:visible;">
-          <span style="font-size:${fontSize}px;line-height:1;color:${pieceColor};
-                       display:block;${glowStr}
-                       ${stars>=3?`animation:wpiece-aura 1.4s ease-in-out infinite;`:''}">♞</span>
+          <span style="
+            font-size:${fontSize}px;
+            line-height:1;
+            color:${col};
+            display:block;
+            transform:scaleX(-1);
+            transform-origin:center;
+            ${glow}
+            ${stars>=3 ? `animation:wpiece-aura 1.2s ease-in-out infinite;` : ''}
+            ${stars>=2 ? `filter:drop-shadow(0 0 4px ${col});` : ''}
+          ">♞</span>
         </div>
-        <!-- base platform — same height/style as other pieces -->
+        <!-- base platform -->
         <div style="position:absolute;bottom:0;left:0;width:${bW}px;height:6px;
-                    background:${pieceColor};border-radius:3px;
-                    box-shadow:0 1px 0 rgba(255,255,255,.2) inset;">
-          ${stars>=2?`<div style="height:2px;background:rgba(255,255,255,.2);border-radius:3px 3px 0 0;"></div>`:''}
+                    background:${col};border-radius:3px;
+                    box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 4px rgba(0,0,0,.3);">
         </div>
-        ${stars>=3?`<!-- crown sparkle top -->
-        <div style="position:absolute;top:-4px;left:50%;transform:translateX(-50%);
-                    font-size:7px;color:#ffe060;animation:wsparkle .8s ease-in-out infinite;">✦</div>`:''}
+        ${stars>=3 ? `<!-- sparkle above -->
+        <div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+                    font-size:8px;color:#ffe060;animation:wsparkle .7s ease-in-out infinite;">✦</div>` : ''}
+        ${stars>=2 ? `<!-- rank accent line on base -->
+        <div style="position:absolute;bottom:2px;left:3px;right:3px;height:1px;
+                    background:rgba(255,255,255,.3);border-radius:1px;"></div>` : ''}
       </div>`;
     },
         bishop: () => {
@@ -3778,71 +3795,77 @@ function buildWarriorEl(rank, stars) {
     const ws = sc;
 
             if (rank === 'pawn') {
-      // Gilded Rapier — scale down 30%, glow on SVG element, no wrapper box
-      const szBase = stars===3 ? 21 : stars===2 ? 17 : 13;
+      // Gilded Rapier — SVG with width=0 height=0 so NO bounding box is painted
+      // All drawing via overflow:visible — weapon appears but zero footprint div
+      const szBase = stars===3 ? 22 : stars===2 ? 18 : 14;
       const sc2    = Math.round(szBase * ws);
       const gold   = '#d4a020';
       const silver = wcol;
-      // glow on the SVG itself — hugs the strokes, no square halo
       const svgGlow = stars>=3
         ? `filter:drop-shadow(0 0 4px ${gold}) drop-shadow(0 0 8px ${gold});`
         : stars>=2 ? `filter:drop-shadow(0 0 2px ${gold});` : '';
-      return `<div style="${baseStyle}--tilt:0deg;">
-        <svg width="${sc2}" height="${sc2}" viewBox="0 0 50 50"
+      // Scale factor: viewBox 50×50 → sc2 px via transform
+      const k = sc2 / 50;
+      return `<div style="${baseStyle}--tilt:0deg;width:0;height:0;overflow:visible;">
+        <svg width="0" height="0" viewBox="0 0 0 0"
              xmlns="http://www.w3.org/2000/svg"
-             style="display:block;overflow:visible;${svgGlow}"
-             shape-rendering="geometricPrecision">
+             style="display:block;overflow:visible;${svgGlow}">
+          <g transform="scale(${k.toFixed(3)}) translate(-25,-25)">
+            <!-- BLADE — diagonal from top-right (44,2) to hilt area (14,36) -->
+            <line x1="44" y1="2"  x2="14" y2="36" stroke="${silver}" stroke-width="${stars>=2?2.5:2}" stroke-linecap="round"/>
+            <line x1="46" y1="4"  x2="16" y2="38" stroke="${silver}" stroke-width="${stars>=2?1.8:1.2}" stroke-linecap="round" opacity=".55"/>
+            <line x1="45" y1="3"  x2="16" y2="36" stroke="white" stroke-width=".9" stroke-linecap="round" opacity=".3"/>
+            <!-- needle tip -->
+            <path d="M 44,2 L 47,0 L 50,0 L 48,4 L 45,4 Z" fill="${silver}"/>
+            <line x1="47" y1="0" x2="50" y2="0" stroke="white" stroke-width=".8" opacity=".7"/>
+            ${stars>=2 ? `<!-- fuller groove -->
+            <line x1="43" y1="4" x2="17" y2="36" stroke="rgba(0,0,0,.18)" stroke-width=".8" stroke-linecap="round"/>` : ''}
+            ${stars>=3 ? `<!-- blade etching near forte -->
+            <line x1="20" y1="30" x2="28" y2="22" stroke="${gold}" stroke-width=".8" opacity=".55"/>` : ''}
 
-          <!-- BLADE — two thin edges converging to needle tip -->
-          <line x1="40" y1="6"  x2="16" y2="34" stroke="${silver}" stroke-width="${stars>=2?2:1.5}" stroke-linecap="round"/>
-          <line x1="42" y1="8"  x2="17" y2="36" stroke="${silver}" stroke-width="${stars>=2?1.5:1}" stroke-linecap="round" opacity=".65"/>
-          <line x1="41" y1="7"  x2="17" y2="35" stroke="white"    stroke-width=".7" stroke-linecap="round" opacity=".35"/>
-          <path d="M 40,6 L 42,4 L 44,2 L 43,5 L 41,7 Z" fill="${silver}" opacity=".95"/>
-          ${stars>=2 ? `<line x1="39" y1="8" x2="18" y2="33" stroke="rgba(0,0,0,.2)" stroke-width=".7" stroke-linecap="round"/>` : ''}
-          ${stars>=3 ? `<line x1="22" y1="28" x2="28" y2="22" stroke="${gold}" stroke-width=".7" opacity=".55"/>` : ''}
+            <!-- RICASSO (thick part before guard) -->
+            <line x1="14" y1="36" x2="12" y2="38" stroke="${silver}" stroke-width="3" stroke-linecap="round"/>
 
-          <!-- RICASSO + MAIN CROSSGUARD -->
-          <line x1="16" y1="34" x2="14" y2="36" stroke="${silver}" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="10" y1="32" x2="20" y2="40" stroke="${gold}"   stroke-width="2.8" stroke-linecap="round"/>
-          <line x1="10" y1="32" x2="20" y2="40" stroke="white"     stroke-width=".7"  stroke-linecap="round" opacity=".45"/>
+            <!-- CROSSGUARD — diagonal, perpendicular to blade -->
+            <line x1="6"  y1="32" x2="18" y2="44" stroke="${gold}" stroke-width="3.5" stroke-linecap="round"/>
+            <line x1="6"  y1="32" x2="18" y2="44" stroke="white"   stroke-width=".9"  stroke-linecap="round" opacity=".4"/>
 
-          ${stars>=2 ? `<!-- swept quillons -->
-          <path d="M 10,32 Q 6,26 9,22" stroke="${gold}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-          <path d="M 20,40 Q 24,44 21,47" stroke="${gold}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-          <!-- knuckle bow -->
-          <path d="M 10,32 Q 7,38 12,43" stroke="${gold}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-          <path d="M 10,32 Q 7,38 12,43" stroke="white"  stroke-width=".4"  fill="none" stroke-linecap="round" opacity=".4"/>` : ''}
+            ${stars>=2 ? `<!-- swept quillons -->
+            <path d="M 6,32 Q 2,24 5,18" stroke="${gold}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <path d="M 18,44 Q 22,50 19,54" stroke="${gold}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <!-- knuckle bow -->
+            <path d="M 6,32 Q 3,40 9,47" stroke="${gold}" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M 6,32 Q 3,40 9,47" stroke="white"   stroke-width=".5" fill="none" stroke-linecap="round" opacity=".4"/>` : ''}
 
-          ${stars>=3 ? `<!-- pas d'âne rings (stroke-only, no fill = no box) -->
-          <circle cx="11" cy="33" r="3.5" stroke="${gold}" stroke-width="1.6" fill="none"/>
-          <circle cx="19" cy="39" r="2.8" stroke="${gold}" stroke-width="1.4" fill="none"/>
-          <!-- shell guard -->
-          <path d="M 13,36 Q 15,34 17,36 Q 15,38 13,36 Z" fill="${gold}" opacity=".75"/>` : ''}
+            ${stars>=3 ? `<!-- pas d'âne rings -->
+            <circle cx="7"  cy="33" r="4" stroke="${gold}" stroke-width="2" fill="none"/>
+            <circle cx="17" cy="43" r="3.5" stroke="${gold}" stroke-width="1.8" fill="none"/>
+            <!-- shell guard -->
+            <path d="M 10,38 Q 12,35 14,38 Q 12,41 10,38 Z" fill="${gold}" opacity=".8"/>` : ''}
 
-          <!-- GRIP -->
-          <line x1="14" y1="36" x2="9"  y2="42" stroke="${col}" stroke-width="2.6" stroke-linecap="round"/>
-          <line x1="13" y1="37" x2="11" y2="39" stroke="${gold}" stroke-width=".8" opacity=".8"/>
-          <line x1="12" y1="38.5" x2="10" y2="40.5" stroke="${gold}" stroke-width=".8" opacity=".7"/>
-          <line x1="11" y1="40"   x2="9.5" y2="41.5" stroke="${gold}" stroke-width=".8" opacity=".6"/>
-          ${stars>=2 ? `<line x1="11.5" y1="39.5" x2="13.5" y2="37.5" stroke="${gold}" stroke-width="1.4" opacity=".85"/>` : ''}
+            <!-- GRIP -->
+            <line x1="12" y1="38" x2="6"  y2="46" stroke="${col}" stroke-width="3.2" stroke-linecap="round"/>
+            <line x1="11" y1="39.5" x2="8.5" y2="42" stroke="${gold}" stroke-width="1" opacity=".8"/>
+            <line x1="10" y1="41.5" x2="7.5" y2="44" stroke="${gold}" stroke-width="1" opacity=".7"/>
+            ${stars>=2 ? `<line x1="10.5" y1="43" x2="13" y2="40.5" stroke="${gold}" stroke-width="1.6" opacity=".85"/>` : ''}
 
-          <!-- POMMEL (stroke-only circles never make a box) -->
-          ${stars>=3
-            ? `<ellipse cx="7" cy="44" rx="4" ry="3.5" fill="${gold}"/>
-               <ellipse cx="7" cy="44" rx="2" ry="1.8" fill="${col}" opacity=".35"/>
-               <ellipse cx="7" cy="44" rx="1.2" ry="1"  fill="white" opacity=".85"/>
-               <path d="M 4,42 Q 3.5,44 5,46" stroke="white" stroke-width=".6" fill="none" opacity=".45"/>
-               <circle cx="43" cy="2" r="2.5" fill="${gold}" opacity=".35"/>
-               <circle cx="43" cy="2" r="1.2" fill="white"  opacity=".65"/>`
-            : stars>=2
-            ? `<circle cx="7.5" cy="44" r="3" fill="${gold}"/>
-               <circle cx="6.5" cy="43" r=".9" fill="white" opacity=".55"/>`
-            : `<circle cx="8"   cy="43" r="2.2" fill="${silver}"/>
-               <circle cx="7.2" cy="42.2" r=".7" fill="white" opacity=".45"/>`}
+            <!-- POMMEL -->
+            ${stars>=3
+              ? `<ellipse cx="4" cy="48" rx="5" ry="4.5" fill="${gold}"/>
+                 <ellipse cx="4" cy="48" rx="2.5" ry="2"   fill="${col}" opacity=".3"/>
+                 <ellipse cx="4" cy="48" rx="1.5" ry="1.2" fill="white" opacity=".85"/>
+                 <!-- tip glow dot -->
+                 <circle cx="49" cy="0" r="3" fill="${gold}" opacity=".3"/>
+                 <circle cx="49" cy="0" r="1.5" fill="white" opacity=".7"/>`
+              : stars>=2
+              ? `<circle cx="4.5" cy="48" r="4" fill="${gold}"/>
+                 <circle cx="3.5" cy="47" r="1.2" fill="white" opacity=".55"/>`
+              : `<circle cx="5" cy="47"   r="3.2" fill="${silver}"/>
+                 <circle cx="4" cy="46.2" r=".9"  fill="white" opacity=".45"/>`}
+          </g>
         </svg>
       </div>`;
     }
-
 
     if (rank === 'knight') {
       // Spears — all stars use spear shape, escalating in number/glow
