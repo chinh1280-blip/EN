@@ -2066,7 +2066,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
                 <div class="fc-eng"  id="fc-word">Serendipity</div>
                 <div class="fc-phon" id="fc-phon">/ˌser.ənˈdɪp.ɪ.ti/</div>
                 <div class="fc-eg-front" id="fc-eg-front" style="font-size:12px;color:rgba(0,0,0,.35);font-style:italic;margin-top:6px;padding:0 8px;max-width:100%;text-align:center;line-height:1.5;"></div>
-                <div class="fc-tap-hint" style="margin-top:8px;">Nhấn để xem nghĩa → lại để ghi chú 📝 → lại về ↺</div>
+                <div class="fc-tap-hint" style="margin-top:8px;">Nhấn để xem nghĩa · nhấn lại để lật ↺</div>
               </div>
               <div class="fc-face fc-back">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;justify-content:center;">
@@ -2074,7 +2074,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
                   <span id="fc-pos-tag" class="chip chip-blue" style="font-size:11px;display:none;"></span>
                 </div>
                 <div class="fc-eg"   id="fc-eg">"Finding that café was pure serendipity."</div>
-                <div style="margin-top:10px;font-size:11px;color:var(--muted);opacity:.6;">Nhấn lại để xem ghi chú 📝</div>
+                
               </div>
               <!-- NOTE FACE: 3rd flip -->
               <div class="fc-face fc-note-face" id="fc-note-face">
@@ -6916,27 +6916,27 @@ function flipFC(){
   const card=document.getElementById('fc-card');
   const w=fcQueue[fcIdx];
   if(!fcFlipped && !fcNoted){
-    // State 0 → 1: show back (meaning)
+    // Flip 1: front → back (meaning)
     card.classList.remove('noted');
     card.classList.add('flipped');
     fcFlipped=true; fcNoted=false;
     speak(w?.word);
   } else if(fcFlipped && !fcNoted){
-    // State 1 → 2: show note face (if note exists)
-    const noteContent=document.getElementById('fc-note-content');
-    const hasNote=w?.note && w.note.trim() && w.note!=='<br>';
+    // Flip 2: back → note (only if word has note) or → front
+    const hasNote = w?.note && w.note.trim() && w.note !== '<br>';
     if(hasNote){
-      if(noteContent) noteContent.innerHTML=w.note;
+      const noteContent = document.getElementById('fc-note-content');
+      if(noteContent) noteContent.innerHTML = w.note;
       card.classList.remove('flipped');
       card.classList.add('noted');
       fcFlipped=false; fcNoted=true;
     } else {
-      // No note — skip back to front
+      // No note → back to front
       card.classList.remove('flipped','noted');
       fcFlipped=false; fcNoted=false;
     }
-  } else {
-    // State 2 → 0: back to front
+  } else if(fcNoted){
+    // Flip 3: note → front
     card.classList.remove('flipped','noted');
     fcFlipped=false; fcNoted=false;
   }
@@ -7379,22 +7379,30 @@ function renderWB(){
   }
 
   el.innerHTML = list.map(w => {
-    const hasNote = w.note && w.note.trim() && w.note !== '<br>';
+    const chipCls  = topicChipClass(w.topic);
+    const topicLbl = topicLabel(w.topic);
+    const wSafe    = w.word.replace(/'/g, "\\'");
+    const hasNote  = w.note && w.note.trim() && w.note !== '<br>';
     const noteHtml = hasNote
-      ? `<div class="sent-note-preview" style="margin-top:8px;font-size:12px;"><div class="sent-note-preview-inner">${w.note}</div></div>`
+      ? '<div class="sent-note-preview" style="margin-top:8px;font-size:12px;"><div class="sent-note-preview-inner">' + w.note + '</div></div>'
+      : '';
+    const posHtml  = w.partOfSpeech
+      ? '<span class="wb-pos">' + w.partOfSpeech + '</span>'
+      : '';
+    const ipaHtml  = (showIPA && w.phonetic)
+      ? '<span class="wb-ipa">' + w.phonetic + '</span>'
       : '';
     return `<div class="wb-card">
       <div class="wb-row1">
         <span class="wb-word">${w.word}</span>
-        ${w.partOfSpeech ? `<span class="wb-pos">${w.partOfSpeech}</span>` : ''}
-        ${showIPA && w.phonetic ? `<span class="wb-ipa">${w.phonetic}</span>` : ''}
+        ${posHtml}${ipaHtml}
       </div>
       <div class="wb-meaning">${w.meaning}</div>
       ${noteHtml}
       <div class="wb-row3">
-        <span class="chip ${topicChipClass(w.topic)} wb-topic">${topicLabel(w.topic)}</span>
+        <span class="chip ${chipCls} wb-topic">${topicLbl}</span>
         <div class="wb-actions">
-          <button class="wr-btn" onclick="speak('${w.word.replace(/'/g,"\'")}')">🔊</button>
+          <button class="wr-btn" onclick="speak('${wSafe}')">🔊</button>
           <button class="wr-btn wb-edit" onclick="openEditWord(${w.id})">✎</button>
           <button class="wr-btn wb-del"  onclick="deleteWord(${w.id})">×</button>
         </div>
