@@ -3605,14 +3605,107 @@ function buildWarriorEl(rank, stars) {
       @keyframes wglow-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4)}}
       @keyframes wsword-glow{0%,100%{box-shadow:0 0 4px var(--wc),0 0 8px var(--wc)}50%{box-shadow:0 0 8px var(--wc),0 0 20px var(--wc),0 0 36px var(--wc)}}
       /* ── Weapon signature animations ── */
-      @keyframes w-mace-hit{0%{transform:rotate(-30deg) translateY(0)}30%{transform:rotate(20deg) translateY(-3px)}55%{transform:rotate(-20deg) translateY(-1px)}80%{transform:rotate(15deg) translateY(-2px)}100%{transform:rotate(-30deg) translateY(0)}}
-      @keyframes w-spear-thrust{0%,100%{transform:translateX(0) rotate(var(--tilt,0deg))}40%{transform:translateX(7px) rotate(var(--tilt,0deg))}55%{transform:translateX(10px) rotate(var(--tilt,0deg))}70%{transform:translateX(2px) rotate(var(--tilt,0deg))}}
-      @keyframes w-orb-pulse{0%,100%{box-shadow:0 0 6px var(--oc),0 0 12px var(--oc);transform:scale(1)}50%{box-shadow:0 0 14px var(--oc),0 0 28px var(--oc),0 0 44px var(--oc);transform:scale(1.1)}}
-      @keyframes w-orb-elec{0%,100%{opacity:0;transform:scale(.8) rotate(0deg)}30%{opacity:1;transform:scale(1.3) rotate(60deg)}60%{opacity:.8;transform:scale(1.1) rotate(120deg)}80%{opacity:1;transform:scale(1.4) rotate(180deg)}}
-      @keyframes w-hammer-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-      @keyframes w-staff-aura{0%,100%{opacity:.3;transform:scale(.9) rotate(0deg)}50%{opacity:.9;transform:scale(1.25) rotate(180deg)}}
-      @keyframes w-sword-slash{0%,100%{transform:rotate(-25deg) translateY(0)}40%{transform:rotate(30deg) translateY(-4px)}70%{transform:rotate(-15deg) translateY(-2px)}}
-      @keyframes w-spark-ring{0%{transform:rotate(0deg) scale(0.8);opacity:.8}50%{transform:rotate(180deg) scale(1.2);opacity:1}100%{transform:rotate(360deg) scale(0.8);opacity:.8}}
+
+      /* KNIGHT: horizontal stab — sharp thrust forward then snap back */
+      @keyframes w-spear-thrust{
+        0%,100%{ transform:translateX(0); }
+        30%    { transform:translateX(8px); }
+        45%    { transform:translateX(14px); }   /* full extension */
+        55%    { transform:translateX(12px); }   /* brief hold */
+        70%    { transform:translateX(-2px); }   /* overshoot back */
+        85%    { transform:translateX(1px); }
+      }
+
+      /* BISHOP: gentle levitate */
+      @keyframes w-book-levitate{
+        0%,100%{ transform:translateY(0) rotate(-2deg); }
+        50%    { transform:translateY(-5px) rotate(2deg); }
+      }
+      /* BISHOP: sparkle dot pop */
+      @keyframes w-sparkle-pop{
+        0%  { opacity:0; transform:scale(0) rotate(0deg); }
+        40% { opacity:1; transform:scale(1.4) rotate(180deg); }
+        70% { opacity:.8; transform:scale(1.1) rotate(270deg); }
+        100%{ opacity:0; transform:scale(0) rotate(360deg); }
+      }
+
+      /* ROOK: axe chop — swing up then slam down, shake on impact */
+      @keyframes w-axe-chop{
+        0%  { transform:rotate(30deg);  transform-origin:bottom right; }
+        15% { transform:rotate(-50deg); transform-origin:bottom right; } /* swing back up */
+        16% { transform:rotate(-50deg); transform-origin:bottom right; }
+        60% { transform:rotate(40deg);  transform-origin:bottom right; } /* slam down */
+        62% { transform:rotate(36deg);  transform-origin:bottom right; } /* impact shake */
+        64% { transform:rotate(42deg);  transform-origin:bottom right; }
+        66% { transform:rotate(38deg);  transform-origin:bottom right; }
+        100%{ transform:rotate(30deg);  transform-origin:bottom right; }
+      }
+
+      /* QUEEN: orb pulse glow */
+      @keyframes w-orb-pulse{
+        0%,100%{ box-shadow:0 0 8px var(--oc),0 0 16px var(--oc); transform:scale(1); }
+        50%    { box-shadow:0 0 18px var(--oc),0 0 36px var(--oc),0 0 54px var(--oc); transform:scale(1.08); }
+      }
+      /* QUEEN: element icon orbit pop */
+      @keyframes w-elem-orbit{
+        0%  { opacity:0; transform:rotate(var(--start-angle)) translateX(var(--orbit-r)) scale(.4); }
+        20% { opacity:1; transform:rotate(calc(var(--start-angle) + 40deg)) translateX(var(--orbit-r)) scale(1.1); }
+        80% { opacity:.8; transform:rotate(calc(var(--start-angle) + 320deg)) translateX(var(--orbit-r)) scale(1); }
+        100%{ opacity:0; transform:rotate(calc(var(--start-angle) + 360deg)) translateX(var(--orbit-r)) scale(.4); }
+      }
+
+      /* KING: wild multi-slash sequence */
+      @keyframes w-sword-slash{
+        0%  { transform:rotate(-45deg) scale(1);    filter:brightness(1); }
+        12% { transform:rotate(50deg)  scale(1.04); filter:brightness(1.5); }
+        14% { transform:rotate(45deg)  scale(1.04); filter:brightness(2); }  /* slash impact */
+        26% { transform:rotate(-55deg) scale(1);    filter:brightness(1); }
+        38% { transform:rotate(40deg)  scale(1.03); filter:brightness(1.4); }
+        40% { transform:rotate(35deg)  scale(1.03); filter:brightness(1.8); }
+        54% { transform:rotate(-40deg) scale(1);    filter:brightness(1); }
+        62% { transform:rotate(60deg)  scale(1.05); filter:brightness(1.6); }
+        64% { transform:rotate(55deg)  scale(1.05); filter:brightness(2.2); }
+        80% { transform:rotate(-45deg) scale(1);    filter:brightness(1); }
+        100%{ transform:rotate(-45deg) scale(1);    filter:brightness(1); }
+      }
+      /* KING: slash trail crescent — fades in/out in sync with sword slash */
+      @keyframes w-trail-1{
+        0%,11%,20%,100%{ opacity:0; }
+        13%,16%        { opacity:.7; }
+      }
+      @keyframes w-trail-2{
+        0%,37%,46%,100%{ opacity:0; }
+        39%,42%        { opacity:.6; }
+      }
+      @keyframes w-trail-3{
+        0%,61%,70%,100%{ opacity:0; }
+        63%,66%        { opacity:.8; }
+      }
+      /* ring pulse for orb */
+      @keyframes w-orb-elec{
+        0%,100%{ opacity:.2; transform:scale(.85) rotate(0deg); }
+        30%    { opacity:.8; transform:scale(1.25) rotate(45deg); }
+        60%    { opacity:.6; transform:scale(1.1) rotate(90deg); }
+      }
+      @keyframes w-spark-ring{
+        0%  { transform:rotate(0deg)   scale(.8); opacity:.7; }
+        50% { transform:rotate(180deg) scale(1.2); opacity:1; }
+        100%{ transform:rotate(360deg) scale(.8); opacity:.7; }
+      }
+      @keyframes w-mace-hit{
+        0%          {transform:rotate(-30deg) translateY(0)}
+        30%         {transform:rotate(20deg)  translateY(-3px)}
+        55%         {transform:rotate(-20deg) translateY(-1px)}
+        80%         {transform:rotate(15deg)  translateY(-2px)}
+        100%        {transform:rotate(-30deg) translateY(0)}
+      }
+      @keyframes worb-spin{from{transform:rotate(0deg) translateX(12px)}to{transform:rotate(360deg) translateX(12px)}}
+      @keyframes wsparkle{0%,100%{opacity:.4;transform:scale(.7)}50%{opacity:1;transform:scale(1.3)}}
+      @keyframes wfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+      @keyframes wfloat-fast{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-5px) scale(1.04)}}
+      @keyframes wpiece-aura{0%,100%{box-shadow:0 0 8px var(--ac),0 0 18px var(--ac)}50%{box-shadow:0 0 15px var(--ac),0 0 32px var(--ac),0 0 50px var(--ac)}}
+      @keyframes wsword-glow{0%,100%{filter:drop-shadow(0 0 3px var(--wc,#fff))}50%{filter:drop-shadow(0 0 8px var(--wc,#fff)) drop-shadow(0 0 16px var(--wc,#fff))}}
+      @keyframes wglow-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4)}}
     `;
     document.head.appendChild(s2);
   }
@@ -3905,295 +3998,460 @@ function buildWarriorEl(rank, stars) {
        Thrust: w-spear-thrust, near-vertical (-5°)
     ═══════════════════════════════════════════ */
     if (rank === 'knight') {
-      const S = Math.round(20 * ws2);
+      // Horizontal lance/spear: tip points RIGHT toward enemy
+      // viewBox: -10 -15 90 40 gives room for tip overflow + aura
+      const S  = Math.round(22 * ws2);   // SVG rendered width
+      const SH = Math.round(14 * ws2);   // SVG rendered height
       const green = wcol, dark = col;
-      const shW = stars>=3?4:3;
-      const glow = stars>=3 ? `filter:drop-shadow(0 0 5px ${green}) drop-shadow(0 0 10px ${green});`
-                : stars>=2 ? `filter:drop-shadow(0 0 3px ${green});` : '';
-      const thrustDur = stars>=3 ? '0.55s' : stars>=2 ? '0.7s' : '0.9s';
-      // Spear drawn vertically: tip at top (12,2), butt at bottom (12,72) in viewbox
-      return `<div style="position:relative;display:inline-block;width:${S}px;height:${Math.round(S*1.5)}px;overflow:visible;">
-        <svg width="${S}" height="${Math.round(S*1.5)}" viewBox="0 0 25 78" xmlns="http://www.w3.org/2000/svg"
-             style="display:block;overflow:visible;${glow}
-                    animation:w-spear-thrust ${thrustDur} ease-in-out infinite;
-                    transform-origin:0px 0px;">
-          <g transform="rotate(-5,12,36)">
-            <!-- SPEARHEAD — leaf blade pointing up -->
-            <path d="M 12,2 L 19,18 L 12,28 L 5,18 Z" fill="${green}"/>
-            <line x1="12" y1="3"  x2="12" y2="27" stroke="white" stroke-width="1.3" opacity=".45"/>
-            <line x1="18" y1="17" x2="12" y2="4"  stroke="white" stroke-width=".8"  opacity=".3"/>
-            <circle cx="12" cy="2" r="1.8" fill="white" opacity=".9"/>
-            ${stars>=2 ? `<!-- ferrule -->
-            <rect x="9" y="26" width="6" height="5" rx="1" fill="${gold}"/>
-            <!-- side lugs -->
-            <path d="M 9,30 Q 4,29 5,32 Q 9,33 9.5,31 Z" fill="${gold}"/>
-            <path d="M 15,30 Q 20,29 19,32 Q 15,33 14.5,31 Z" fill="${gold}"/>` : ''}
-            ${stars>=3 ? `<!-- blade etchings -->
-            <line x1="10" y1="8" x2="10" y2="24" stroke="${gold}" stroke-width=".8" opacity=".6"/>
-            <line x1="14" y1="8" x2="14" y2="24" stroke="${gold}" stroke-width=".8" opacity=".6"/>` : ''}
-            <!-- SHAFT -->
-            <rect x="${12-shW/2}" y="${stars>=2?31:29}" width="${shW}" height="38" rx="1.5" fill="${dark}"/>
-            <rect x="${12-shW/2+1}" y="${stars>=2?31:29}" width="1.5" height="38" rx=".5" fill="rgba(255,255,255,.22)"/>
-            ${stars>=2 ? `<!-- metal bands -->
-            <rect x="${12-shW/2-1}" y="40" width="${shW+2}" height="3" rx="1" fill="${gold}"/>
-            <rect x="${12-shW/2-1}" y="54" width="${shW+2}" height="3" rx="1" fill="${gold}"/>` : ''}
-            ${stars>=3 ? `<!-- rune marks -->
-            <line x1="12" y1="45" x2="9"  y2="48" stroke="${green}" stroke-width=".9" opacity=".6"/>
-            <line x1="12" y1="45" x2="15" y2="48" stroke="${green}" stroke-width=".9" opacity=".6"/>
-            <line x1="10" y1="50" x2="14" y2="50" stroke="${green}" stroke-width=".9" opacity=".5"/>` : ''}
-            <!-- BUTT CAP -->
-            <path d="M ${12-shW/2},69 L ${12+shW/2},69 L 12,75 Z" fill="${stars>=2?gold:green}"/>
-            <!-- ENERGY AURA around spearhead -->
-            ${energyAura(12, 15, 9, green, gold, stars)}
-          </g>
+      const thrustDur = stars>=3 ? '0.5s' : stars>=2 ? '0.65s' : '0.85s';
+      const glow = stars>=3
+        ? `filter:drop-shadow(0 0 5px ${green}) drop-shadow(0 0 10px ${green});`
+        : stars>=2 ? `filter:drop-shadow(0 0 3px ${green});` : '';
+      // Spear drawn horizontally: tip at RIGHT (x=76), butt at LEFT (x=8)
+      // All coords in viewBox space -10 -15 90 40 (90×40 units)
+      const shaftY = 10; // center y of shaft
+      const shW    = stars>=3 ? 3.5 : stars>=2 ? 3 : 2.5;
+      return `<div style="position:relative;display:inline-block;
+                          width:${S}px;height:${SH}px;overflow:visible;
+                          animation:w-spear-thrust ${thrustDur} ease-in-out infinite;">
+        <svg width="${S}" height="${SH}" viewBox="-10 -15 90 40"
+             xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;${glow}">
+          <!-- ── SHAFT ── -->
+          <rect x="8" y="${shaftY-shW/2}" width="58" height="${shW}" rx="${shW/2}"
+                fill="${dark}"/>
+          <!-- shaft highlight -->
+          <rect x="8" y="${shaftY-shW/2}" width="58" height="${shW*.4}" rx="${shW/2}"
+                fill="rgba(255,255,255,.3)"/>
+          ${stars>=2 ? `<!-- metal grip bands -->
+          <rect x="28" y="${shaftY-shW/2-1}" width="4" height="${shW+2}" rx="1" fill="${gold}"/>
+          <rect x="40" y="${shaftY-shW/2-1}" width="4" height="${shW+2}" rx="1" fill="${gold}"/>` : ''}
+          ${stars>=2 ? `<!-- CROSS-GUARD (lugs) at x=66 -->
+          <path d="M 66,${shaftY-7} L 66,${shaftY+7}" stroke="${gold}" stroke-width="3.5" stroke-linecap="round"/>
+          <path d="M 65,${shaftY-6} L 65,${shaftY+6}" stroke="white" stroke-width=".8" stroke-linecap="round" opacity=".5"/>` : ''}
+          <!-- ── SPEARHEAD (diamond leaf, tip at x=80) ── -->
+          <path d="M 66,${shaftY} L 72,${shaftY-5} L 80,${shaftY} L 72,${shaftY+5} Z"
+                fill="${green}"/>
+          <!-- blade spine -->
+          <line x1="68" y1="${shaftY}" x2="79" y2="${shaftY}"
+                stroke="white" stroke-width="1" opacity=".45"/>
+          <!-- tip glint -->
+          <circle cx="80" cy="${shaftY}" r="1.5" fill="white" opacity=".9"/>
+          ${stars>=3 ? `<!-- extra wide blade etchings -->
+          <line x1="70" y1="${shaftY-2}" x2="78" y2="${shaftY-2}" stroke="${gold}" stroke-width=".7" opacity=".6"/>
+          <line x1="70" y1="${shaftY+2}" x2="78" y2="${shaftY+2}" stroke="${gold}" stroke-width=".7" opacity=".6"/>` : ''}
+          <!-- ── BUTT CAP ── -->
+          <path d="M 8,${shaftY-shW/2} L 4,${shaftY} L 8,${shaftY+shW/2} Z"
+                fill="${stars>=2?gold:green}"/>
+          <!-- ── ENERGY AURA at spearhead ── -->
+          ${stars>=1 ? `<circle cx="73" cy="${shaftY}" r="8" stroke="${green}" stroke-width="1.5"
+                  fill="none" opacity=".5" style="animation:w-orb-elec ${thrustDur} ease-in-out infinite;"/>` : ''}
+          ${stars>=2 ? `<circle cx="73" cy="${shaftY}" r="13" stroke="${green}" stroke-width="1"
+                  fill="none" opacity=".3" style="animation:w-orb-elec ${thrustDur} ease-in-out infinite;animation-delay:-.2s;animation-direction:reverse;"/>` : ''}
+          ${stars>=3 ? `<circle cx="73" cy="${shaftY}" r="18" stroke="${gold}" stroke-width=".8"
+                  fill="none" opacity=".2" style="animation:w-spark-ring .8s linear infinite;"/>
+          <!-- thrust sparks -->
+          <line x1="82" y1="${shaftY-3}" x2="88" y2="${shaftY-6}" stroke="${green}" stroke-width="1.2" opacity=".7"/>
+          <line x1="82" y1="${shaftY}"   x2="89" y2="${shaftY}"   stroke="${green}" stroke-width="1"   opacity=".6"/>
+          <line x1="82" y1="${shaftY+3}" x2="88" y2="${shaftY+6}" stroke="${green}" stroke-width="1.2" opacity=".7"/>` : ''}
         </svg>
       </div>`;
     }
 
-    /* ═══════════════════════════════════════════
+        /* ═══════════════════════════════════════════
        BISHOP — Quả cầu điện (Magic Orb + Staff)
        Electric arc: w-orb-elec pulse
     ═══════════════════════════════════════════ */
     if (rank === 'bishop') {
-      const oD = Math.round(14 * ws2);
-      const sH = Math.round(26 * ws2);
+      // Open floating spellbook with sparkle particles
+      const S   = Math.round(22 * ws2);
+      const SH  = Math.round(20 * ws2);
       const blue = wcol, dark = col;
-      const dur = stars>=3 ? '0.5s' : stars>=2 ? '0.75s' : '1.0s';
-      const glow = stars>=3 ? `filter:drop-shadow(0 0 6px ${blue}) drop-shadow(0 0 12px ${blue});`
-                : stars>=2 ? `filter:drop-shadow(0 0 4px ${blue});` : '';
-      const shW = Math.max(3, Math.round(3*ws2));
-      const cx = Math.round(oD/2), cy = Math.round(oD/2);
-      const or_ = Math.round(oD*.42);
-      const total = oD + sH + 4;
-      return `<div style="${baseStyle}width:${oD+20}px;height:${total}px;${glow}">
-        <!-- SHAFT -->
-        <div style="position:absolute;top:${oD-2}px;left:50%;transform:translateX(-50%);
-                    width:${shW}px;height:${sH+4}px;
-                    background:linear-gradient(180deg,${blue},${dark} 60%,${blue});
-                    border-radius:1.5px;"></div>
-        <!-- BUTT FERRULE -->
-        <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-                    width:${Math.round(oD*.55)}px;height:${Math.round(4*ws2)}px;
-                    background:${gold};border-radius:0 0 2px 2px;"></div>
-        ${stars>=2 ? `<!-- shaft node ring -->
-        <div style="position:absolute;top:${oD + Math.round(sH*.35)}px;left:50%;transform:translateX(-50%);
-                    width:${Math.round(oD*.55)}px;height:${Math.round(oD*.55)}px;
-                    border-radius:50%;background:${gold};box-shadow:0 0 4px ${gold};"></div>` : ''}
-        <!-- ORB -->
-        <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);
-                    width:${oD}px;height:${oD}px;border-radius:50%;
-                    background:radial-gradient(circle at 32% 30%,white 0%,${blue} 45%,${dark} 100%);
-                    animation:w-orb-pulse ${dur} ease-in-out infinite;--oc:${blue};
-                    box-shadow:0 0 8px ${blue},0 0 18px ${blue};">
-          ${stars>=2 ? `<div style="position:absolute;top:12%;left:12%;width:28%;height:28%;
-                          background:white;border-radius:50%;opacity:.55;"></div>` : ''}
-        </div>
-        <!-- ELECTRIC RINGS around orb -->
-        <div style="position:absolute;top:${-(oD*.22)}px;left:50%;transform:translateX(-50%);
-                    width:${oD*1.44}px;height:${oD*1.44}px;border-radius:50%;
-                    border:${stars>=3?2:1.5}px solid ${blue};opacity:.65;
-                    animation:w-orb-elec ${dur} ease-in-out infinite;"></div>
-        ${stars>=2 ? `<div style="position:absolute;top:${-(oD*.4)}px;left:50%;transform:translateX(-50%);
-                    width:${oD*1.8}px;height:${oD*1.8}px;border-radius:50%;
-                    border:1px solid ${blue};opacity:.4;
-                    animation:w-orb-elec ${dur} ease-in-out infinite;animation-direction:reverse;animation-delay:-.25s;"></div>` : ''}
-        ${stars>=3 ? `<div style="position:absolute;top:${-(oD*.62)}px;left:50%;transform:translateX(-50%);
-                    width:${oD*2.24}px;height:${oD*2.24}px;border-radius:50%;
-                    border:1px dashed ${blue};opacity:.25;
-                    animation:w-spark-ring .7s linear infinite;"></div>
-                    <!-- orbiting dot -->
-                    <div style="position:absolute;top:${oD*.5-4}px;left:50%;
-                                width:7px;height:7px;margin-left:-3.5px;border-radius:50%;
-                                background:${blue};box-shadow:0 0 5px ${blue};
-                                animation:worb-spin .9s linear infinite;
-                                transform-origin:-${Math.round(oD*.72)}px 0;"></div>` : ''}
-      </div>`;
-    }
+      const levDur = stars>=3 ? '1.2s' : '1.6s';
+      const glow = stars>=3
+        ? `filter:drop-shadow(0 0 6px ${blue}) drop-shadow(0 0 12px ${blue});`
+        : stars>=2 ? `filter:drop-shadow(0 0 4px ${blue});` : '';
+      // Book drawn in viewBox 0 0 60 50, book center at (30,28)
+      // Extra padding in viewBox for sparkles: -12 -12 84 68
+      const sparkles = stars>=2 ? [
+        {cx:8,  cy:10, r:2.2, dur:'1.1s', delay:'0s'},
+        {cx:52, cy:8,  r:1.8, dur:'0.9s', delay:'-0.3s'},
+        {cx:56, cy:34, r:2.0, dur:'1.3s', delay:'-0.6s'},
+        {cx:4,  cy:36, r:1.6, dur:'1.0s', delay:'-0.9s'},
+        ...(stars>=3 ? [
+          {cx:30, cy:4,  r:2.5, dur:'0.8s', delay:'-0.2s'},
+          {cx:14, cy:44, r:1.8, dur:'1.1s', delay:'-0.5s'},
+          {cx:46, cy:44, r:2.0, dur:'0.9s', delay:'-0.8s'},
+        ] : [])
+      ] : [];
+      return `<div style="position:relative;display:inline-block;
+                          width:${S}px;height:${SH}px;overflow:visible;
+                          animation:w-book-levitate ${levDur} ease-in-out infinite;">
+        <svg width="${S}" height="${SH}" viewBox="-12 -12 84 68"
+             xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;${glow}">
+          <defs>
+            <radialGradient id="bkCover${stars}" cx="50%" cy="40%" r="60%">
+              <stop offset="0%"  stop-color="${blue}" stop-opacity=".9"/>
+              <stop offset="100%" stop-color="${dark}"/>
+            </radialGradient>
+            <radialGradient id="bkPage${stars}" cx="50%" cy="50%" r="70%">
+              <stop offset="0%"   stop-color="#f5f0e8"/>
+              <stop offset="100%" stop-color="#c8bfa0"/>
+            </radialGradient>
+          </defs>
 
-    /* ═══════════════════════════════════════════
-       ROOK — Búa chiến (War Hammer)
-       Spinning: w-hammer-spin, pivot=handle-end
-    ═══════════════════════════════════════════ */
-    if (rank === 'rook') {
-      const S = Math.round(18 * ws2);
-      const brn = wcol, dark = col;
-      const hW = Math.round(20 * ws2), hH = Math.round(14 * ws2);
-      const glow = stars>=3 ? `filter:drop-shadow(0 0 5px ${brn}) drop-shadow(0 0 10px ${brn});`
-                : stars>=2 ? `filter:drop-shadow(0 0 3px ${brn});` : '';
-      const spinDur = stars>=3 ? '0.5s' : stars>=2 ? '0.75s' : '1.0s';
-      const shH = Math.round(34 * ws2);
-      return `<div style="position:relative;display:inline-block;width:${S}px;height:${S}px;overflow:visible;">
-        <svg width="${S}" height="${S}" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"
-             style="display:block;overflow:visible;${glow}
-                    animation:w-hammer-spin ${spinDur} linear infinite;
-                    transform-origin:0px 0px;">
-          <g>
-            <!-- HAMMER HEAD (at top-right of handle) -->
-            <rect x="22" y="4" width="26" height="16" rx="3" fill="${brn}"/>
-            <rect x="22" y="4" width="26" height="4"  rx="2" fill="white" opacity=".22"/>
-            <rect x="22" y="4" width="26" height="16" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="1"/>
-            ${stars>=2 ? `<!-- face rivets -->
-            <circle cx="26" cy="8"  r="1.8" fill="${gold}"/>
-            <circle cx="26" cy="16" r="1.8" fill="${gold}"/>
-            <circle cx="44" cy="8"  r="1.8" fill="${gold}"/>
-            <circle cx="44" cy="16" r="1.8" fill="${gold}"/>
-            <!-- face rune -->
-            <text x="35" y="15" text-anchor="middle" font-size="7" fill="${gold}" opacity=".6" font-family="serif">ᚱ</text>` : ''}
-            ${stars>=3 ? `<!-- spike on top of head -->
-            <path d="M 31,4 L 35,0 L 39,4" fill="${brn}"/>
-            <line x1="35" y1="0" x2="35" y2="4" stroke="white" stroke-width=".8" opacity=".4"/>` : ''}
-            <!-- SHAFT -->
-            <rect x="8" y="8" width="15" height="36" rx="2" fill="${dark}"/>
-            <rect x="10" y="8" width="4"  height="36" rx="1" fill="rgba(255,255,255,.2)"/>
-            ${stars>=2 ? `<!-- band rings on shaft -->
-            <rect x="7" y="22" width="17" height="3" rx="1" fill="${gold}"/>
-            <rect x="7" y="34" width="17" height="3" rx="1" fill="${gold}"/>` : ''}
-            <!-- POMMEL KNOB -->
-            <circle cx="15" cy="46" r="${Math.round(5*ws2)}" fill="${brn}"/>
-            <circle cx="13" cy="44" r="${Math.round(2*ws2)}" fill="white" opacity=".25"/>
-            <!-- ENERGY AURA at hammer head center -->
-            ${energyAura(35, 12, 8, brn, gold, stars)}
-          </g>
+          <!-- ── BOOK SHADOW ── -->
+          <ellipse cx="30" cy="46" rx="20" ry="3" fill="rgba(0,0,0,.2)"/>
+
+          <!-- ── LEFT COVER ── -->
+          <path d="M 6,14 L 28,10 L 28,42 L 6,46 Z" fill="url(#bkCover${stars})" rx="2"/>
+          <path d="M 6,14 L 28,10 L 28,42 L 6,46 Z" fill="none"
+                stroke="${blue}" stroke-width=".8" opacity=".4"/>
+          <!-- left cover spine decoration -->
+          ${stars>=2 ? `<line x1="10" y1="18" x2="10" y2="42" stroke="${blue}" stroke-width="1" opacity=".35"/>
+          <line x1="13" y1="16" x2="13" y2="44" stroke="rgba(255,255,255,.15)" stroke-width=".5"/>` : ''}
+
+          <!-- ── RIGHT COVER ── -->
+          <path d="M 54,14 L 32,10 L 32,42 L 54,46 Z" fill="url(#bkCover${stars})" rx="2"/>
+          <path d="M 54,14 L 32,10 L 32,42 L 54,46 Z" fill="none"
+                stroke="${blue}" stroke-width=".8" opacity=".4"/>
+          ${stars>=2 ? `<line x1="50" y1="18" x2="50" y2="42" stroke="${blue}" stroke-width="1" opacity=".35"/>` : ''}
+
+          <!-- ── LEFT PAGE ── -->
+          <path d="M 10,16 L 28,12 L 28,40 L 10,44 Z" fill="url(#bkPage${stars})"/>
+          <!-- page lines -->
+          <line x1="13" y1="20" x2="26" y2="18" stroke="${dark}" stroke-width=".6" opacity=".3"/>
+          <line x1="13" y1="24" x2="26" y2="22" stroke="${dark}" stroke-width=".6" opacity=".3"/>
+          <line x1="13" y1="28" x2="26" y2="26" stroke="${dark}" stroke-width=".6" opacity=".3"/>
+          <line x1="13" y1="32" x2="26" y2="30" stroke="${dark}" stroke-width=".6" opacity=".3"/>
+          ${stars>=2 ? `<!-- magic rune glyph on left page -->
+          <text x="19" y="37" text-anchor="middle" font-size="9" fill="${blue}"
+                opacity=".6" font-family="serif">ᚠ</text>` : ''}
+
+          <!-- ── RIGHT PAGE ── -->
+          <path d="M 50,16 L 32,12 L 32,40 L 50,44 Z" fill="url(#bkPage${stars})"/>
+          <line x1="34" y1="18" x2="47" y2="20" stroke="${dark}" stroke-width=".6" opacity=".3"/>
+          <line x1="34" y1="22" x2="47" y2="24" stroke="${dark}" stroke-width=".6" opacity=".3"/>
+          <line x1="34" y1="26" x2="47" y2="28" stroke="${dark}" stroke-width=".6" opacity=".3"/>
+          <line x1="34" y1="30" x2="47" y2="32" stroke="${dark}" stroke-width=".6" opacity=".3"/>
+          ${stars>=3 ? `<text x="41" y="37" text-anchor="middle" font-size="9" fill="${blue}"
+                opacity=".6" font-family="serif">ᚢ</text>` : ''}
+
+          <!-- ── SPINE (center crease) ── -->
+          <path d="M 30,10 L 30,42" stroke="${blue}" stroke-width="2" opacity=".5"/>
+          <path d="M 29,10 L 31,10 L 31,42 L 29,42 Z" fill="${dark}" opacity=".3"/>
+
+          <!-- ── COVER HIGHLIGHT ── -->
+          <path d="M 8,16 L 26,12" stroke="rgba(255,255,255,.3)" stroke-width="1.2"
+                stroke-linecap="round"/>
+          <path d="M 52,16 L 34,12" stroke="rgba(255,255,255,.3)" stroke-width="1.2"
+                stroke-linecap="round"/>
+
+          ${stars>=3 ? `<!-- glow aura under book -->
+          <ellipse cx="30" cy="40" rx="22" ry="4" fill="${blue}" opacity=".12"
+                   style="animation:w-orb-pulse 1.2s ease-in-out infinite;--oc:${blue};"/>` : ''}
+
+          <!-- ── SPARKLE PARTICLES ── -->
+          ${sparkles.map(sp => `
+          <circle cx="${sp.cx}" cy="${sp.cy}" r="${sp.r}" fill="${blue}" opacity=".8"
+                  style="animation:w-sparkle-pop ${sp.dur} ease-in-out infinite;animation-delay:${sp.delay};">
+          </circle>
+          <path d="M ${sp.cx},${sp.cy-sp.r*2} L ${sp.cx+sp.r*.6},${sp.cy-sp.r*.6} L ${sp.cx+sp.r*2},${sp.cy}
+                   L ${sp.cx+sp.r*.6},${sp.cy+sp.r*.6} L ${sp.cx},${sp.cy+sp.r*2}
+                   L ${sp.cx-sp.r*.6},${sp.cy+sp.r*.6} L ${sp.cx-sp.r*2},${sp.cy}
+                   L ${sp.cx-sp.r*.6},${sp.cy-sp.r*.6} Z"
+                fill="${blue}" opacity=".5"
+                style="animation:w-sparkle-pop ${sp.dur} ease-in-out infinite;animation-delay:${sp.delay};"
+                transform="rotate(22.5,${sp.cx},${sp.cy})"/>
+          `).join('')}
         </svg>
       </div>`;
     }
 
-    /* ═══════════════════════════════════════════
+        /* ═══════════════════════════════════════════
+       ROOK — Búa chiến (War Hammer)
+       Spinning: w-hammer-spin, pivot=handle-end
+    ═══════════════════════════════════════════ */
+    if (rank === 'rook') {
+      // Battle axe: large crescent head + thick handle
+      // Pivot at handle BOTTOM (butt), chop down animation
+      const S  = Math.round(22 * ws2);
+      const SH = Math.round(26 * ws2);
+      const brn = wcol, dark = col;
+      const chopDur = stars>=3 ? '0.6s' : stars>=2 ? '0.8s' : '1.1s';
+      const glow = stars>=3
+        ? `filter:drop-shadow(0 0 5px ${brn}) drop-shadow(0 0 10px ${brn});`
+        : stars>=2 ? `filter:drop-shadow(0 0 3px ${brn});` : '';
+      // Axe drawn in viewBox -20 -20 80 90
+      // Handle: (20,15) → (20,72) — butt at bottom-right
+      // Axe head: large crescent on LEFT side of handle top
+      return `<div style="position:relative;display:inline-block;
+                          width:${S}px;height:${SH}px;overflow:visible;
+                          animation:w-axe-chop ${chopDur} ease-in-out infinite;
+                          transform-origin:right bottom;">
+        <svg width="${S}" height="${SH}" viewBox="-20 -20 80 90"
+             xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;${glow}">
+          <defs>
+            <radialGradient id="axeHead${stars}" cx="40%" cy="30%" r="70%">
+              <stop offset="0%"   stop-color="white"  stop-opacity=".4"/>
+              <stop offset="40%"  stop-color="${brn}"  stop-opacity=".9"/>
+              <stop offset="100%" stop-color="${dark}"/>
+            </radialGradient>
+          </defs>
+
+          <!-- ── HANDLE ── -->
+          <rect x="17" y="14" width="${stars>=3?7:6}" height="54" rx="3"
+                fill="${dark}"/>
+          <!-- handle highlight -->
+          <rect x="19" y="14" width="2" height="54" rx="1"
+                fill="rgba(255,255,255,.22)"/>
+          ${stars>=2 ? `<!-- grip wrap bands -->
+          <rect x="16" y="34" width="${stars>=3?9:8}" height="3" rx="1.5" fill="${gold}"/>
+          <rect x="16" y="46" width="${stars>=3?9:8}" height="3" rx="1.5" fill="${gold}"/>
+          <rect x="16" y="58" width="${stars>=3?9:8}" height="3" rx="1.5" fill="${gold}"/>` : ''}
+
+          <!-- ── POMMEL (butt cap, pivot point) ── -->
+          <ellipse cx="20" cy="70" rx="${stars>=3?8:6}" ry="${stars>=3?6:5}"
+                   fill="${brn}"/>
+          <ellipse cx="18" cy="68" rx="3" ry="2" fill="white" opacity=".25"/>
+
+          <!-- ── AXE HEAD — large crescent facing left ── -->
+          <!-- outer arc -->
+          <path d="M 18,14 Q -14,-2 -10,28 Q -8,46 18,44 Z"
+                fill="url(#axeHead${stars})"/>
+          <!-- inner bite (concave edge) -->
+          <path d="M 18,14 Q 2,10 4,29 Q 4,42 18,44 Z"
+                fill="${dark}" opacity=".45"/>
+          <!-- cutting edge highlight -->
+          <path d="M -10,28 Q -12,16 -8,6 Q -2,-2 6,2"
+                stroke="white" stroke-width="2.5" fill="none"
+                stroke-linecap="round" opacity=".6"/>
+          <!-- edge glint -->
+          <path d="M -9,22 Q -11,14 -6,8"
+                stroke="white" stroke-width="1" fill="none" opacity=".4"/>
+          ${stars>=2 ? `<!-- rivets on blade -->
+          <circle cx="2"  cy="16" r="1.5" fill="${gold}"/>
+          <circle cx="-2" cy="26" r="1.5" fill="${gold}"/>
+          <circle cx="2"  cy="36" r="1.5" fill="${gold}"/>
+          <!-- rune on flat of axe -->
+          <text x="10" y="32" text-anchor="middle" font-size="7"
+                fill="${gold}" opacity=".5" font-family="serif">ᚱ</text>` : ''}
+          ${stars>=3 ? `<!-- spike on top of axe head -->
+          <path d="M 14,14 L 18,4 L 22,14" fill="${brn}"/>
+          <line x1="18" y1="4" x2="18" y2="14" stroke="white" stroke-width=".8" opacity=".4"/>
+          <!-- second smaller blade on right (double axe) -->
+          <path d="M 22,16 Q 40,10 38,28 Q 36,40 22,42 Z"
+                fill="${brn}" opacity=".7"/>
+          <path d="M 22,16 Q 28,14 28,28 Q 28,38 22,42 Z"
+                fill="${dark}" opacity=".35"/>
+          <path d="M 38,28 Q 40,20 36,14"
+                stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".5"/>` : ''}
+
+          <!-- ── ENERGY AURA at axe head ── -->
+          ${stars>=1 ? `<circle cx="4" cy="28" r="12" stroke="${brn}" stroke-width="1.5"
+                  fill="none" opacity=".4" style="animation:w-orb-elec ${chopDur} ease-in-out infinite;"/>` : ''}
+          ${stars>=2 ? `<circle cx="4" cy="28" r="20" stroke="${brn}" stroke-width="1"
+                  fill="none" opacity=".25" style="animation:w-orb-elec ${chopDur} ease-in-out infinite;animation-delay:-.3s;animation-direction:reverse;"/>` : ''}
+          ${stars>=3 ? `<!-- impact sparks (appear on chop) -->
+          <line x1="-12" y1="28" x2="-18" y2="22" stroke="${gold}" stroke-width="1.5" opacity=".7"/>
+          <line x1="-13" y1="32" x2="-20" y2="32" stroke="${gold}" stroke-width="1.2" opacity=".6"/>
+          <line x1="-12" y1="36" x2="-18" y2="42" stroke="${gold}" stroke-width="1.5" opacity=".7"/>` : ''}
+        </svg>
+      </div>`;
+    }
+
+        /* ═══════════════════════════════════════════
        QUEEN — Gậy phép (Magic Staff)
        Aura spinning: w-staff-aura
        Fixed: orb properly centered on shaft top
     ═══════════════════════════════════════════ */
     if (rank === 'queen') {
-      const S = Math.round(20 * ws2);
+      // Magic orb with element icons orbiting
+      const S   = Math.round(22 * ws2);
+      const SH  = Math.round(22 * ws2);
       const pur = wcol, dark = col;
-      const glow = stars>=3 ? `filter:drop-shadow(0 0 6px ${pur}) drop-shadow(0 0 14px ${pur});`
-                : stars>=2 ? `filter:drop-shadow(0 0 4px ${pur});` : '';
-      const auraDur = stars>=3 ? '0.5s' : stars>=2 ? '0.7s' : '1.0s';
-      // All drawn in SVG 0x0: shaft from (25,60) up to (25,8), orb centered at (25,8)
-      const shW = Math.round(3 * ws2);
-      const orbR = Math.round(9 * ws2);
-      return `<div style="position:relative;display:inline-block;width:${S}px;height:${S}px;overflow:visible;">
-        <svg width="${S}" height="${S}" viewBox="0 0 50 58" xmlns="http://www.w3.org/2000/svg"
-             style="display:block;overflow:visible;${glow}">
-          <g>
-            <!-- SHAFT (drawn first, goes behind orb) -->
-            <rect x="${25-shW/2}" y="${8+orbR}" width="${shW}" height="${50-(8+orbR)}" rx="1.5"
-                  fill="url(#qg${stars})" />
-            <defs>
-              <linearGradient id="qg${stars}" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%"   stop-color="${pur}"/>
-                <stop offset="50%"  stop-color="${dark}"/>
-                <stop offset="100%" stop-color="${pur}"/>
-              </linearGradient>
-            </defs>
-            <rect x="${25-shW/2+1}" y="${8+orbR}" width="${Math.max(1,shW-2)}" height="${50-(8+orbR)}"
-                  rx=".8" fill="rgba(255,255,255,.2)"/>
-            ${stars>=2 ? `<!-- shaft accent nodes -->
-            <circle cx="25" cy="${8+orbR+Math.round((50-8-orbR)*.33)}" r="${Math.round(2.5*ws2)}" fill="${gold}"/>
-            <circle cx="25" cy="${8+orbR+Math.round((50-8-orbR)*.66)}" r="${Math.round(2*ws2)}" fill="${gold}" opacity=".8"/>` : ''}
-            <!-- BUTT FERRULE -->
-            <rect x="${25-Math.round(3*ws2)}" y="${48}" width="${Math.round(6*ws2)}" height="${Math.round(4*ws2)}"
-                  rx="1" fill="${gold}"/>
-            <!-- ORB — perfectly centered at (25,8) on top of shaft -->
-            <circle cx="25" cy="8" r="${orbR}" fill="url(#orbg${stars})"/>
-            <defs>
-              <radialGradient id="orbg${stars}" cx="32%" cy="30%" r="60%">
-                <stop offset="0%"   stop-color="white" stop-opacity=".9"/>
-                <stop offset="40%"  stop-color="${pur}" stop-opacity=".9"/>
-                <stop offset="100%" stop-color="${dark}" stop-opacity="1"/>
-              </radialGradient>
-            </defs>
-            <circle cx="25" cy="8" r="${orbR}" fill="none" stroke="${pur}" stroke-width="1.5" opacity=".5"/>
-            <!-- orb inner highlight -->
-            <circle cx="${25-Math.round(orbR*.25)}" cy="${8-Math.round(orbR*.25)}" r="${Math.round(orbR*.3)}"
-                    fill="white" opacity=".3"/>
-            ${stars>=2 ? `<!-- orbiting gem -->
-            <circle cx="25" cy="8" r="1.8" fill="${gold}" opacity=".9"
-                    style="animation:worb-spin ${auraDur} linear infinite;transform-origin:0 -${orbR+3}px;"/>` : ''}
-            ${stars>=3 ? `<!-- crown spikes on orb -->
-            <path d="M ${25-orbR},8 L ${25-orbR-3},4 L ${25-orbR+1},8" fill="${pur}" opacity=".7"/>
-            <path d="M ${25+orbR},8 L ${25+orbR+3},4 L ${25+orbR-1},8" fill="${pur}" opacity=".7"/>` : ''}
-            <!-- AURA RING 1 -->
-            <circle cx="25" cy="8" r="${orbR+5}" stroke="${pur}" stroke-width="${stars>=3?2:1.5}" fill="none"
-                    opacity=".55" style="animation:w-orb-elec ${auraDur} ease-in-out infinite;"/>
-            ${stars>=2 ? `<circle cx="25" cy="8" r="${orbR+11}" stroke="${pur}" stroke-width="1" fill="none"
-                    opacity=".35" style="animation:w-orb-elec ${auraDur} ease-in-out infinite;animation-direction:reverse;animation-delay:-.35s;"/>` : ''}
-            ${stars>=3 ? `<circle cx="25" cy="8" r="${orbR+18}" stroke="${pur}" stroke-width=".8" fill="none"
-                    opacity=".2" style="animation:w-spark-ring .6s linear infinite;"/>
-            <!-- sparkle particles -->
-            ${[45,135,225,315].map((deg,i) => {
-              const a = deg*Math.PI/180, r2 = orbR+7;
-              const px_ = (25+Math.cos(a)*r2).toFixed(1), py_ = (8+Math.sin(a)*r2).toFixed(1);
-              return `<circle cx="${px_}" cy="${py_}" r="1.8" fill="${gold}"
-                        style="animation:wsparkle .${4+i}s ease-in-out infinite;animation-delay:-${(i*.15).toFixed(2)}s;"/>`;
-            }).join('')}` : ''}
-          </g>
+      const orbDur = stars>=3 ? '0.6s' : stars>=2 ? '0.85s' : '1.1s';
+      const glow = stars>=3
+        ? `filter:drop-shadow(0 0 6px ${pur}) drop-shadow(0 0 14px ${pur});`
+        : stars>=2 ? `filter:drop-shadow(0 0 4px ${pur});` : '';
+      // Orb centered at (30,30) in viewBox -20 -20 100 100
+      const orbR = Math.round(14 * ws2);
+      const elems = stars>=2 ? ['💧','🔥','⚡',...(stars>=3?['🌀','✨']:[])] : [];
+      const elemDurs = ['2.4s','2.1s','1.8s','2.7s','1.5s'];
+      const elemDelays = ['0s','-0.7s','-1.4s','-0.3s','-1.1s'];
+      const elemAngles = [0,72,144,216,288];
+      const orbitR = orbR + (stars>=3 ? 22 : 18);
+      return `<div style="position:relative;display:inline-block;
+                          width:${S}px;height:${SH}px;overflow:visible;">
+        <svg width="${S}" height="${SH}" viewBox="-20 -20 100 100"
+             xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;${glow}">
+          <defs>
+            <radialGradient id="orbFill${stars}" cx="35%" cy="30%" r="65%">
+              <stop offset="0%"   stop-color="white"  stop-opacity=".9"/>
+              <stop offset="35%"  stop-color="${pur}"  stop-opacity=".9"/>
+              <stop offset="100%" stop-color="${dark}"/>
+            </radialGradient>
+          </defs>
+
+          <!-- ── OUTER GLOW RINGS ── -->
+          <circle cx="30" cy="30" r="${orbR+10}" stroke="${pur}" stroke-width="1.5"
+                  fill="none" opacity=".35"
+                  style="animation:w-orb-elec ${orbDur} ease-in-out infinite;"/>
+          ${stars>=2 ? `<circle cx="30" cy="30" r="${orbR+18}" stroke="${pur}" stroke-width="1"
+                  fill="none" opacity=".2"
+                  style="animation:w-orb-elec ${orbDur} ease-in-out infinite;animation-direction:reverse;animation-delay:-.3s;"/>` : ''}
+          ${stars>=3 ? `<circle cx="30" cy="30" r="${orbR+28}" stroke="${pur}" stroke-width=".8"
+                  fill="none" opacity=".12"
+                  style="animation:w-spark-ring 1.2s linear infinite;"/>` : ''}
+
+          <!-- ── MAIN ORB ── -->
+          <circle cx="30" cy="30" r="${orbR}" fill="url(#orbFill${stars})"
+                  style="animation:w-orb-pulse ${orbDur} ease-in-out infinite;--oc:${pur};"/>
+          <!-- inner facet -->
+          <circle cx="${30-Math.round(orbR*.3)}" cy="${30-Math.round(orbR*.3)}"
+                  r="${Math.round(orbR*.35)}" fill="white" opacity=".22"/>
+          <!-- equator ring -->
+          <ellipse cx="30" cy="30" rx="${orbR}" ry="${Math.round(orbR*.35)}"
+                   fill="none" stroke="${pur}" stroke-width="1" opacity=".4"/>
+          <!-- vertical ring -->
+          <ellipse cx="30" cy="30" rx="${Math.round(orbR*.35)}" ry="${orbR}"
+                   fill="none" stroke="${pur}" stroke-width=".8" opacity=".3"/>
+
+          <!-- ── ELEMENT ICONS ORBITING ── -->
+          ${elems.map((em, i) => {
+            const a0 = elemAngles[i] * Math.PI / 180;
+            // Position the foreignObject at orbit radius, animating via CSS
+            const fx = (30 + Math.cos(a0)*orbitR - 8).toFixed(1);
+            const fy = (30 + Math.sin(a0)*orbitR - 8).toFixed(1);
+            const sz = stars>=3 ? (i===0?13:12) : 11;
+            return `<foreignObject x="${fx}" y="${fy}" width="${sz+4}" height="${sz+4}"
+                      style="animation:w-elem-orbit ${elemDurs[i]} linear infinite;
+                             animation-delay:${elemDelays[i]};
+                             transform-origin:${(8-parseFloat(fx)+30).toFixed(0)}px ${(8-parseFloat(fy)+30).toFixed(0)}px;
+                             --start-angle:${elemAngles[i]}deg;
+                             --orbit-r:${orbitR}px;">
+                      <span xmlns="http://www.w3.org/1999/xhtml"
+                            style="font-size:${sz}px;display:block;filter:drop-shadow(0 0 3px ${pur});">${em}</span>
+                    </foreignObject>`;
+          }).join('')}
         </svg>
       </div>`;
     }
 
-    /* ═══════════════════════════════════════════
+        /* ═══════════════════════════════════════════
        KING — Đại kiếm (Greatsword)
        Slash: w-sword-slash  pivot=pommel
     ═══════════════════════════════════════════ */
     if (rank === 'king') {
-      const S = Math.round(22 * ws2);
+      // Greatsword: tip UP, pommel DOWN, whole SVG rotates from pommel
+      // Wild slash animation — wide angle sweeps, brightness flashes on impact
+      const S   = Math.round(18 * ws2);
+      const SH  = Math.round(28 * ws2);
       const sil = wcol, yel = '#ffe060', dark = col;
-      const bW = Math.round(8 * ws2);  // blade width
-      const glow = stars>=3 ? `filter:drop-shadow(0 0 6px ${yel}) drop-shadow(0 0 14px ${gold});`
-                : stars>=2 ? `filter:drop-shadow(0 0 4px ${gold});` : '';
-      const slashDur = stars>=3 ? '0.5s' : stars>=2 ? '0.7s' : '0.9s';
-      // Drawn vertically: tip at top (25,2), pommel at bottom (25,70)
-      const gH = Math.round(bW * .55);   // crossguard half-width extra each side
-      const gripL = Math.round(12 * ws2);
-      const pommR = Math.round(4 * ws2);
-      return `<div style="position:relative;display:inline-block;width:${S}px;height:${Math.round(S*1.4)}px;overflow:visible;">
-        <svg width="${S}" height="${Math.round(S*1.4)}" viewBox="-25 0 50 72" xmlns="http://www.w3.org/2000/svg"
-             style="display:block;overflow:visible;${glow}
-                    animation:w-sword-slash ${slashDur} ease-in-out infinite;
-                    transform-origin:0px 0px;">
-          <g transform="translate(-25,0)">
-            <!-- BLADE — tapered from base to needle tip -->
-            <path d="M ${25-bW/2},48 L 25,2 L ${25+bW/2},48 Z" fill="${sil}"/>
-            <!-- blade fuller -->
-            <rect x="${25-1}" y="6" width="2" height="38" rx="1" fill="rgba(0,0,0,.3)"/>
-            <!-- edge light catch left -->
-            <path d="M ${25-bW/2+1},46 L 25,4" stroke="white" stroke-width="1" opacity=".4"/>
-            <!-- tip glint -->
-            <circle cx="25" cy="2" r="2" fill="white" opacity=".9"/>
-            ${stars>=2 ? `<!-- blade etchings -->
-            <line x1="${25-bW/4}" y1="14" x2="${25+bW/4}" y2="14" stroke="${gold}" stroke-width=".9" opacity=".6"/>
-            <line x1="${25-bW/3}" y1="24" x2="${25+bW/3}" y2="24" stroke="${gold}" stroke-width=".9" opacity=".5"/>` : ''}
-            ${stars>=3 ? `<!-- rune glyph -->
-            <text x="25" y="36" text-anchor="middle" font-size="5" fill="${gold}" opacity=".7" font-family="serif">ᛞ</text>
-            <!-- blood channel glow -->
-            <rect x="${25-1}" y="8" width="2" height="30" rx="1" fill="${yel}" opacity=".3"/>` : ''}
-            <!-- CROSSGUARD -->
-            <rect x="${25-bW/2-gH}" y="46" width="${bW+gH*2}" height="${Math.round(3*ws2)}" rx="2" fill="${gold}"/>
-            <rect x="${25-bW/2-gH}" y="46" width="${bW+gH*2}" height="2" rx="1" fill="white" opacity=".3"/>
-            ${stars>=2 ? `<!-- guard end gems -->
-            <circle cx="${25-bW/2-gH+2}" cy="${47+Math.round(1.5*ws2)}" r="${Math.round(2*ws2)}" fill="${sil}"/>
-            <circle cx="${25+bW/2+gH-2}" cy="${47+Math.round(1.5*ws2)}" r="${Math.round(2*ws2)}" fill="${sil}"/>` : ''}
-            <!-- GRIP -->
-            <rect x="${25-bW/4}" y="${49+Math.round(1.5*ws2)}" width="${bW/2}" height="${gripL}" rx="2" fill="${dark}"/>
-            <!-- wrap bands -->
-            ${[.2,.4,.6,.8].map(f=>`<rect x="${25-bW/4}" y="${49+Math.round(1.5*ws2)+Math.round(gripL*f)}" width="${bW/2}" height="1.5" rx=".5" fill="${gold}" opacity=".8"/>`).join('')}
-            <!-- POMMEL -->
-            <ellipse cx="25" cy="${49+Math.round(1.5*ws2)+gripL+pommR}" rx="${bW/2+pommR*.4}" ry="${pommR}" fill="${gold}"/>
-            <ellipse cx="25" cy="${49+Math.round(1.5*ws2)+gripL+pommR}" rx="${bW/4}" ry="${pommR*.5}" fill="${dark}" opacity=".35"/>
-            ${stars>=3 ? `<circle cx="25" cy="${49+Math.round(1.5*ws2)+gripL+pommR}" r="${pommR*.35}" fill="${yel}"/>` : ''}
-            <!-- ENERGY AURA around blade tip -->
-            ${energyAura(25, 8, 5, sil, yel, stars)}
-            ${stars>=3 ? `<!-- slash trail lines -->
-            <line x1="${25+bW/2+3}" y1="8"  x2="${25+bW/2+9}"  y2="14" stroke="${yel}" stroke-width="1.2" opacity=".6"/>
-            <line x1="${25+bW/2+2}" y1="16" x2="${25+bW/2+8}"  y2="22" stroke="${yel}" stroke-width="1"   opacity=".5"/>
-            <line x1="${25+bW/2+1}" y1="24" x2="${25+bW/2+6}"  y2="30" stroke="${yel}" stroke-width=".8"  opacity=".4"/>` : ''}
-          </g>
+      const slashDur = stars>=3 ? '1.0s' : stars>=2 ? '1.2s' : '1.5s';
+      const glow = stars>=3
+        ? `filter:drop-shadow(0 0 6px ${yel}) drop-shadow(0 0 14px ${gold}) drop-shadow(0 0 2px white);`
+        : stars>=2 ? `filter:drop-shadow(0 0 4px ${gold});` : '';
+      // Sword in viewBox -30 -10 60 90
+      // Blade tip at (0,2), pommel at (0,74) — centered on X axis
+      // Whole SVG pivots from pommel = transform-origin center bottom
+      const bW  = Math.round(6 * ws2);   // blade width at base
+      const grdH = Math.round(3 * ws2);   // crossguard height
+      const gripH = Math.round(11 * ws2);
+      const pomH  = Math.round(5 * ws2);
+      const guardOff = 44; // y of crossguard
+      return `<div style="position:relative;display:inline-block;
+                          width:${S}px;height:${SH}px;overflow:visible;
+                          animation:w-sword-slash ${slashDur} ease-in-out infinite;
+                          transform-origin:50% 100%;">
+        <svg width="${S}" height="${SH}" viewBox="-30 -10 60 90"
+             xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;${glow}">
+          <defs>
+            <linearGradient id="bladeG${stars}" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"   stop-color="white" stop-opacity=".95"/>
+              <stop offset="30%"  stop-color="${sil}" stop-opacity=".9"/>
+              <stop offset="70%"  stop-color="${sil}" stop-opacity=".8"/>
+              <stop offset="100%" stop-color="${dark}"/>
+            </linearGradient>
+            <!-- Crescent trail gradients for slash effect -->
+            <radialGradient id="trail1${stars}" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="${yel}" stop-opacity=".7"/>
+              <stop offset="100%" stop-color="${yel}" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="trail2${stars}" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="white" stop-opacity=".6"/>
+              <stop offset="100%" stop-color="${yel}" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <!-- ── SLASH TRAIL CRESCENTS (behind blade, sync with keyframes) ── -->
+          ${stars>=2 ? `<!-- Trail 1: right-diagonal slash sweep -->
+          <path d="M -20,-8 Q 10,-18 25,5 Q 15,0 5,8 Q -8,0 -20,-8 Z"
+                fill="url(#trail1${stars})" opacity="0"
+                style="animation:w-trail-1 ${slashDur} ease-in-out infinite;"/>` : ''}
+          ${stars>=3 ? `<!-- Trail 2: left-diagonal slash sweep -->
+          <path d="M 20,-6 Q -12,-16 -24,6 Q -14,2 -4,10 Q 8,2 20,-6 Z"
+                fill="url(#trail2${stars})" opacity="0"
+                style="animation:w-trail-2 ${slashDur} ease-in-out infinite;"/>
+          <!-- Trail 3: upward power slash -->
+          <path d="M -18,20 Q 0,-14 18,20 Q 8,12 0,8 Q -8,12 -18,20 Z"
+                fill="url(#trail1${stars})" opacity="0"
+                style="animation:w-trail-3 ${slashDur} ease-in-out infinite;"/>` : ''}
+
+          <!-- ── BLADE ── tapers from base to needle tip -->
+          <path d="M ${-bW/2},${guardOff} L 0,2 L ${bW/2},${guardOff} Z"
+                fill="url(#bladeG${stars})"/>
+          <!-- fuller groove (central ridge) -->
+          <rect x="-1" y="6" width="2" height="${guardOff-10}" rx="1"
+                fill="rgba(0,0,0,.25)"/>
+          <!-- left edge highlight -->
+          <path d="M ${-bW/2+1},${guardOff-2} L -1,4"
+                stroke="white" stroke-width=".9" opacity=".35"/>
+          <!-- tip glint -->
+          <circle cx="0" cy="2" r="2.2" fill="white" opacity=".9"/>
+
+          ${stars>=2 ? `<!-- blade etchings / runes -->
+          <line x1="${-bW/4}" y1="14" x2="${bW/4}" y2="14"
+                stroke="${gold}" stroke-width=".9" opacity=".65"/>
+          <line x1="${-bW/3}" y1="24" x2="${bW/3}" y2="24"
+                stroke="${gold}" stroke-width=".9" opacity=".55"/>` : ''}
+          ${stars>=3 ? `<!-- rune glyph mid-blade -->
+          <text x="0" y="36" text-anchor="middle" font-size="5"
+                fill="${yel}" opacity=".75" font-family="serif">ᛞ</text>
+          <!-- blood channel: golden glow line -->
+          <rect x="-.8" y="8" width="1.6" height="28" rx=".8" fill="${yel}" opacity=".3"/>
+          <!-- tip energy aura -->
+          <circle cx="0" cy="4" r="6" stroke="${yel}" stroke-width="1.5" fill="none"
+                  opacity=".4" style="animation:w-orb-elec ${(parseFloat(slashDur)*.7).toFixed(2)}s ease-in-out infinite;"/>` : ''}
+
+          <!-- ── CROSSGUARD ── -->
+          <rect x="${-bW/2-8}" y="${guardOff}" width="${bW+16}" height="${grdH}" rx="2"
+                fill="${gold}"/>
+          <rect x="${-bW/2-8}" y="${guardOff}" width="${bW+16}" height="2" rx="1"
+                fill="white" opacity=".35"/>
+          ${stars>=2 ? `<!-- guard end gems -->
+          <circle cx="${-bW/2-6}" cy="${guardOff+grdH/2}" r="${Math.round(2.2*ws2)}" fill="${sil}"/>
+          <circle cx="${bW/2+6}"  cy="${guardOff+grdH/2}" r="${Math.round(2.2*ws2)}" fill="${sil}"/>
+          <circle cx="${-bW/2-6}" cy="${guardOff+grdH/2}" r="${Math.round(1*ws2)}"   fill="white" opacity=".5"/>` : ''}
+
+          <!-- ── GRIP ── -->
+          <rect x="${-bW/4}" y="${guardOff+grdH}" width="${bW/2}" height="${gripH}" rx="2"
+                fill="${dark}"/>
+          <!-- wrap bands -->
+          ${[.2,.4,.6,.8].map(f =>
+            `<rect x="${-bW/4}" y="${guardOff+grdH+Math.round(gripH*f)}" width="${bW/2}" height="1.5" rx=".5" fill="${gold}" opacity=".8"/>`
+          ).join('')}
+
+          <!-- ── POMMEL (pivot point, bottom) ── -->
+          <ellipse cx="0" cy="${guardOff+grdH+gripH+pomH}" rx="${bW/2+pomH*.5}" ry="${pomH}"
+                   fill="${gold}"/>
+          <ellipse cx="0" cy="${guardOff+grdH+gripH+pomH}" rx="${bW/4}" ry="${pomH*.5}"
+                   fill="${dark}" opacity=".3"/>
+          ${stars>=3 ? `<circle cx="0" cy="${guardOff+grdH+gripH+pomH}" r="${pomH*.35}" fill="${yel}"/>` : ''}
         </svg>
       </div>`;
     }
 
-    // Fallback
+        // Fallback
     return `<div style="${baseStyle}width:24px;height:36px;overflow:visible;">
       <svg width="24" height="36" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"
            style="display:block;overflow:visible;">
