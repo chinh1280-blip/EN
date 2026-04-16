@@ -1739,20 +1739,20 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <button class="sn-rte-btn" onclick="document.getElementById('aw-note').focus();rteCmd('underline')"><u>U</u></button>
             <div class="sn-rte-sep"></div>
             <span style="font-size:10px;color:var(--muted);margin-right:2px;">Màu:</span>
-            <div class="sn-rte-color" style="background:#e03030;" onmousedown="event.preventDefault();rteClr('#e03030')"></div>
-            <div class="sn-rte-color" style="background:#1a7ad4;" onmousedown="event.preventDefault();rteClr('#1a7ad4')"></div>
-            <div class="sn-rte-color" style="background:#16a34a;" onmousedown="event.preventDefault();rteClr('#16a34a')"></div>
-            <div class="sn-rte-color" style="background:#d97706;" onmousedown="event.preventDefault();rteClr('#d97706')"></div>
-            <div class="sn-rte-color" style="background:#7c3aed;" onmousedown="event.preventDefault();rteClr('#7c3aed')"></div>
+            <div class="sn-rte-color" style="background:#e03030;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#e03030')"></div>
+            <div class="sn-rte-color" style="background:#1a7ad4;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#1a7ad4')"></div>
+            <div class="sn-rte-color" style="background:#16a34a;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#16a34a')"></div>
+            <div class="sn-rte-color" style="background:#d97706;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#d97706')"></div>
+            <div class="sn-rte-color" style="background:#7c3aed;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#7c3aed')"></div>
             <div class="sn-rte-sep"></div>
             <span style="font-size:10px;color:var(--muted);margin-right:2px;">Nền:</span>
-            <div class="sn-rte-color" style="background:#fef08a;" onmousedown="event.preventDefault();rteHl('#fef08a')"></div>
-            <div class="sn-rte-color" style="background:#bbf7d0;" onmousedown="event.preventDefault();rteHl('#bbf7d0')"></div>
-            <div class="sn-rte-color" style="background:#fecaca;" onmousedown="event.preventDefault();rteHl('#fecaca')"></div>
+            <div class="sn-rte-color" style="background:#fef08a;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#fef08a')"></div>
+            <div class="sn-rte-color" style="background:#bbf7d0;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#bbf7d0')"></div>
+            <div class="sn-rte-color" style="background:#fecaca;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#fecaca')"></div>
             <div class="sn-rte-sep"></div>
             <button class="sn-rte-btn" onmousedown="event.preventDefault();rteCmd('removeFormat')" style="font-weight:400;font-size:11px;">✕</button>
           </div>
-          <div class="sn-note-editor" id="aw-note" contenteditable="true"
+          <div class="sn-note-editor" id="aw-note" contenteditable="true" onmouseup="rteSaveSelection()" onkeyup="rteSaveSelection()"
                data-placeholder="Ghi chú ngữ pháp, cách dùng, ví dụ mở rộng..."
                onkeydown="rteKey(event)"></div>
         </div>
@@ -1805,20 +1805,20 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <button class="sn-rte-btn" onclick="document.getElementById('ew-note').focus();rteCmd('underline')"><u>U</u></button>
             <div class="sn-rte-sep"></div>
             <span style="font-size:10px;color:var(--muted);margin-right:2px;">Màu:</span>
-            <div class="sn-rte-color" style="background:#e03030;" onmousedown="event.preventDefault();rteClr('#e03030')"></div>
-            <div class="sn-rte-color" style="background:#1a7ad4;" onmousedown="event.preventDefault();rteClr('#1a7ad4')"></div>
-            <div class="sn-rte-color" style="background:#16a34a;" onmousedown="event.preventDefault();rteClr('#16a34a')"></div>
-            <div class="sn-rte-color" style="background:#d97706;" onmousedown="event.preventDefault();rteClr('#d97706')"></div>
-            <div class="sn-rte-color" style="background:#7c3aed;" onmousedown="event.preventDefault();rteClr('#7c3aed')"></div>
+            <div class="sn-rte-color" style="background:#e03030;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#e03030')"></div>
+            <div class="sn-rte-color" style="background:#1a7ad4;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#1a7ad4')"></div>
+            <div class="sn-rte-color" style="background:#16a34a;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#16a34a')"></div>
+            <div class="sn-rte-color" style="background:#d97706;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#d97706')"></div>
+            <div class="sn-rte-color" style="background:#7c3aed;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#7c3aed')"></div>
             <div class="sn-rte-sep"></div>
             <span style="font-size:10px;color:var(--muted);margin-right:2px;">Nền:</span>
-            <div class="sn-rte-color" style="background:#fef08a;" onmousedown="event.preventDefault();rteHl('#fef08a')"></div>
-            <div class="sn-rte-color" style="background:#bbf7d0;" onmousedown="event.preventDefault();rteHl('#bbf7d0')"></div>
-            <div class="sn-rte-color" style="background:#fecaca;" onmousedown="event.preventDefault();rteHl('#fecaca')"></div>
+            <div class="sn-rte-color" style="background:#fef08a;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#fef08a')"></div>
+            <div class="sn-rte-color" style="background:#bbf7d0;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#bbf7d0')"></div>
+            <div class="sn-rte-color" style="background:#fecaca;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#fecaca')"></div>
             <div class="sn-rte-sep"></div>
             <button class="sn-rte-btn" onmousedown="event.preventDefault();rteCmd('removeFormat')" style="font-weight:400;font-size:11px;">✕</button>
           </div>
-          <div class="sn-note-editor" id="ew-note" contenteditable="true"
+          <div class="sn-note-editor" id="ew-note" contenteditable="true" onmouseup="rteSaveSelection()" onkeyup="rteSaveSelection()"
                data-placeholder="Ghi chú ngữ pháp, cách dùng..."
                onkeydown="rteKey(event)"></div>
         </div>
@@ -2211,24 +2211,24 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
                 <button class="sn-rte-btn" onclick="rteCmd('underline')" title="Gạch chân (Ctrl+U)"><u>U</u></button>
                 <div class="sn-rte-sep"></div>
                 <span style="font-size:10px;color:var(--muted);margin-right:2px;">Màu:</span>
-                <div class="sn-rte-color" style="background:#e03030;" onclick="rteClr('#e03030')" title="Đỏ"></div>
-                <div class="sn-rte-color" style="background:#1a7ad4;" onclick="rteClr('#1a7ad4')" title="Xanh dương"></div>
-                <div class="sn-rte-color" style="background:#16a34a;" onclick="rteClr('#16a34a')" title="Xanh lá"></div>
-                <div class="sn-rte-color" style="background:#d97706;" onclick="rteClr('#d97706')" title="Cam"></div>
-                <div class="sn-rte-color" style="background:#7c3aed;" onclick="rteClr('#7c3aed')" title="Tím"></div>
+                <div class="sn-rte-color" style="background:#e03030;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#e03030')" title="Đỏ"></div>
+                <div class="sn-rte-color" style="background:#1a7ad4;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#1a7ad4')" title="Xanh dương"></div>
+                <div class="sn-rte-color" style="background:#16a34a;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#16a34a')" title="Xanh lá"></div>
+                <div class="sn-rte-color" style="background:#d97706;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#d97706')" title="Cam"></div>
+                <div class="sn-rte-color" style="background:#7c3aed;" onmousedown="event.preventDefault();rteSaveSelection();rteClr('#7c3aed')" title="Tím"></div>
                 <div class="sn-rte-sep"></div>
                 <span style="font-size:10px;color:var(--muted);margin-right:2px;">Nền:</span>
-                <div class="sn-rte-color" style="background:#fef08a;" onclick="rteHl('#fef08a')" title="Vàng"></div>
-                <div class="sn-rte-color" style="background:#bbf7d0;" onclick="rteHl('#bbf7d0')" title="Xanh nhạt"></div>
-                <div class="sn-rte-color" style="background:#fecaca;" onclick="rteHl('#fecaca')" title="Hồng"></div>
-                <div class="sn-rte-color" style="background:#e0e7ff;" onclick="rteHl('#e0e7ff')" title="Tím nhạt"></div>
+                <div class="sn-rte-color" style="background:#fef08a;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#fef08a')" title="Vàng"></div>
+                <div class="sn-rte-color" style="background:#bbf7d0;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#bbf7d0')" title="Xanh nhạt"></div>
+                <div class="sn-rte-color" style="background:#fecaca;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#fecaca')" title="Hồng"></div>
+                <div class="sn-rte-color" style="background:#e0e7ff;" onmousedown="event.preventDefault();rteSaveSelection();rteHl('#e0e7ff')" title="Tím nhạt"></div>
                 <div class="sn-rte-sep"></div>
                 <button class="sn-rte-btn" onclick="rteCmd('removeFormat')" title="Xoá định dạng" style="font-weight:400;font-size:11px;">✕ Xoá</button>
               </div>
               <div class="sn-note-editor" id="sn-note-editor"
                    contenteditable="true"
                    data-placeholder="Ghi chú ngữ pháp... Bôi đen text rồi bấm nút màu/đậm để định dạng"
-                   onkeydown="rteKey(event)"></div>
+                   onmouseup="rteSaveSelection()" onkeyup="rteSaveSelection()" onkeydown="rteKey(event)"></div>
             </div>
           </div>
           <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
@@ -7203,14 +7203,30 @@ function setSentType(t,btn){
 }
 // RTE helpers (rich text editor)
 function rteCmd(cmd){ document.execCommand(cmd,false,null); }
+// Saved selection for RTE color operations
+let _rteSavedSel = null;
+function rteSaveSelection() {
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) _rteSavedSel = sel.getRangeAt(0).cloneRange();
+}
+function rteRestoreSelection() {
+  if (!_rteSavedSel) return false;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(_rteSavedSel);
+  return true;
+}
 function rteClr(color){
-  // onmousedown+preventDefault keeps selection alive when clicking swatch
+  rteRestoreSelection();
   document.execCommand('styleWithCSS', false, true);
   document.execCommand('foreColor', false, color);
+  _rteSavedSel = null;
 }
 function rteHl(color){
+  rteRestoreSelection();
   document.execCommand('styleWithCSS', false, true);
   document.execCommand('hiliteColor', false, color);
+  _rteSavedSel = null;
 }
 function rteKey(e){ if(e.ctrlKey||e.metaKey){ if(e.key==='b'){e.preventDefault();rteCmd('bold');} if(e.key==='i'){e.preventDefault();rteCmd('italic');} if(e.key==='u'){e.preventDefault();rteCmd('underline');} } }
 function rteGet()  { return document.getElementById('sn-note-editor')?.innerHTML||''; }
@@ -8713,18 +8729,22 @@ function deleteWord(id){
   toast('Đã xóa','');
 }
 function openEditWord(id) {
-  const w = words.find(x=>x.id===id); if(!w) return;
-  populateTopicSelects();
-  document.getElementById('ew-id').value  = id;
-  document.getElementById('ew-w').value   = w.word;
-  document.getElementById('ew-p').value   = w.phonetic||'';
-  document.getElementById('ew-pos').value = w.partOfSpeech||'';
-  document.getElementById('ew-m').value   = w.meaning;
-  document.getElementById('ew-e').value   = w.example||'';
-  document.getElementById('ew-t').value   = w.topic||'general';
-  document.getElementById('ew-l').value   = w.level||3;
+  const w = words.find(x=>x.id===id);
+  if(!w){ toast('Không tìm thấy từ!','bad'); return; }
+  try { populateTopicSelects(); } catch(e){ console.warn('populateTopicSelects error:',e); }
+  const set = (elId, val) => { const el=document.getElementById(elId); if(el) el.value=val; };
+  set('ew-id',  id);
+  set('ew-w',   w.word);
+  set('ew-p',   w.phonetic||'');
+  set('ew-pos', w.partOfSpeech||'');
+  set('ew-m',   w.meaning);
+  set('ew-e',   w.example||'');
+  set('ew-t',   w.topic||'general');
+  set('ew-l',   w.level||3);
   const ewNote = document.getElementById('ew-note');
-  if (ewNote) ewNote.innerHTML = w.note||'';
+  if(ewNote) ewNote.innerHTML = w.note||'';
+  const modal = document.getElementById('editModal');
+  if(!modal){ toast('Lỗi: không tìm thấy modal!','bad'); return; }
   openModal('editModal');
 }
 >
