@@ -3603,6 +3603,15 @@ function buildWarriorEl(rank, stars) {
       @keyframes wsparkle{0%,100%{opacity:.5;transform:scale(.8)}50%{opacity:1;transform:scale(1.3)}}
       @keyframes wglow-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4)}}
       @keyframes wsword-glow{0%,100%{box-shadow:0 0 4px var(--wc),0 0 8px var(--wc)}50%{box-shadow:0 0 8px var(--wc),0 0 20px var(--wc),0 0 36px var(--wc)}}
+      /* ── Weapon signature animations ── */
+      @keyframes w-mace-hit{0%{transform:rotate(-30deg) translateY(0)}30%{transform:rotate(20deg) translateY(-3px)}55%{transform:rotate(-20deg) translateY(-1px)}80%{transform:rotate(15deg) translateY(-2px)}100%{transform:rotate(-30deg) translateY(0)}}
+      @keyframes w-spear-thrust{0%,100%{transform:translateX(0) rotate(var(--tilt,0deg))}40%{transform:translateX(7px) rotate(var(--tilt,0deg))}55%{transform:translateX(10px) rotate(var(--tilt,0deg))}70%{transform:translateX(2px) rotate(var(--tilt,0deg))}}
+      @keyframes w-orb-pulse{0%,100%{box-shadow:0 0 6px var(--oc),0 0 12px var(--oc);transform:scale(1)}50%{box-shadow:0 0 14px var(--oc),0 0 28px var(--oc),0 0 44px var(--oc);transform:scale(1.1)}}
+      @keyframes w-orb-elec{0%,100%{opacity:0;transform:scale(.8) rotate(0deg)}30%{opacity:1;transform:scale(1.3) rotate(60deg)}60%{opacity:.8;transform:scale(1.1) rotate(120deg)}80%{opacity:1;transform:scale(1.4) rotate(180deg)}}
+      @keyframes w-hammer-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+      @keyframes w-staff-aura{0%,100%{opacity:.3;transform:scale(.9) rotate(0deg)}50%{opacity:.9;transform:scale(1.25) rotate(180deg)}}
+      @keyframes w-sword-slash{0%,100%{transform:rotate(-25deg) translateY(0)}40%{transform:rotate(30deg) translateY(-4px)}70%{transform:rotate(-15deg) translateY(-2px)}}
+      @keyframes w-spark-ring{0%{transform:rotate(0deg) scale(0.8);opacity:.8}50%{transform:rotate(180deg) scale(1.2);opacity:1}100%{transform:rotate(360deg) scale(0.8);opacity:.8}}
     `;
     document.head.appendChild(s2);
   }
@@ -3795,286 +3804,360 @@ function buildWarriorEl(rank, stars) {
     const ws = sc;
 
             if (rank === 'pawn') {
-      // Gilded Rapier — SVG with width=0 height=0 so NO bounding box is painted
-      // All drawing via overflow:visible — weapon appears but zero footprint div
-      const szBase = stars===3 ? 22 : stars===2 ? 18 : 14;
-      const sc2    = Math.round(szBase * ws);
+      // ── Chùy gai (Spiked Mace/Flail) — double-hit animation ──
+      const sz     = stars===3 ? 22 : stars===2 ? 18 : 14;
+      const px     = Math.round(sz * ws);
       const gold   = '#d4a020';
-      const silver = wcol;
-      const svgGlow = stars>=3
-        ? `filter:drop-shadow(0 0 4px ${gold}) drop-shadow(0 0 8px ${gold});`
-        : stars>=2 ? `filter:drop-shadow(0 0 2px ${gold});` : '';
-      // Scale factor: viewBox 50×50 → sc2 px via transform
-      const k = sc2 / 50;
+      const dark   = col;
+      const bright = wcol;
+      const spikes = stars>=3 ? 8 : stars>=2 ? 6 : 5;
+      const glowSvg = stars>=3
+        ? `filter:drop-shadow(0 0 5px ${bright}) drop-shadow(0 0 10px ${gold});`
+        : stars>=2 ? `filter:drop-shadow(0 0 3px ${bright});` : '';
+      // w-mace-hit: 2 hits per cycle (two bounce peaks at 30% and 80%)
+      const hitDur  = stars>=3 ? '0.7s' : stars>=2 ? '0.9s' : '1.1s';
+      // Build spike polygon around head circle
+      // spikes evenly around center (cx=28,cy=22), outer r=12, inner r=8
+      const spikePoints = Array.from({length:spikes}, (_,i) => {
+        const a1 = (i/spikes)*Math.PI*2 - Math.PI/2;
+        const a2 = ((i+0.5)/spikes)*Math.PI*2 - Math.PI/2;
+        const outerR = stars>=3 ? 13 : 11;
+        const innerR = outerR - 4;
+        return `${(28+Math.cos(a1)*outerR).toFixed(1)},${(22+Math.sin(a1)*outerR).toFixed(1)} `+
+               `${(28+Math.cos(a2)*innerR).toFixed(1)},${(22+Math.sin(a2)*innerR).toFixed(1)}`;
+      }).join(' ');
       return `<div style="${baseStyle}--tilt:0deg;width:0;height:0;overflow:visible;">
         <svg width="0" height="0" viewBox="0 0 0 0"
              xmlns="http://www.w3.org/2000/svg"
-             style="display:block;overflow:visible;${svgGlow}">
-          <g transform="scale(${k.toFixed(3)}) translate(-25,-25)">
-            <!-- BLADE — diagonal from top-right (44,2) to hilt area (14,36) -->
-            <line x1="44" y1="2"  x2="14" y2="36" stroke="${silver}" stroke-width="${stars>=2?2.5:2}" stroke-linecap="round"/>
-            <line x1="46" y1="4"  x2="16" y2="38" stroke="${silver}" stroke-width="${stars>=2?1.8:1.2}" stroke-linecap="round" opacity=".55"/>
-            <line x1="45" y1="3"  x2="16" y2="36" stroke="white" stroke-width=".9" stroke-linecap="round" opacity=".3"/>
-            <!-- needle tip -->
-            <path d="M 44,2 L 47,0 L 50,0 L 48,4 L 45,4 Z" fill="${silver}"/>
-            <line x1="47" y1="0" x2="50" y2="0" stroke="white" stroke-width=".8" opacity=".7"/>
-            ${stars>=2 ? `<!-- fuller groove -->
-            <line x1="43" y1="4" x2="17" y2="36" stroke="rgba(0,0,0,.18)" stroke-width=".8" stroke-linecap="round"/>` : ''}
-            ${stars>=3 ? `<!-- blade etching near forte -->
-            <line x1="20" y1="30" x2="28" y2="22" stroke="${gold}" stroke-width=".8" opacity=".55"/>` : ''}
-
-            <!-- RICASSO (thick part before guard) -->
-            <line x1="14" y1="36" x2="12" y2="38" stroke="${silver}" stroke-width="3" stroke-linecap="round"/>
-
-            <!-- CROSSGUARD — diagonal, perpendicular to blade -->
-            <line x1="6"  y1="32" x2="18" y2="44" stroke="${gold}" stroke-width="3.5" stroke-linecap="round"/>
-            <line x1="6"  y1="32" x2="18" y2="44" stroke="white"   stroke-width=".9"  stroke-linecap="round" opacity=".4"/>
-
-            ${stars>=2 ? `<!-- swept quillons -->
-            <path d="M 6,32 Q 2,24 5,18" stroke="${gold}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-            <path d="M 18,44 Q 22,50 19,54" stroke="${gold}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-            <!-- knuckle bow -->
-            <path d="M 6,32 Q 3,40 9,47" stroke="${gold}" stroke-width="2" fill="none" stroke-linecap="round"/>
-            <path d="M 6,32 Q 3,40 9,47" stroke="white"   stroke-width=".5" fill="none" stroke-linecap="round" opacity=".4"/>` : ''}
-
-            ${stars>=3 ? `<!-- pas d'âne rings -->
-            <circle cx="7"  cy="33" r="4" stroke="${gold}" stroke-width="2" fill="none"/>
-            <circle cx="17" cy="43" r="3.5" stroke="${gold}" stroke-width="1.8" fill="none"/>
-            <!-- shell guard -->
-            <path d="M 10,38 Q 12,35 14,38 Q 12,41 10,38 Z" fill="${gold}" opacity=".8"/>` : ''}
-
-            <!-- GRIP -->
-            <line x1="12" y1="38" x2="6"  y2="46" stroke="${col}" stroke-width="3.2" stroke-linecap="round"/>
-            <line x1="11" y1="39.5" x2="8.5" y2="42" stroke="${gold}" stroke-width="1" opacity=".8"/>
-            <line x1="10" y1="41.5" x2="7.5" y2="44" stroke="${gold}" stroke-width="1" opacity=".7"/>
-            ${stars>=2 ? `<line x1="10.5" y1="43" x2="13" y2="40.5" stroke="${gold}" stroke-width="1.6" opacity=".85"/>` : ''}
-
-            <!-- POMMEL -->
-            ${stars>=3
-              ? `<ellipse cx="4" cy="48" rx="5" ry="4.5" fill="${gold}"/>
-                 <ellipse cx="4" cy="48" rx="2.5" ry="2"   fill="${col}" opacity=".3"/>
-                 <ellipse cx="4" cy="48" rx="1.5" ry="1.2" fill="white" opacity=".85"/>
-                 <!-- tip glow dot -->
-                 <circle cx="49" cy="0" r="3" fill="${gold}" opacity=".3"/>
-                 <circle cx="49" cy="0" r="1.5" fill="white" opacity=".7"/>`
-              : stars>=2
-              ? `<circle cx="4.5" cy="48" r="4" fill="${gold}"/>
-                 <circle cx="3.5" cy="47" r="1.2" fill="white" opacity=".55"/>`
-              : `<circle cx="5" cy="47"   r="3.2" fill="${silver}"/>
-                 <circle cx="4" cy="46.2" r=".9"  fill="white" opacity=".45"/>`}
+             style="display:block;overflow:visible;${glowSvg}
+                    animation:w-mace-hit ${hitDur} ease-in-out infinite;
+                    transform-origin:10px 38px;">
+          <g transform="scale(${(px/50).toFixed(3)}) translate(-5,-5)">
+            <!-- HANDLE — thick grip -->
+            <line x1="8"  y1="42" x2="18" y2="28" stroke="${dark}"   stroke-width="5"   stroke-linecap="round"/>
+            <line x1="8"  y1="42" x2="18" y2="28" stroke="${bright}" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+            <!-- handle wraps -->
+            <line x1="10" y1="39" x2="13" y2="35" stroke="${gold}" stroke-width="1.2" opacity=".9"/>
+            <line x1="12" y1="36" x2="15" y2="32" stroke="${gold}" stroke-width="1.2" opacity=".8"/>
+            <line x1="14" y1="33" x2="17" y2="29" stroke="${gold}" stroke-width="1.2" opacity=".7"/>
+            <!-- CHAIN LINK (for flail feel) -->
+            ${stars>=2 ? `<line x1="18" y1="28" x2="22" y2="24" stroke="${bright}" stroke-width="2" stroke-linecap="round" stroke-dasharray="2.5,2"/>` : `<line x1="18" y1="28" x2="22" y2="25" stroke="${bright}" stroke-width="2.5" stroke-linecap="round"/>`}
+            <!-- MACE HEAD (spiked ball) -->
+            <!-- spike star polygon -->
+            <polygon points="${spikePoints}" fill="${bright}" opacity=".9"/>
+            <!-- main sphere -->
+            <circle cx="28" cy="22" r="${stars>=3?8:7}" fill="${dark}"/>
+            <!-- sphere highlight gradient -->
+            <circle cx="28" cy="22" r="${stars>=3?8:7}" fill="none" stroke="${bright}" stroke-width="1.5" opacity=".6"/>
+            <circle cx="25" cy="19" r="${stars>=3?3:2.5}" fill="white" opacity=".25"/>
+            ${stars>=2 ? `<!-- equator band -->
+            <ellipse cx="28" cy="22" rx="${stars>=3?8:7}" ry="2.5" fill="none" stroke="${gold}" stroke-width="1.2" opacity=".7"/>
+            <!-- pole cap -->
+            <circle cx="28" cy="14" r="2.5" fill="${gold}" opacity=".85"/>
+            <circle cx="28" cy="14" r="1.2" fill="white" opacity=".6"/>` : ''}
+            ${stars>=3 ? `<!-- pommel -->
+            <circle cx="6" cy="44" r="4" fill="${gold}"/>
+            <circle cx="6" cy="44" r="2" fill="white" opacity=".5"/>
+            <!-- impact sparks (static decoration) -->
+            <line x1="38" y1="14" x2="42" y2="10" stroke="${bright}" stroke-width="1.2" opacity=".7"/>
+            <line x1="40" y1="18" x2="44" y2="16" stroke="${gold}"   stroke-width="1"   opacity=".6"/>
+            <line x1="36" y1="12" x2="38" y2="8"  stroke="white"     stroke-width=".8"  opacity=".5"/>` : ''}
           </g>
         </svg>
       </div>`;
     }
 
     if (rank === 'knight') {
-      // Spears — all stars use spear shape, escalating in number/glow
-      const spearLen = stars===3 ? Math.round(38*ws) : stars===2 ? Math.round(30*ws) : Math.round(24*ws);
-      const glowStr  = stars>=3 ? `filter:drop-shadow(0 0 4px ${wcol}) drop-shadow(0 0 10px ${wcol});` : stars>=2 ? `filter:drop-shadow(0 0 3px ${wcol});` : '';
-      const animStr  = stars>=3 ? 'wfloat-fast 0.6s ease-in-out infinite alternate' : 'wfloat 1.0s ease-in-out infinite alternate';
-      const boxSz    = Math.round(spearLen * 0.85);
+      // ── Thương giáo (War Spear) — thrust animation, upright, lethal ──
+      const spearH = stars===3 ? Math.round(42*ws) : stars===2 ? Math.round(34*ws) : Math.round(26*ws);
+      const spearW = 28;
+      const green  = wcol;
+      const dark   = col;
+      const gold   = '#d4a020';
+      const glowStr = stars>=3
+        ? `filter:drop-shadow(0 0 5px ${green}) drop-shadow(0 0 10px ${green});`
+        : stars>=2 ? `filter:drop-shadow(0 0 3px ${green});` : '';
+      // w-spear-thrust: quick horizontal thrust then pull back
+      const thrustDur = stars>=3 ? '0.55s' : stars>=2 ? '0.7s' : '0.9s';
+      // Stars 3: 3-thrust combo (keyframe has 3 peaks via cubic timing)
+      const thrustAnim = stars>=3
+        ? `w-spear-thrust ${thrustDur} cubic-bezier(.2,.8,.3,1) infinite`
+        : `w-spear-thrust ${thrustDur} ease-in-out infinite`;
 
-      if (stars === 1) {
-        // Single spear, angled 45° top-right to bottom-left
-        return `<div style="${baseStyle}--tilt:0deg;width:${boxSz}px;height:${boxSz}px;${glowStr}">
-          <svg width="${boxSz}" height="${boxSz}" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"
-               style="display:block;overflow:visible;">
-            <!-- shaft -->
-            <line x1="34" y1="4" x2="6" y2="34" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
-            <!-- shaft highlight -->
-            <line x1="33" y1="5" x2="8" y2="32" stroke="rgba(255,255,255,.4)" stroke-width="1.2" stroke-linecap="round"/>
-            <!-- spearhead tip (leaf shape) -->
-            <polygon points="34,4 38,0 38,8 34,10 32,6" fill="${wcol}"/>
-            <line x1="34" y1="4" x2="37" y2="2" stroke="white" stroke-width="1" opacity=".6"/>
-            <!-- butt cap -->
-            <rect x="4" y="32" width="5" height="5" rx="1" fill="${wcol}" transform="rotate(-45,6.5,34.5)"/>
-          </svg>
-        </div>`;
-      } else if (stars === 2) {
-        // Two spears side by side, slightly offset
-        return `<div style="${baseStyle}--tilt:0deg;width:${boxSz+6}px;height:${boxSz}px;${glowStr}">
-          <svg width="${boxSz+6}" height="${boxSz}" viewBox="0 0 44 38" xmlns="http://www.w3.org/2000/svg"
-               style="display:block;overflow:visible;">
-            <!-- spear 1 (behind) -->
-            <line x1="38" y1="2" x2="10" y2="34" stroke="${col}" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
-            <polygon points="38,2 42,0 42,7 38,8 36,5" fill="${col}" opacity=".8"/>
-            <!-- spear 2 (front) -->
-            <line x1="34" y1="4" x2="6" y2="34" stroke="${wcol}" stroke-width="3" stroke-linecap="round"/>
-            <line x1="33" y1="5" x2="8" y2="32" stroke="rgba(255,255,255,.4)" stroke-width="1.2" stroke-linecap="round"/>
-            <polygon points="34,4 38,0 38,8 34,10 32,6" fill="${wcol}"/>
-            <line x1="34" y1="4" x2="37" y2="2" stroke="white" stroke-width="1" opacity=".6"/>
-            <!-- butt caps -->
-            <rect x="3" y="31" width="5" height="5" rx="1" fill="${col}" opacity=".7" transform="rotate(-45,5.5,33.5)"/>
-            <rect x="6" y="32" width="5" height="5" rx="1" fill="${wcol}" transform="rotate(-45,8.5,34.5)"/>
-          </svg>
-        </div>`;
-      } else {
-        // Crossed spears (X pattern) like reference image, golden glow
-        const sparkle = `<span style="position:absolute;top:-4px;right:-2px;font-size:8px;color:${wcol};animation:wsparkle .5s ease-in-out infinite;">⚡</span>`;
-        return `<div style="${baseStyle}--tilt:0deg;width:${boxSz+4}px;height:${boxSz}px;${glowStr}position:relative;">
-          ${sparkle}
-          <svg width="${boxSz+4}" height="${boxSz}" viewBox="0 0 42 40" xmlns="http://www.w3.org/2000/svg"
-               style="display:block;overflow:visible;">
-            <!-- spear 1: top-left to bottom-right -->
-            <line x1="4"  y1="4"  x2="38" y2="36" stroke="${col}"  stroke-width="3" stroke-linecap="round" opacity=".8"/>
-            <!-- spear 2: top-right to bottom-left -->
-            <line x1="38" y1="4"  x2="4"  y2="36" stroke="${wcol}" stroke-width="3" stroke-linecap="round"/>
-            <!-- shaft highlights -->
-            <line x1="4"  y1="4"  x2="36" y2="34" stroke="rgba(255,255,255,.35)" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="38" y1="4"  x2="6"  y2="34" stroke="rgba(255,255,255,.35)" stroke-width="1.2" stroke-linecap="round"/>
-            <!-- spearhead top-right -->
-            <polygon points="38,4 42,0 42,8 38,9 36,6" fill="${wcol}"/>
-            <line x1="38" y1="4" x2="41" y2="2" stroke="white" stroke-width="1" opacity=".7"/>
-            <!-- spearhead top-left -->
-            <polygon points="4,4 0,0 0,8 4,9 6,6" fill="${wcol}"/>
-            <!-- butt caps bottom -->
-            <rect x="35" y="32" width="5" height="6" rx="1" fill="${wcol}" transform="rotate(45,37.5,35)"/>
-            <rect x="1"  y="32" width="5" height="6" rx="1" fill="${col}" opacity=".8" transform="rotate(-45,3.5,35)"/>
-            <!-- center bind -->
-            <circle cx="21" cy="20" r="3.5" fill="${wcol}"/>
-            <circle cx="21" cy="20" r="2"   fill="white" opacity=".7"/>
-          </svg>
-        </div>`;
-      }
+      const headH     = stars>=3 ? 14 : stars>=2 ? 11 : 9;
+      const shaftW    = stars>=3 ? 4 : 3;
+      const crossH    = stars>=2 ? 6 : 0;
+
+      return `<div style="${baseStyle}--tilt:-5deg;width:0;height:0;overflow:visible;
+                           animation:${thrustAnim};transform-origin:4px 50%;">
+        <svg width="0" height="0" viewBox="0 0 0 0"
+             xmlns="http://www.w3.org/2000/svg"
+             style="display:block;overflow:visible;${glowStr}">
+          <g transform="scale(${(spearH/70).toFixed(3)}) translate(-4,-35)">
+            <!-- ══ SPEARHEAD (top, pointing right) ══ -->
+            <!-- main blade: long diamond leaf -->
+            <path d="M 10,5 L 18,14 L 10,26 L 5,14 Z" fill="${green}"/>
+            <!-- blade spine highlight -->
+            <line x1="10" y1="6"  x2="10" y2="25" stroke="white" stroke-width="1.2" opacity=".5"/>
+            <!-- blade edge highlight -->
+            <line x1="17" y1="14" x2="10" y2="7"  stroke="white" stroke-width=".8" opacity=".35"/>
+            <!-- blade tip glint -->
+            <circle cx="10" cy="5" r="1.5" fill="white" opacity=".8"/>
+            ${stars>=2 ? `<!-- socket ferrule (metal sleeve at base of head) -->
+            <rect x="7" y="23" width="6" height="5" rx="1" fill="${gold}"/>
+            <line x1="7" y1="25" x2="13" y2="25" stroke="white" stroke-width=".7" opacity=".5"/>
+            <!-- side lugs (cross-guards on spear) -->
+            <path d="M 7,27 Q 3,26 4,29 Q 7,30 8,28 Z" fill="${gold}"/>
+            <path d="M 13,27 Q 17,26 16,29 Q 13,30 12,28 Z" fill="${gold}"/>` : ''}
+            ${stars>=3 ? `<!-- secondary blade etching -->
+            <line x1="8"  y1="9"  x2="8"  y2="23" stroke="${gold}" stroke-width=".7" opacity=".6"/>
+            <line x1="12" y1="9"  x2="12" y2="23" stroke="${gold}" stroke-width=".7" opacity=".6"/>` : ''}
+
+            <!-- ══ SHAFT ══ -->
+            <rect x="${10-shaftW/2}" y="${stars>=2?28:26}" width="${shaftW}" height="42" rx="1.5"
+                  fill="${dark}"/>
+            <!-- shaft wood grain highlight -->
+            <rect x="${10-shaftW/2+1}" y="${stars>=2?28:26}" width="1.5" height="42" rx=".5"
+                  fill="rgba(255,255,255,.25)"/>
+            ${stars>=2 ? `<!-- shaft metal bands -->
+            <rect x="${10-shaftW/2-1}" y="38" width="${shaftW+2}" height="3" rx="1" fill="${gold}"/>
+            <rect x="${10-shaftW/2-1}" y="52" width="${shaftW+2}" height="3" rx="1" fill="${gold}"/>` : ''}
+            ${stars>=3 ? `<!-- runes etched on shaft -->
+            <line x1="10" y1="44" x2="7"  y2="47" stroke="${green}" stroke-width=".8" opacity=".6"/>
+            <line x1="10" y1="44" x2="13" y2="47" stroke="${green}" stroke-width=".8" opacity=".6"/>
+            <line x1="8"  y1="49" x2="12" y2="49" stroke="${green}" stroke-width=".8" opacity=".5"/>` : ''}
+
+            <!-- ══ BUTT CAP (bottom) ══ -->
+            <path d="M ${10-shaftW/2},70 L ${10+shaftW/2},70 L 10,76 Z"
+                  fill="${stars>=2?gold:green}"/>
+            <line x1="${10-shaftW/2}" y1="70" x2="${10+shaftW/2}" y2="70"
+                  stroke="white" stroke-width=".8" opacity=".4"/>
+
+            ${stars>=3 ? `<!-- TRAIL SPARKS on thrust (decorative) -->
+            <circle cx="17" cy="12" r="1.5" fill="${green}" opacity=".8"/>
+            <circle cx="20" cy="10" r="1"   fill="white"   opacity=".6"/>
+            <circle cx="16" cy="8"  r="1"   fill="${green}" opacity=".5"/>` : ''}
+          </g>
+        </svg>
+      </div>`;
     }
-
     if (rank === 'bishop') {
-      if (stars === 1) {
-        // Magic orb
-        const oD = Math.round(14*ws);
-        return `<div style="${baseStyle}width:${oD}px;height:${oD}px;border-radius:50%;background:radial-gradient(circle,white 20%,${wcol} 60%,${col} 100%);"></div>`;
-      } else if (stars === 2) {
-        // Staff + orb
-        const sH = Math.round(28*ws), oD = Math.round(10*ws);
-        return `<div style="${baseStyle}width:${oD+4}px;height:${sH+oD}px;">
-          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:${oD}px;height:${oD}px;border-radius:50%;background:radial-gradient(circle,white,${wcol},${col});"></div>
-          <div style="position:absolute;top:${oD-2}px;left:50%;transform:translateX(-50%);width:3px;height:${sH}px;background:linear-gradient(${wcol},${col});border-radius:2px;"></div>
-        </div>`;
-      } else {
-        // Dual orbs orbiting staff
-        const sH = Math.round(30*ws), oD = Math.round(10*ws);
-        return `<div style="${baseStyle}width:${oD+18}px;height:${sH+oD}px;">
-          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:${oD}px;height:${oD}px;border-radius:50%;background:radial-gradient(circle,white,${wcol},${col});box-shadow:0 0 8px ${wcol};"></div>
-          <div style="position:absolute;top:${oD-2}px;left:50%;transform:translateX(-50%);width:3px;height:${sH}px;background:linear-gradient(${wcol},${col});border-radius:2px;"></div>
-          <div style="position:absolute;top:${oD+4}px;left:50%;width:8px;height:8px;border-radius:50%;background:${wcol};animation:worb-spin 1.2s linear infinite;transform-origin:-2px center;box-shadow:0 0 6px ${wcol};"></div>
-          <div style="position:absolute;top:${oD+12}px;left:50%;width:7px;height:7px;border-radius:50%;background:white;animation:worb-spin 1.8s linear infinite reverse;transform-origin:-3px center;opacity:.8;"></div>
-        </div>`;
-      }
+      // ── Quả cầu phép (Magic Orb) — electric arc pulse ──
+      const oD = stars===3 ? Math.round(20*ws) : stars===2 ? Math.round(16*ws) : Math.round(12*ws);
+      const sH = stars>=2 ? Math.round(30*ws) : 0;
+      const blue  = wcol;
+      const dark  = col;
+      const white2 = '#ffffff';
+      const elecDur = stars>=3 ? '0.5s' : stars>=2 ? '0.75s' : '1.0s';
+      const glowStr = stars>=3
+        ? `filter:drop-shadow(0 0 6px ${blue}) drop-shadow(0 0 12px ${blue});`
+        : stars>=2 ? `filter:drop-shadow(0 0 4px ${blue});` : '';
+      const totalH = oD + (stars>=2 ? sH+4 : 0);
+      const cx = oD/2, cy = oD/2;
+      const or_ = oD*0.42;
+      return `<div style="${baseStyle}width:${oD+6}px;height:${totalH}px;${glowStr}">
+        ${stars>=2 ? `<!-- staff -->
+        <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+                    width:${Math.max(3,Math.round(3*ws))}px;height:${sH}px;
+                    background:linear-gradient(180deg,${blue} 0%,${dark} 100%);border-radius:2px;"></div>` : ''}
+        <!-- ORB container -->
+        <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);
+                    width:${oD}px;height:${oD}px;">
+          <!-- orb sphere -->
+          <div style="position:absolute;inset:0;border-radius:50%;
+                      background:radial-gradient(circle at 35% 35%,white 0%,${blue} 40%,${dark} 100%);
+                      animation:w-orb-pulse ${elecDur} ease-in-out infinite;--oc:${blue};"></div>
+          <!-- electric ring 1 — outer -->
+          <div style="position:absolute;inset:-${Math.round(oD*.18)}px;border-radius:50%;
+                      border:${stars>=3?2:1.5}px solid ${blue};opacity:.7;
+                      animation:w-orb-elec ${elecDur} ease-in-out infinite;"></div>
+          <!-- electric ring 2 — rotated offset -->
+          <div style="position:absolute;inset:-${Math.round(oD*.28)}px;border-radius:50%;
+                      border:1px solid ${blue};opacity:.45;
+                      animation:w-orb-elec ${elecDur} ease-in-out infinite;animation-delay:${parseFloat(elecDur)*-.33}s;"></div>
+          ${stars>=2 ? `<!-- spark ring -->
+          <div style="position:absolute;inset:-${Math.round(oD*.4)}px;border-radius:50%;
+                      border:1px dashed ${blue};opacity:.35;
+                      animation:w-spark-ring ${elecDur} linear infinite;animation-delay:-.2s;"></div>` : ''}
+          ${stars>=3 ? `<!-- inner core glow -->
+          <div style="position:absolute;inset:${Math.round(oD*.2)}px;border-radius:50%;
+                      background:white;opacity:.5;
+                      animation:w-orb-pulse ${(parseFloat(elecDur)*.7).toFixed(2)}s ease-in-out infinite;--oc:white;"></div>
+          <!-- orbiting particle -->
+          <div style="position:absolute;top:50%;left:50%;width:${Math.round(oD*.18)}px;height:${Math.round(oD*.18)}px;
+                      margin:-${Math.round(oD*.09)}px;border-radius:50%;background:${blue};
+                      animation:worb-spin ${elecDur} linear infinite;transform-origin:-${Math.round(oD*.5)}px 0;
+                      box-shadow:0 0 4px ${blue};"></div>` : ''}
+        </div>
+      </div>`;
     }
-
     if (rank === 'rook') {
-      if (stars === 1) {
-        // Hammer
-        const hH = Math.round(28*ws);
-        return `<div style="${baseStyle}width:${Math.round(16*ws)}px;height:${hH}px;">
-          <div style="width:${Math.round(16*ws)}px;height:${Math.round(10*ws)}px;background:${wcol};border-radius:3px;"></div>
-          <div style="width:4px;height:${hH-10}px;background:${col};margin:0 auto;border-radius:0 0 2px 2px;"></div>
-        </div>`;
-      } else if (stars === 2) {
-        // Stone boulder
-        const bD = Math.round(20*ws);
-        return `<div style="${baseStyle}width:${bD}px;height:${bD}px;border-radius:${bD/3}px;
-          background:radial-gradient(circle at 35% 35%,${wcol},${col} 60%,#6a4a20);
-          box-shadow:2px 2px 4px rgba(0,0,0,.4);"></div>`;
-      } else {
-        // Cannon barrel with fire
-        const cW = Math.round(32*ws), cH = Math.round(14*ws);
-        return `<div style="${baseStyle}--tilt:5deg;width:${cW}px;height:${cH+8}px;">
-          <div style="width:${cW}px;height:${cH}px;background:linear-gradient(180deg,${wcol},${col},#5a3a10);
-            border-radius:${cH/2}px;border:1px solid rgba(255,255,255,.2);"></div>
-          <!-- fire at muzzle -->
-          <div style="position:absolute;top:-2px;left:-6px;font-size:12px;animation:wsparkle .4s ease-in-out infinite;">🔥</div>
-          <!-- wheel -->
-          <div style="position:absolute;bottom:0;left:${cW*0.25-6}px;width:12px;height:12px;border-radius:50%;background:${col};border:2px solid ${wcol};"></div>
-          <div style="position:absolute;bottom:0;left:${cW*0.65-6}px;width:12px;height:12px;border-radius:50%;background:${col};border:2px solid ${wcol};"></div>
-        </div>`;
-      }
+      // ── Búa chiến (War Hammer) — spinning animation ──
+      const hH = stars===3 ? Math.round(34*ws) : stars===2 ? Math.round(26*ws) : Math.round(20*ws);
+      const hW = stars===3 ? Math.round(22*ws) : stars===2 ? Math.round(18*ws) : Math.round(14*ws);
+      const brown = wcol; const dark = col; const gold = '#d4a020';
+      const spinDur = stars>=3 ? '0.6s' : stars>=2 ? '0.9s' : '1.2s';
+      const glowStr = stars>=3
+        ? `filter:drop-shadow(0 0 5px ${brown}) drop-shadow(0 0 10px ${brown});`
+        : stars>=2 ? `filter:drop-shadow(0 0 3px ${brown});` : '';
+      return `<div style="${baseStyle}width:${hW}px;height:${hH+10}px;${glowStr}
+                           animation:w-hammer-spin ${spinDur} linear infinite;
+                           transform-origin:${hW/2}px ${hH+5}px;">
+        <!-- HAMMER HEAD -->
+        <div style="width:${hW}px;height:${Math.round(hH*.45)}px;
+                    background:linear-gradient(135deg,${brown} 0%,${dark} 50%,${brown} 100%);
+                    border-radius:4px;position:relative;
+                    box-shadow:inset 0 2px 0 rgba(255,255,255,.25),inset 0 -2px 0 rgba(0,0,0,.3);">
+          <!-- face plate -->
+          <div style="position:absolute;top:2px;left:2px;right:2px;bottom:2px;
+                      background:${dark};border-radius:2px;opacity:.4;"></div>
+          ${stars>=2 ? `<!-- rivets -->
+          <div style="position:absolute;top:3px;left:3px;width:4px;height:4px;border-radius:50%;background:${gold};"></div>
+          <div style="position:absolute;top:3px;right:3px;width:4px;height:4px;border-radius:50%;background:${gold};"></div>
+          <div style="position:absolute;bottom:3px;left:3px;width:4px;height:4px;border-radius:50%;background:${gold};"></div>
+          <div style="position:absolute;bottom:3px;right:3px;width:4px;height:4px;border-radius:50%;background:${gold};"></div>` : ''}
+          ${stars>=3 ? `<!-- spike on top -->
+          <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+                      width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;
+                      border-bottom:9px solid ${brown};"></div>
+          <!-- runes on face -->
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                      font-size:9px;color:${brown};opacity:.6;font-family:serif;">ᚱ</div>` : ''}
+        </div>
+        <!-- SHAFT -->
+        <div style="width:${Math.max(4,Math.round(hW*.22))}px;height:${Math.round(hH*.6)}px;
+                    background:linear-gradient(90deg,rgba(255,255,255,.15),${dark},rgba(0,0,0,.2));
+                    margin:0 auto;border-radius:1px;">
+          ${stars>=2 ? `<!-- shaft bands -->
+          <div style="position:absolute;width:${Math.round(hW*.35)}px;height:3px;
+                      background:${gold};border-radius:1px;top:${Math.round(hH*.2)}px;left:50%;transform:translateX(-50%);"></div>` : ''}
+        </div>
+        <!-- POMMEL KNOB -->
+        <div style="width:${Math.round(hW*.4)}px;height:${Math.round(hW*.4)}px;
+                    background:radial-gradient(circle at 35% 35%,${brown},${dark});
+                    border-radius:50%;margin:0 auto;
+                    box-shadow:inset 0 1px 0 rgba(255,255,255,.3);"></div>
+      </div>`;
     }
-
     if (rank === 'queen') {
-      if (stars === 1) {
-        // Magic wand
-        const wH = Math.round(26*ws);
-        return `<div style="${baseStyle}width:8px;height:${wH}px;">
-          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:${Math.round(10*ws)}px;color:${wcol};">★</div>
-          <div style="position:absolute;top:${Math.round(10*ws)}px;left:50%;transform:translateX(-50%);width:2px;height:${wH-10}px;background:linear-gradient(${wcol},${col});border-radius:1px;"></div>
-        </div>`;
-      } else if (stars === 2) {
-        // Scepter with gem
-        const sH = Math.round(30*ws), gD = Math.round(9*ws);
-        return `<div style="${baseStyle}width:${gD+4}px;height:${sH+gD}px;">
-          <div style="position:absolute;top:0;left:50%;transform:translate(-50%,-0%);width:${gD}px;height:${gD}px;
-            background:${wcol};clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);
-            box-shadow:0 0 6px ${wcol};"></div>
-          <div style="position:absolute;top:${gD}px;left:50%;transform:translateX(-50%);width:4px;height:${sH}px;
-            background:linear-gradient(${wcol},${col});border-radius:2px;"></div>
-          <!-- side gems -->
-          <div style="position:absolute;top:${gD+4}px;left:0;width:4px;height:4px;border-radius:50%;background:${col};"></div>
-          <div style="position:absolute;top:${gD+4}px;right:0;width:4px;height:4px;border-radius:50%;background:${col};"></div>
-        </div>`;
-      } else {
-        // Triple wand fan
-        const wH = Math.round(28*ws);
-        return `<div style="${baseStyle}width:28px;height:${wH}px;position:relative;">
-          ${['#ff88ff','#cc44ff','#ffffff'].map((sc2, i) => {
-            const angles = ['-18deg','0deg','18deg'];
-            const lefts  = ['0px','8px','16px'];
-            return `<div style="position:absolute;left:${lefts[i]};top:0;width:3px;height:${wH-4}px;
-              background:${sc2};border-radius:2px;transform:rotate(${angles[i]});transform-origin:bottom center;
-              box-shadow:0 0 4px ${sc2};">
-              <div style="position:absolute;top:-3px;left:-2px;font-size:7px;color:${sc2};animation:wsparkle ${.5+i*.2}s ease-in-out infinite alternate;">✦</div>
-            </div>`;
-          }).join('')}
-        </div>`;
-      }
+      // ── Gậy phép (Magic Staff) — aura halo animation ──
+      const sH  = stars===3 ? Math.round(38*ws) : stars===2 ? Math.round(30*ws) : Math.round(22*ws);
+      const oD  = stars===3 ? Math.round(16*ws) : stars===2 ? Math.round(13*ws) : Math.round(10*ws);
+      const pur = wcol; const dark = col; const gold = '#d4a020';
+      const auraDur = stars>=3 ? '0.5s' : stars>=2 ? '0.7s' : '1.0s';
+      const glowStr = stars>=3
+        ? `filter:drop-shadow(0 0 6px ${pur}) drop-shadow(0 0 14px ${pur});`
+        : stars>=2 ? `filter:drop-shadow(0 0 4px ${pur});` : '';
+      const totalH = sH + oD + 6;
+      return `<div style="${baseStyle}width:${oD+12}px;height:${totalH}px;${glowStr}">
+        <!-- STAFF ORB (top) -->
+        <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);
+                    width:${oD}px;height:${oD}px;border-radius:50%;
+                    background:radial-gradient(circle at 30% 30%,white 0%,${pur} 50%,${dark} 100%);
+                    animation:w-orb-pulse ${auraDur} ease-in-out infinite;--oc:${pur};
+                    box-shadow:0 0 6px ${pur},0 0 14px ${pur};">
+          ${stars>=2 ? `<!-- gem facets -->
+          <div style="position:absolute;top:15%;left:15%;width:30%;height:30%;
+                      background:white;border-radius:50%;opacity:.5;"></div>` : ''}
+        </div>
+        <!-- AURA RING 1 -->
+        <div style="position:absolute;top:${-oD*.3}px;left:50%;transform:translateX(-50%);
+                    width:${oD*1.6}px;height:${oD*1.6}px;border-radius:50%;
+                    border:${stars>=3?2:1.5}px solid ${pur};opacity:.6;
+                    animation:w-staff-aura ${auraDur} ease-in-out infinite;"></div>
+        ${stars>=2 ? `<!-- AURA RING 2 (counter-rotate) -->
+        <div style="position:absolute;top:${-oD*.55}px;left:50%;transform:translateX(-50%);
+                    width:${oD*2.1}px;height:${oD*2.1}px;border-radius:50%;
+                    border:1px solid ${pur};opacity:.35;
+                    animation:w-staff-aura ${auraDur} ease-in-out infinite;animation-direction:reverse;animation-delay:-.3s;"></div>` : ''}
+        ${stars>=3 ? `<!-- orbiting star particle -->
+        <div style="position:absolute;top:${oD/2-4}px;left:50%;
+                    width:8px;height:8px;margin-left:-4px;border-radius:50%;
+                    background:${pur};box-shadow:0 0 5px ${pur};
+                    animation:worb-spin ${(parseFloat(auraDur)*1.4).toFixed(2)}s linear infinite;
+                    transform-origin:-${Math.round(oD*.8)}px 0;"></div>
+        <!-- sparkle chars -->
+        <div style="position:absolute;top:${-4}px;left:${oD+8}px;font-size:8px;color:#fff;
+                    animation:wsparkle .6s ease-in-out infinite;">✦</div>` : ''}
+        <!-- SHAFT -->
+        <div style="position:absolute;top:${oD-2}px;left:50%;transform:translateX(-50%);
+                    width:${Math.max(3,Math.round(3.5*ws))}px;height:${sH}px;
+                    background:linear-gradient(180deg,${pur} 0%,${dark} 60%,${pur} 100%);
+                    border-radius:2px;">
+          ${stars>=2 ? `<!-- shaft nodes -->
+          <div style="position:absolute;top:${Math.round(sH*.3)}px;left:50%;transform:translateX(-50%);
+                      width:${Math.round(5*ws)}px;height:${Math.round(5*ws)}px;border-radius:50%;
+                      background:${gold};box-shadow:0 0 3px ${gold};"></div>
+          <div style="position:absolute;top:${Math.round(sH*.65)}px;left:50%;transform:translateX(-50%);
+                      width:${Math.round(4*ws)}px;height:${Math.round(4*ws)}px;border-radius:50%;
+                      background:${gold};opacity:.8;"></div>` : ''}
+        </div>
+        <!-- BUTT FERRULE -->
+        <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+                    width:${Math.round(oD*.6)}px;height:${Math.round(5*ws)}px;
+                    background:${gold};border-radius:0 0 2px 2px;"></div>
+      </div>`;
     }
-
     if (rank === 'king') {
-      if (stars === 1) {
-        // Short royal sword
-        const blH = Math.round(20*ws);
-        return `<div style="${baseStyle}width:10px;height:${blH+8}px;">
-          <div style="position:absolute;top:0;left:3px;width:4px;height:${blH}px;background:linear-gradient(white,${wcol},${col});border-radius:2px 2px 0 0;"></div>
-          <div style="position:absolute;top:${blH-2}px;left:0;width:10px;height:3px;background:${wcol};border-radius:1px;"></div>
-          <div style="position:absolute;top:${blH+1}px;left:4px;width:3px;height:7px;background:${col};border-radius:0 0 1px 1px;"></div>
-        </div>`;
-      } else if (stars === 2) {
-        // Broadsword
-        const blH = Math.round(30*ws), blW = Math.round(7*ws);
-        return `<div style="${baseStyle}width:${blW+6}px;height:${blH+10}px;">
-          <div style="position:absolute;top:0;left:${(blW+6-blW)/2}px;width:${blW}px;height:${blH}px;
-            background:linear-gradient(180deg,white 0%,${wcol} 30%,${col} 100%);
-            clip-path:polygon(30% 0%,70% 0%,100% 80%,50% 100%,0% 80%);"></div>
-          <div style="position:absolute;top:${blH-2}px;left:0;width:${blW+6}px;height:4px;background:${wcol};border-radius:2px;box-shadow:0 0 4px ${wcol};"></div>
-          <div style="position:absolute;top:${blH+2}px;left:${(blW+6-4)/2}px;width:4px;height:8px;background:${col};border-radius:2px;"></div>
-        </div>`;
-      } else {
-        // Legendary Greatsword with radiant aura
-        const blH = Math.round(44*ws), blW = Math.round(9*ws);
-        const sparkleArr = ['✦','✦','✦','★'].map((ch, i) => {
-          const tops  = ['-6px','10px','22px','36px'];
-          const lefts = [`${blW+8}px`,`${-10}px`,`${blW+10}px`,`${-8}px`];
-          const spd   = ['.5s','.7s','.4s','.8s'];
-          return `<span style="position:absolute;top:${tops[i]};left:${lefts[i]};font-size:9px;color:${wcol};animation:wsparkle ${spd[i]} ease-in-out infinite alternate;opacity:.9;">${ch}</span>`;
-        }).join('');
-        return `<div style="${baseStyle}width:${blW+22}px;height:${blH+14}px;position:relative;">
-          <!-- blade -->
-          <div style="position:absolute;top:0;left:${(blW+22-blW)/2}px;width:${blW}px;height:${blH}px;
-            background:linear-gradient(180deg,white 0%,${wcol} 25%,${wcol} 60%,${col} 100%);
-            clip-path:polygon(35% 0%,65% 0%,100% 75%,50% 100%,0% 75%);
-            box-shadow:0 0 10px ${wcol},0 0 24px ${wcol};"></div>
-          <!-- crossguard -->
-          <div style="position:absolute;top:${blH-3}px;left:0;width:${blW+22}px;height:6px;
-            background:linear-gradient(90deg,${col},${wcol},${col});
-            border-radius:3px;box-shadow:0 0 8px ${wcol};"></div>
-          <!-- handle -->
-          <div style="position:absolute;top:${blH+3}px;left:${(blW+22-5)/2}px;width:5px;height:11px;
-            background:${col};border-radius:0 0 2px 2px;"></div>
-          ${sparkleArr}
-        </div>`;
-      }
+      // ── Kiếm vua (Greatsword) — slash chop animation ──
+      const blH = stars===3 ? Math.round(48*ws) : stars===2 ? Math.round(38*ws) : Math.round(28*ws);
+      const blW = stars===3 ? Math.round(10*ws) : stars===2 ? Math.round(8*ws)  : Math.round(6*ws);
+      const pommY = blH + Math.round(blH*.26);
+      const gold = '#d4a020'; const yel = '#ffe060'; const dark = col; const sil = wcol;
+      const slashDur = stars>=3 ? '0.5s' : stars>=2 ? '0.7s' : '0.9s';
+      const glowStr = stars>=3
+        ? `filter:drop-shadow(0 0 6px ${yel}) drop-shadow(0 0 14px ${gold});`
+        : stars>=2 ? `filter:drop-shadow(0 0 4px ${gold});` : '';
+      // Pivot at pommel (bottom)
+      return `<div style="${baseStyle}--tilt:-8deg;width:${blW+14}px;height:${blH+14}px;${glowStr}
+                           animation:w-sword-slash ${slashDur} ease-in-out infinite;
+                           transform-origin:${(blW+14)/2}px ${blH+10}px;">
+        <!-- BLADE (0×0 trick) -->
+        <svg width="0" height="0" viewBox="0 0 0 0"
+             xmlns="http://www.w3.org/2000/svg"
+             style="position:absolute;top:0;left:0;overflow:visible;">
+          <g transform="translate(${(blW+14)/2},4)">
+            <!-- blade body — tapered both edges -->
+            <path d="M ${-blW/2},${blH-8} L 0,0 L ${blW/2},${blH-8} Z" fill="${sil}"/>
+            <!-- blade secondary taper for diamond cross section -->
+            <path d="M ${-blW/3},${blH-8} L 0,0 L ${blW/3},${blH-8} Z" fill="white" opacity=".25"/>
+            <!-- fuller groove -->
+            <line x1="0" y1="4" x2="0" y2="${blH-12}" stroke="${dark}" stroke-width="1.5" opacity=".4"/>
+            <!-- edge highlights -->
+            <line x1="${-blW/2+1}" y1="${blH-10}" x2="-1" y2="2" stroke="white" stroke-width="1" opacity=".4"/>
+            <!-- tip glint -->
+            <circle cx="0" cy="1" r="2" fill="white" opacity=".9"/>
+            ${stars>=2 ? `<!-- blade etching pattern -->
+            <line x1="${-blW/4}" y1="${blH*.25}" x2="${blW/4}" y2="${blH*.25}" stroke="${gold}" stroke-width=".8" opacity=".6"/>
+            <line x1="${-blW/4}" y1="${blH*.4}"  x2="${blW/4}" y2="${blH*.4}"  stroke="${gold}" stroke-width=".8" opacity=".5"/>` : ''}
+            ${stars>=3 ? `<!-- rune glyph mid blade -->
+            <text x="0" y="${blH*.33}" text-anchor="middle" font-size="4" fill="${gold}" opacity=".7" font-family="serif">ᛞ</text>
+            <!-- blood channel shine -->
+            <line x1="0" y1="6" x2="0" y2="${blH*.7}" stroke="${yel}" stroke-width=".6" opacity=".4"/>` : ''}
+            <!-- CROSSGUARD -->
+            <rect x="${-blW/2-8}" y="${blH-10}" width="${blW+16}" height="${Math.max(4,blW*.6)}" rx="2" fill="${gold}"/>
+            <rect x="${-blW/2-8}" y="${blH-10}" width="${blW+16}" height="2" rx="1" fill="white" opacity=".3"/>
+            ${stars>=2 ? `<!-- guard wing gems -->
+            <circle cx="${-blW/2-5}" cy="${blH-8}" r="2.5" fill="${sil}"/>
+            <circle cx="${blW/2+5}"  cy="${blH-8}" r="2.5" fill="${sil}"/>
+            <circle cx="${-blW/2-5}" cy="${blH-8}" r="1.2" fill="white" opacity=".7"/>` : ''}
+            <!-- GRIP -->
+            <rect x="${-blW/4}" y="${blH-4}" width="${blW/2}" height="${Math.round(blH*.24)}" rx="2" fill="${dark}"/>
+            <!-- grip wrap bands -->
+            ${[0.2,0.4,0.6,0.8].map(f=>`<rect x="${-blW/4}" y="${blH-4+Math.round(blH*.24*f)}" width="${blW/2}" height="1.5" rx=".5" fill="${gold}" opacity=".8"/>`).join('')}
+            <!-- POMMEL -->
+            <ellipse cx="0" cy="${pommY}" rx="${blW*.7}" ry="${blW*.55}" fill="${gold}"/>
+            <ellipse cx="0" cy="${pommY}" rx="${blW*.35}" ry="${blW*.28}" fill="${dark}" opacity=".4"/>
+            <circle  cx="0" cy="${pommY}" r="${blW*.2}" fill="white" opacity=".6"/>
+            ${stars>=3 ? `<!-- pommel gem -->
+            <ellipse cx="0" cy="${pommY}" rx="${blW*.15}" ry="${blW*.12}" fill="${yel}"/>
+            <!-- slash effect lines -->
+            <line x1="${blW+2}" y1="8" x2="${blW+8}" y2="14" stroke="${yel}" stroke-width="1.2" opacity=".7"/>
+            <line x1="${blW+1}" y1="14" x2="${blW+7}" y2="20" stroke="${yel}" stroke-width="1"   opacity=".5"/>` : ''}
+          </g>
+        </svg>
+      </div>`;
     }
-
     return `<div style="${baseStyle}width:8px;height:${Math.round(20*ws)}px;background:${wcol};border-radius:2px;"></div>`;
   }
 
