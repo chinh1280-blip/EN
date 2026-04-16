@@ -3606,14 +3606,28 @@ function buildWarriorEl(rank, stars) {
       @keyframes wsword-glow{0%,100%{box-shadow:0 0 4px var(--wc),0 0 8px var(--wc)}50%{box-shadow:0 0 8px var(--wc),0 0 20px var(--wc),0 0 36px var(--wc)}}
       /* ── Weapon signature animations ── */
 
-      /* KNIGHT: horizontal stab — sharp thrust forward then snap back */
-      @keyframes w-spear-thrust{
-        0%,100%{ transform:translateX(0); }
-        30%    { transform:translateX(8px); }
-        45%    { transform:translateX(14px); }   /* full extension */
-        55%    { transform:translateX(12px); }   /* brief hold */
-        70%    { transform:translateX(-2px); }   /* overshoot back */
-        85%    { transform:translateX(1px); }
+      /* KNIGHT: spear-combo — nạp đà → chọt thẳng → chếch trên → chếch dưới → nghỉ */
+      @keyframes spear-combo{
+        /* 0-8%: nạp đà lùi */
+        0%   { transform:translateX(0)    rotate(0deg); }
+        8%   { transform:translateX(-6px) rotate(0deg); }
+        /* 10-18%: chọt thẳng cực nhanh */
+        10%  { transform:translateX(-6px) rotate(0deg); }
+        14%  { transform:translateX(18px) rotate(0deg); }
+        18%  { transform:translateX(16px) rotate(0deg); }
+        /* 20-28%: thu về + chọt chếch LÊN */
+        22%  { transform:translateX(-4px) rotate(-12deg); }
+        26%  { transform:translateX(16px) rotate(-12deg); }
+        28%  { transform:translateX(14px) rotate(-12deg); }
+        /* 30-38%: thu về + chọt chếch XUỐNG */
+        32%  { transform:translateX(-4px) rotate(12deg); }
+        36%  { transform:translateX(16px) rotate(12deg); }
+        38%  { transform:translateX(14px) rotate(12deg); }
+        /* 42-50%: thu về tư thế chuẩn bị */
+        44%  { transform:translateX(-2px) rotate(0deg); }
+        50%  { transform:translateX(0)    rotate(0deg); }
+        /* 50-100%: đứng im — khoảng nghỉ nhịp */
+        100% { transform:translateX(0)    rotate(0deg); }
       }
 
       /* BISHOP: gentle levitate */
@@ -3629,16 +3643,22 @@ function buildWarriorEl(rank, stars) {
         100%{ opacity:0; transform:scale(0) rotate(360deg); }
       }
 
-      /* ROOK: axe chop — swing up then slam down, shake on impact */
-      @keyframes w-axe-chop{
-        0%  { transform:rotate(30deg);  transform-origin:bottom right; }
-        15% { transform:rotate(-50deg); transform-origin:bottom right; } /* swing back up */
-        16% { transform:rotate(-50deg); transform-origin:bottom right; }
-        60% { transform:rotate(40deg);  transform-origin:bottom right; } /* slam down */
-        62% { transform:rotate(36deg);  transform-origin:bottom right; } /* impact shake */
-        64% { transform:rotate(42deg);  transform-origin:bottom right; }
-        66% { transform:rotate(38deg);  transform-origin:bottom right; }
-        100%{ transform:rotate(30deg);  transform-origin:bottom right; }
+      /* ROOK: hammer-slam — vung lên chậm → khựng → đập cực nhanh → bật nảy → nghỉ */
+      @keyframes hammer-slam{
+        /* 0-30%: vung ngược ra sau chậm rãi */
+        0%   { transform:rotate(0deg); }
+        30%  { transform:rotate(-65deg); }
+        /* 30-35%: khựng một nhịp trên không */
+        35%  { transform:rotate(-62deg); }
+        /* 35-40%: đập mạnh xuống — tốc độ cực nhanh */
+        37%  { transform:rotate(10deg); }
+        40%  { transform:rotate(55deg); }
+        /* 40-45%: bật nảy phản lực */
+        42%  { transform:rotate(45deg); }
+        45%  { transform:rotate(50deg); }
+        /* 45-100%: từ từ về 0 rồi đứng im */
+        65%  { transform:rotate(0deg); }
+        100% { transform:rotate(0deg); }
       }
 
       /* QUEEN: orb pulse glow */
@@ -3998,61 +4018,83 @@ function buildWarriorEl(rank, stars) {
        Thrust: w-spear-thrust, near-vertical (-5°)
     ═══════════════════════════════════════════ */
     if (rank === 'knight') {
-      // Horizontal lance/spear: tip points RIGHT toward enemy
-      // viewBox: -10 -15 90 40 gives room for tip overflow + aura
-      const S  = Math.round(22 * ws2);   // SVG rendered width
-      const SH = Math.round(14 * ws2);   // SVG rendered height
+      // Horizontal spear — tip RIGHT, combo stab animation with phantom spears
+      const S   = Math.round(24 * ws2);
+      const SH  = Math.round(20 * ws2);
       const green = wcol, dark = col;
-      const thrustDur = stars>=3 ? '0.5s' : stars>=2 ? '0.65s' : '0.85s';
+      const comboDur = stars>=3 ? '1.0s' : stars>=2 ? '1.2s' : '1.5s';
       const glow = stars>=3
         ? `filter:drop-shadow(0 0 5px ${green}) drop-shadow(0 0 10px ${green});`
         : stars>=2 ? `filter:drop-shadow(0 0 3px ${green});` : '';
-      // Spear drawn horizontally: tip at RIGHT (x=76), butt at LEFT (x=8)
-      // All coords in viewBox space -10 -15 90 40 (90×40 units)
-      const shaftY = 10; // center y of shaft
-      const shW    = stars>=3 ? 3.5 : stars>=2 ? 3 : 2.5;
+      // viewBox: -15 -25 110 50 — wide left (nạp đà), wide right (thrust), tall (phantoms)
+      const sy  = 12; // main spear shaft Y center
+      const shW = stars>=3 ? 4 : stars>=2 ? 3.5 : 3;
+
+      // Phantom spear helper — same shape, lower opacity, offset in Y
+      const phantomSpear = (offsetY, opBase, opHead) => `
+        <!-- Phantom spear at Y offset ${offsetY} -->
+        <line x1="8" y1="${sy+offsetY}" x2="66" y2="${sy+offsetY}"
+              stroke="${dark}" stroke-width="${shW*.8}" stroke-linecap="round" opacity="${opBase}"/>
+        <path d="M 66,${sy+offsetY} L 72,${sy+offsetY-4} L 79,${sy+offsetY} L 72,${sy+offsetY+4} Z"
+              fill="${green}" opacity="${opHead}"/>
+        <line x1="68" y1="${sy+offsetY}" x2="78" y2="${sy+offsetY}"
+              stroke="white" stroke-width=".8" opacity="${opHead*.5}"/>`;
+
       return `<div style="position:relative;display:inline-block;
                           width:${S}px;height:${SH}px;overflow:visible;
-                          animation:w-spear-thrust ${thrustDur} ease-in-out infinite;">
-        <svg width="${S}" height="${SH}" viewBox="-10 -15 90 40"
+                          animation:spear-combo ${comboDur} cubic-bezier(.2,0,.4,1) infinite;">
+        <svg width="${S}" height="${SH}" viewBox="-15 -25 110 50"
              xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;${glow}">
-          <!-- ── SHAFT ── -->
-          <rect x="8" y="${shaftY-shW/2}" width="58" height="${shW}" rx="${shW/2}"
-                fill="${dark}"/>
+
+          ${stars>=2 ? `<!-- PHANTOM SPEAR UP (chếch trên) -->
+          ${phantomSpear(-10, .25, .3)}` : ''}
+          ${stars>=2 ? `<!-- PHANTOM SPEAR DOWN (chếch dưới) -->
+          ${phantomSpear(10, .25, .3)}` : ''}
+          ${stars>=3 ? `<!-- EXTRA PHANTOM — further up, very faint -->
+          ${phantomSpear(-18, .12, .15)}
+          <!-- EXTRA PHANTOM — further down -->
+          ${phantomSpear(18, .12, .15)}` : ''}
+
+          <!-- ── MAIN SHAFT ── -->
+          <line x1="8" y1="${sy}" x2="66" y2="${sy}"
+                stroke="${dark}" stroke-width="${shW}" stroke-linecap="round"/>
           <!-- shaft highlight -->
-          <rect x="8" y="${shaftY-shW/2}" width="58" height="${shW*.4}" rx="${shW/2}"
-                fill="rgba(255,255,255,.3)"/>
-          ${stars>=2 ? `<!-- metal grip bands -->
-          <rect x="28" y="${shaftY-shW/2-1}" width="4" height="${shW+2}" rx="1" fill="${gold}"/>
-          <rect x="40" y="${shaftY-shW/2-1}" width="4" height="${shW+2}" rx="1" fill="${gold}"/>` : ''}
-          ${stars>=2 ? `<!-- CROSS-GUARD (lugs) at x=66 -->
-          <path d="M 66,${shaftY-7} L 66,${shaftY+7}" stroke="${gold}" stroke-width="3.5" stroke-linecap="round"/>
-          <path d="M 65,${shaftY-6} L 65,${shaftY+6}" stroke="white" stroke-width=".8" stroke-linecap="round" opacity=".5"/>` : ''}
-          <!-- ── SPEARHEAD (diamond leaf, tip at x=80) ── -->
-          <path d="M 66,${shaftY} L 72,${shaftY-5} L 80,${shaftY} L 72,${shaftY+5} Z"
+          <line x1="8" y1="${sy-shW*.35}" x2="66" y2="${sy-shW*.35}"
+                stroke="rgba(255,255,255,.3)" stroke-width="${shW*.35}" stroke-linecap="round"/>
+          ${stars>=2 ? `<!-- grip bands -->
+          <rect x="26" y="${sy-shW/2-1.5}" width="5" height="${shW+3}" fill="${gold}"/>
+          <rect x="40" y="${sy-shW/2-1.5}" width="5" height="${shW+3}" fill="${gold}"/>
+          <!-- crossguard lug -->
+          <line x1="64" y1="${sy-8}" x2="64" y2="${sy+8}"
+                stroke="${gold}" stroke-width="4" stroke-linecap="round"/>
+          <line x1="63" y1="${sy-7}" x2="63" y2="${sy+7}"
+                stroke="white" stroke-width="1" stroke-linecap="round" opacity=".4"/>` : ''}
+
+          <!-- ── SPEARHEAD (diamond leaf) ── -->
+          <path d="M 66,${sy} L 73,${sy-6} L 82,${sy} L 73,${sy+6} Z"
                 fill="${green}"/>
-          <!-- blade spine -->
-          <line x1="68" y1="${shaftY}" x2="79" y2="${shaftY}"
-                stroke="white" stroke-width="1" opacity=".45"/>
-          <!-- tip glint -->
-          <circle cx="80" cy="${shaftY}" r="1.5" fill="white" opacity=".9"/>
-          ${stars>=3 ? `<!-- extra wide blade etchings -->
-          <line x1="70" y1="${shaftY-2}" x2="78" y2="${shaftY-2}" stroke="${gold}" stroke-width=".7" opacity=".6"/>
-          <line x1="70" y1="${shaftY+2}" x2="78" y2="${shaftY+2}" stroke="${gold}" stroke-width=".7" opacity=".6"/>` : ''}
+          <line x1="68" y1="${sy}" x2="81" y2="${sy}"
+                stroke="white" stroke-width="1.2" opacity=".5"/>
+          <circle cx="82" cy="${sy}" r="1.8" fill="white" opacity=".9"/>
+          ${stars>=3 ? `<!-- blade etch lines -->
+          <line x1="70" y1="${sy-3}" x2="80" y2="${sy-3}" stroke="${gold}" stroke-width=".8" opacity=".65"/>
+          <line x1="70" y1="${sy+3}" x2="80" y2="${sy+3}" stroke="${gold}" stroke-width=".8" opacity=".65"/>` : ''}
+
           <!-- ── BUTT CAP ── -->
-          <path d="M 8,${shaftY-shW/2} L 4,${shaftY} L 8,${shaftY+shW/2} Z"
-                fill="${stars>=2?gold:green}"/>
-          <!-- ── ENERGY AURA at spearhead ── -->
-          ${stars>=1 ? `<circle cx="73" cy="${shaftY}" r="8" stroke="${green}" stroke-width="1.5"
-                  fill="none" opacity=".5" style="animation:w-orb-elec ${thrustDur} ease-in-out infinite;"/>` : ''}
-          ${stars>=2 ? `<circle cx="73" cy="${shaftY}" r="13" stroke="${green}" stroke-width="1"
-                  fill="none" opacity=".3" style="animation:w-orb-elec ${thrustDur} ease-in-out infinite;animation-delay:-.2s;animation-direction:reverse;"/>` : ''}
-          ${stars>=3 ? `<circle cx="73" cy="${shaftY}" r="18" stroke="${gold}" stroke-width=".8"
-                  fill="none" opacity=".2" style="animation:w-spark-ring .8s linear infinite;"/>
-          <!-- thrust sparks -->
-          <line x1="82" y1="${shaftY-3}" x2="88" y2="${shaftY-6}" stroke="${green}" stroke-width="1.2" opacity=".7"/>
-          <line x1="82" y1="${shaftY}"   x2="89" y2="${shaftY}"   stroke="${green}" stroke-width="1"   opacity=".6"/>
-          <line x1="82" y1="${shaftY+3}" x2="88" y2="${shaftY+6}" stroke="${green}" stroke-width="1.2" opacity=".7"/>` : ''}
+          <polygon points="8,${sy-shW/2} 2,${sy} 8,${sy+shW/2}"
+                   fill="${stars>=2?gold:green}"/>
+
+          <!-- ── ENERGY AURA ── -->
+          <circle cx="74" cy="${sy}" r="${stars>=3?10:8}" stroke="${green}" stroke-width="${stars>=3?2:1.5}"
+                  fill="none" opacity="${stars>=3?.6:.45}"
+                  style="animation:w-orb-elec ${comboDur} ease-in-out infinite;"/>
+          ${stars>=2 ? `<circle cx="74" cy="${sy}" r="${stars>=3?16:13}" stroke="${green}" stroke-width="1"
+                  fill="none" opacity=".28"
+                  style="animation:w-orb-elec ${comboDur} ease-in-out infinite;animation-direction:reverse;animation-delay:-.3s;"/>` : ''}
+          ${stars>=3 ? `<!-- thrust impact sparks -->
+          <line x1="84" y1="${sy-4}" x2="91" y2="${sy-8}" stroke="${green}" stroke-width="1.5" opacity=".7"/>
+          <line x1="84" y1="${sy}"   x2="92" y2="${sy}"   stroke="${green}" stroke-width="1.2" opacity=".65"/>
+          <line x1="84" y1="${sy+4}" x2="91" y2="${sy+8}" stroke="${green}" stroke-width="1.5" opacity=".7"/>` : ''}
         </svg>
       </div>`;
     }
@@ -4172,89 +4214,111 @@ function buildWarriorEl(rank, stars) {
        Spinning: w-hammer-spin, pivot=handle-end
     ═══════════════════════════════════════════ */
     if (rank === 'rook') {
-      // Battle axe: large crescent head + thick handle
-      // Pivot at handle BOTTOM (butt), chop down animation
-      const S  = Math.round(22 * ws2);
-      const SH = Math.round(26 * ws2);
+      // Battle axe — HEAD FACES RIGHT, sharp polygon, thick handle
+      // Pivot bottom of handle → hammer-slam animation
+      const S   = Math.round(24 * ws2);
+      const SH  = Math.round(28 * ws2);
       const brn = wcol, dark = col;
-      const chopDur = stars>=3 ? '0.6s' : stars>=2 ? '0.8s' : '1.1s';
+      const slamDur = stars>=3 ? '0.9s' : stars>=2 ? '1.1s' : '1.4s';
       const glow = stars>=3
         ? `filter:drop-shadow(0 0 5px ${brn}) drop-shadow(0 0 10px ${brn});`
         : stars>=2 ? `filter:drop-shadow(0 0 3px ${brn});` : '';
-      // Axe drawn in viewBox -20 -20 80 90
-      // Handle: (20,15) → (20,72) — butt at bottom-right
-      // Axe head: large crescent on LEFT side of handle top
+      // Axe in viewBox -30 -30 100 100:
+      // Handle: x=20 (thick), y=10→y=72, PIVOT at bottom (20,72)
+      // Axe HEAD: right side of handle top — FACING RIGHT
+      // Head is large rectangular/polygon blade, NO border-radius
+      const hShW = stars>=3 ? 10 : stars>=2 ? 8 : 7; // handle shaft width
+      const hx   = 20; // handle center X
       return `<div style="position:relative;display:inline-block;
                           width:${S}px;height:${SH}px;overflow:visible;
-                          animation:w-axe-chop ${chopDur} ease-in-out infinite;
-                          transform-origin:right bottom;">
-        <svg width="${S}" height="${SH}" viewBox="-20 -20 80 90"
+                          animation:hammer-slam ${slamDur} ease-out infinite;
+                          transform-origin:${Math.round(S*hx/70)}px ${SH}px;">
+        <svg width="${S}" height="${SH}" viewBox="-30 -30 100 100"
              xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;${glow}">
           <defs>
-            <radialGradient id="axeHead${stars}" cx="40%" cy="30%" r="70%">
-              <stop offset="0%"   stop-color="white"  stop-opacity=".4"/>
-              <stop offset="40%"  stop-color="${brn}"  stop-opacity=".9"/>
+            <linearGradient id="headG${stars}" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stop-color="white"  stop-opacity=".35"/>
+              <stop offset="35%"  stop-color="${brn}"  stop-opacity=".95"/>
               <stop offset="100%" stop-color="${dark}"/>
-            </radialGradient>
+            </linearGradient>
           </defs>
 
-          <!-- ── HANDLE ── -->
-          <rect x="17" y="14" width="${stars>=3?7:6}" height="54" rx="3"
+          <!-- ── HANDLE ── thick, no-rx (sharp corners at top) ── -->
+          <rect x="${hx-hShW/2}" y="10" width="${hShW}" height="58"
                 fill="${dark}"/>
-          <!-- handle highlight -->
-          <rect x="19" y="14" width="2" height="54" rx="1"
-                fill="rgba(255,255,255,.22)"/>
+          <!-- handle highlight strip -->
+          <rect x="${hx-hShW/2+2}" y="10" width="${Math.round(hShW*.3)}" height="58"
+                fill="rgba(255,255,255,.18)"/>
           ${stars>=2 ? `<!-- grip wrap bands -->
-          <rect x="16" y="34" width="${stars>=3?9:8}" height="3" rx="1.5" fill="${gold}"/>
-          <rect x="16" y="46" width="${stars>=3?9:8}" height="3" rx="1.5" fill="${gold}"/>
-          <rect x="16" y="58" width="${stars>=3?9:8}" height="3" rx="1.5" fill="${gold}"/>` : ''}
+          <rect x="${hx-hShW/2-2}" y="34" width="${hShW+4}" height="4" fill="${gold}"/>
+          <rect x="${hx-hShW/2-2}" y="46" width="${hShW+4}" height="4" fill="${gold}"/>
+          <rect x="${hx-hShW/2-2}" y="58" width="${hShW+4}" height="4" fill="${gold}"/>` : ''}
 
-          <!-- ── POMMEL (butt cap, pivot point) ── -->
-          <ellipse cx="20" cy="70" rx="${stars>=3?8:6}" ry="${stars>=3?6:5}"
+          <!-- ── POMMEL — pivot point, bottom ── -->
+          <polygon points="${hx-hShW/2-3},68 ${hx+hShW/2+3},68 ${hx+hShW/2+5},72 ${hx-hShW/2-5},72"
                    fill="${brn}"/>
-          <ellipse cx="18" cy="68" rx="3" ry="2" fill="white" opacity=".25"/>
+          <polygon points="${hx-hShW/2-3},68 ${hx+hShW/2+3},68 ${hx+hShW/2+5},72 ${hx-hShW/2-5},72"
+                   fill="none" stroke="white" stroke-width=".5" opacity=".3"/>
 
-          <!-- ── AXE HEAD — large crescent facing left ── -->
-          <!-- outer arc -->
-          <path d="M 18,14 Q -14,-2 -10,28 Q -8,46 18,44 Z"
-                fill="url(#axeHead${stars})"/>
-          <!-- inner bite (concave edge) -->
-          <path d="M 18,14 Q 2,10 4,29 Q 4,42 18,44 Z"
-                fill="${dark}" opacity=".45"/>
-          <!-- cutting edge highlight -->
-          <path d="M -10,28 Q -12,16 -8,6 Q -2,-2 6,2"
-                stroke="white" stroke-width="2.5" fill="none"
-                stroke-linecap="round" opacity=".6"/>
-          <!-- edge glint -->
-          <path d="M -9,22 Q -11,14 -6,8"
-                stroke="white" stroke-width="1" fill="none" opacity=".4"/>
-          ${stars>=2 ? `<!-- rivets on blade -->
-          <circle cx="2"  cy="16" r="1.5" fill="${gold}"/>
-          <circle cx="-2" cy="26" r="1.5" fill="${gold}"/>
-          <circle cx="2"  cy="36" r="1.5" fill="${gold}"/>
-          <!-- rune on flat of axe -->
-          <text x="10" y="32" text-anchor="middle" font-size="7"
-                fill="${gold}" opacity=".5" font-family="serif">ᚱ</text>` : ''}
-          ${stars>=3 ? `<!-- spike on top of axe head -->
-          <path d="M 14,14 L 18,4 L 22,14" fill="${brn}"/>
-          <line x1="18" y1="4" x2="18" y2="14" stroke="white" stroke-width=".8" opacity=".4"/>
-          <!-- second smaller blade on right (double axe) -->
-          <path d="M 22,16 Q 40,10 38,28 Q 36,40 22,42 Z"
-                fill="${brn}" opacity=".7"/>
-          <path d="M 22,16 Q 28,14 28,28 Q 28,38 22,42 Z"
-                fill="${dark}" opacity=".35"/>
-          <path d="M 38,28 Q 40,20 36,14"
-                stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".5"/>` : ''}
+          <!-- ── AXE HEAD — FACING RIGHT, sharp polygon ── -->
+          <!-- Main blade body: trapezoidal slab pointing right -->
+          <polygon points="
+            ${hx+hShW/2},12
+            ${hx+hShW/2},32
+            58,38
+            64,28
+            64,18
+            58,8
+          " fill="url(#headG${stars})"/>
+          <!-- Cutting edge — hard angled line, no rx -->
+          <polygon points="
+            64,18
+            64,28
+            ${stars>=2?68:66},30
+            ${stars>=2?70:67},24
+            ${stars>=2?68:66},18
+          " fill="${brn}"/>
+          <!-- edge highlight (razor glint) -->
+          <line x1="${stars>=2?70:67}" y1="${stars>=2?24:24}"
+                x2="${stars>=2?68:66}" y2="18"
+                stroke="white" stroke-width="2.5" stroke-linecap="square" opacity=".7"/>
+          <line x1="${stars>=2?70:67}" y1="${stars>=2?24:24}"
+                x2="${stars>=2?68:66}" y2="30"
+                stroke="white" stroke-width="1.5" stroke-linecap="square" opacity=".45"/>
 
-          <!-- ── ENERGY AURA at axe head ── -->
-          ${stars>=1 ? `<circle cx="4" cy="28" r="12" stroke="${brn}" stroke-width="1.5"
-                  fill="none" opacity=".4" style="animation:w-orb-elec ${chopDur} ease-in-out infinite;"/>` : ''}
-          ${stars>=2 ? `<circle cx="4" cy="28" r="20" stroke="${brn}" stroke-width="1"
-                  fill="none" opacity=".25" style="animation:w-orb-elec ${chopDur} ease-in-out infinite;animation-delay:-.3s;animation-direction:reverse;"/>` : ''}
-          ${stars>=3 ? `<!-- impact sparks (appear on chop) -->
-          <line x1="-12" y1="28" x2="-18" y2="22" stroke="${gold}" stroke-width="1.5" opacity=".7"/>
-          <line x1="-13" y1="32" x2="-20" y2="32" stroke="${gold}" stroke-width="1.2" opacity=".6"/>
-          <line x1="-12" y1="36" x2="-18" y2="42" stroke="${gold}" stroke-width="1.5" opacity=".7"/>` : ''}
+          <!-- blade top spike (sharp corner) -->
+          <polygon points="${hx+hShW/2},12 ${hx+hShW/2+4},8 58,8 ${hx+hShW/2+2},10"
+                   fill="${brn}"/>
+          ${stars>=3 ? `<!-- bottom spike -->
+          <polygon points="${hx+hShW/2},32 ${hx+hShW/2+4},36 58,38 ${hx+hShW/2+2},34"
+                   fill="${brn}"/>` : ''}
+
+          <!-- Back face (left side of axe head) — flat, dark -->
+          <rect x="${hx+hShW/2}" y="12" width="6" height="20" fill="${dark}" opacity=".4"/>
+
+          ${stars>=2 ? `<!-- eye hole (decorative, no rx) -->
+          <polygon points="44,18 48,16 52,18 52,22 48,24 44,22" fill="${dark}" opacity=".5"/>
+          <polygon points="44,18 48,16 52,18 52,22 48,24 44,22"
+                   fill="none" stroke="${gold}" stroke-width=".8" opacity=".5"/>
+          <!-- rune on flat -->
+          <text x="38" y="29" text-anchor="middle" font-size="7"
+                fill="${gold}" opacity=".55" font-family="serif">ᚱ</text>` : ''}
+          ${stars>=3 ? `<!-- double-bevel edge for thickness illusion -->
+          <polygon points="64,18 ${stars>=3?70:67},${stars>=3?18:18} ${stars>=3?70:67},${stars>=3?24:24} 64,18"
+                   fill="white" opacity=".2"/>` : ''}
+
+          <!-- ── ENERGY AURA at blade edge ── -->
+          <circle cx="${stars>=3?68:65}" cy="24" r="${stars>=3?12:10}"
+                  stroke="${brn}" stroke-width="1.5" fill="none" opacity=".4"
+                  style="animation:w-orb-elec ${slamDur} ease-in-out infinite;"/>
+          ${stars>=2 ? `<circle cx="${stars>=3?68:65}" cy="24" r="${stars>=3?20:16}"
+                  stroke="${brn}" stroke-width="1" fill="none" opacity=".22"
+                  style="animation:w-orb-elec ${slamDur} ease-in-out infinite;animation-direction:reverse;animation-delay:-.4s;"/>` : ''}
+          ${stars>=3 ? `<!-- slam impact sparks at cutting edge -->
+          <line x1="72" y1="18" x2="78" y2="12" stroke="${gold}" stroke-width="2"   opacity=".8"/>
+          <line x1="72" y1="24" x2="80" y2="24" stroke="${gold}" stroke-width="1.8" opacity=".7"/>
+          <line x1="72" y1="30" x2="78" y2="36" stroke="${gold}" stroke-width="2"   opacity=".8"/>
+          <line x1="70" y1="20" x2="75" y2="14" stroke="white"   stroke-width="1"   opacity=".5"/>` : ''}
         </svg>
       </div>`;
     }
