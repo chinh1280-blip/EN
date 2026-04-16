@@ -228,7 +228,7 @@ input::placeholder{color:var(--muted)}
 .fc-back{background:var(--paper);border:1px solid var(--rule2);box-shadow:var(--shadow2);transform:rotateY(180deg)}
 .fc-note-face{
   background:#fdf8f0;border:1px solid #e8dfc8;
-  box-shadow:var(--shadow2);transform:rotateY(360deg);
+  box-shadow:var(--shadow2);
   padding:18px 20px;
 }
 .fc-note-face-inner{
@@ -2058,23 +2058,25 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
           </div>
           <div class="fc-card-scene" onclick="flipFC()">
             <div class="fc-card-3d" id="fc-card">
+              <!-- FACE 1: Tiếng Anh + phiên âm + câu ví dụ -->
               <div class="fc-face fc-front">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
                   <div class="chip chip-muted" id="fc-topic-chip">general</div>
                   <span id="fc-hard-star" style="color:var(--amber);font-size:18px;display:none;" title="Từ khó">★</span>
                 </div>
-                <div class="fc-eng"  id="fc-word">Serendipity</div>
+                <div class="fc-eng" id="fc-word">Serendipity</div>
                 <div class="fc-phon" id="fc-phon">/ˌser.ənˈdɪp.ɪ.ti/</div>
-                <div class="fc-eg-front" id="fc-eg-front" style="font-size:12px;color:rgba(0,0,0,.35);font-style:italic;margin-top:6px;padding:0 8px;max-width:100%;text-align:center;line-height:1.5;"></div>
-                <div class="fc-tap-hint" style="margin-top:8px;">Nhấn để xem nghĩa · nhấn lại để lật ↺</div>
+                <div class="fc-eg-front" id="fc-eg-front" style="font-size:12px;color:rgba(0,0,0,.4);font-style:italic;margin-top:10px;padding:0 8px;max-width:100%;text-align:center;line-height:1.6;border-left:2px solid var(--rule2);text-align:left;padding-left:12px;"></div>
+                <div class="fc-tap-hint" style="margin-top:10px;">Nhấn để xem nghĩa ↓</div>
               </div>
+              <!-- FACE 2: Tiếng Việt + loại từ + câu ví dụ -->
               <div class="fc-face fc-back">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;justify-content:center;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;justify-content:center;flex-wrap:wrap;">
                   <div class="fc-viet" id="fc-viet" style="margin:0;">Sự may mắn tình cờ</div>
                   <span id="fc-pos-tag" class="chip chip-blue" style="font-size:11px;display:none;"></span>
                 </div>
-                <div class="fc-eg"   id="fc-eg">"Finding that café was pure serendipity."</div>
-                
+                <div class="fc-eg" id="fc-eg">"Finding that café was pure serendipity."</div>
+                <div class="fc-tap-hint" style="margin-top:10px;font-size:11px;">Nhấn để xem ghi chú 📝 (nếu có) · hoặc nhấn đánh giá</div>
               </div>
               <!-- NOTE FACE: 3rd flip -->
               <div class="fc-face fc-note-face" id="fc-note-face">
@@ -7201,8 +7203,41 @@ function setSentType(t,btn){
 }
 // RTE helpers (rich text editor)
 function rteCmd(cmd){ document.execCommand(cmd,false,null); }
-function rteClr(c){ document.execCommand('styleWithCSS',false,true); document.execCommand('foreColor',false,c); }
-function rteHl(c){  document.execCommand('styleWithCSS',false,true); document.execCommand('hiliteColor',false,c); }
+function rteClr(color){
+  // Wrap selection in <span style="color:...">
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  document.execCommand('styleWithCSS', false, true);
+  // Try execCommand first (works in most browsers)
+  const ok = document.execCommand('foreColor', false, color);
+  if (!ok) {
+    // Fallback: manual span wrap
+    const range = sel.getRangeAt(0);
+    const span = document.createElement('span');
+    span.style.color = color;
+    try { range.surroundContents(span); } catch(e) {
+      const frag = range.extractContents();
+      span.appendChild(frag);
+      range.insertNode(span);
+    }
+  }
+}
+function rteHl(color){
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  document.execCommand('styleWithCSS', false, true);
+  const ok = document.execCommand('hiliteColor', false, color);
+  if (!ok) {
+    const range = sel.getRangeAt(0);
+    const span = document.createElement('span');
+    span.style.backgroundColor = color;
+    try { range.surroundContents(span); } catch(e) {
+      const frag = range.extractContents();
+      span.appendChild(frag);
+      range.insertNode(span);
+    }
+  }
+}
 function rteKey(e){ if(e.ctrlKey||e.metaKey){ if(e.key==='b'){e.preventDefault();rteCmd('bold');} if(e.key==='i'){e.preventDefault();rteCmd('italic');} if(e.key==='u'){e.preventDefault();rteCmd('underline');} } }
 function rteGet()  { return document.getElementById('sn-note-editor')?.innerHTML||''; }
 function rteSet(h) { const el=document.getElementById('sn-note-editor'); if(el) el.innerHTML=h||''; }
@@ -8655,6 +8690,8 @@ function closeMoreMenu() {
   document.getElementById('ew-e').value   = w.example||'';
   document.getElementById('ew-t').value   = w.topic||'general';
   document.getElementById('ew-l').value   = w.level||3;
+  const ewNote = document.getElementById('ew-note');
+  if (ewNote) ewNote.innerHTML = w.note||'';
   openModal('editModal');
 }
 >
