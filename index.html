@@ -230,6 +230,10 @@ input::placeholder{color:var(--muted)}
   background:#fdf8f0;border:1px solid #e8dfc8;
   box-shadow:var(--shadow2);
   padding:18px 20px;
+  /* Completely separate from 3D flip — controlled by display only */
+  position:absolute;inset:0;border-radius:var(--r3);
+  display:none;z-index:5;
+  flex-direction:column;align-items:flex-start;justify-content:flex-start;
 }
 .fc-note-face-inner{
   width:100%;font-size:13px;line-height:1.8;color:#5a4a30;
@@ -241,11 +245,9 @@ input::placeholder{color:var(--muted)}
 }
 .fc-card{ transition:transform .45s cubic-bezier(.4,0,.2,1); }
 .fc-card.flipped{ transform:rotateY(180deg); }
+/* .noted: freeze 3D, show note overlay via display:flex */
 .fc-card.noted{ transform:rotateY(0deg) !important; transition:none; }
-.fc-note-face{ display:none; }
-.fc-card.noted .fc-front{ opacity:0; pointer-events:none; }
-.fc-card.noted .fc-back{ opacity:0; pointer-events:none; }
-.fc-card.noted .fc-note-face{ display:flex; transform:none; opacity:1; }
+.fc-card.noted .fc-note-face{ display:flex !important; }
 .fc-eng{font-family:var(--serif);font-size:44px;line-height:1;color:var(--ink);margin-bottom:8px}
 .fc-phon{font-family:var(--mono);font-size:15px;color:var(--muted);margin-bottom:14px}
 .fc-tap-hint{font-size:12px;color:var(--muted)}
@@ -2069,14 +2071,21 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
                 <div class="fc-eg-front" id="fc-eg-front" style="font-size:12px;color:rgba(0,0,0,.4);font-style:italic;margin-top:10px;padding:0 8px;max-width:100%;text-align:center;line-height:1.6;border-left:2px solid var(--rule2);text-align:left;padding-left:12px;"></div>
                 <div class="fc-tap-hint" style="margin-top:10px;">Nhấn để xem nghĩa ↓</div>
               </div>
-              <!-- FACE 2: Tiếng Việt + loại từ + câu ví dụ -->
+              <!-- FACE 2: Loại từ trên + Tiếng Việt + ghi chú dưới trong khung -->
               <div class="fc-face fc-back">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;justify-content:center;flex-wrap:wrap;">
-                  <div class="fc-viet" id="fc-viet" style="margin:0;">Sự may mắn tình cờ</div>
-                  <span id="fc-pos-tag" class="chip chip-blue" style="font-size:11px;display:none;"></span>
-                </div>
+                <span id="fc-pos-tag" class="chip chip-blue" style="font-size:11px;display:none;margin-bottom:8px;"></span>
+                <div class="fc-viet" id="fc-viet">Sự may mắn tình cờ</div>
                 <div class="fc-eg" id="fc-eg">"Finding that café was pure serendipity."</div>
-                <div class="fc-tap-hint" style="margin-top:10px;font-size:11px;">Nhấn để xem ghi chú 📝 (nếu có) · hoặc nhấn đánh giá</div>
+                <div id="fc-back-note" style="display:none;margin-top:10px;width:100%;
+                     background:#fdf8f0;border:1px solid #e8dfc8;border-radius:var(--r);
+                     padding:8px 12px 8px 32px;font-size:12px;line-height:1.7;
+                     color:#5a4a30;font-style:italic;position:relative;text-align:left;">
+                  <span style="position:absolute;left:10px;top:8px;font-style:normal;">💡</span>
+                  <div id="fc-back-note-content"></div>
+                </div>
+                <div class="fc-tap-hint" style="margin-top:8px;font-size:11px;">
+                  Nhấn lại để lật ↺
+                </div>
               </div>
               <!-- NOTE FACE: 3rd flip -->
               <div class="fc-face fc-note-face" id="fc-note-face">
@@ -2986,7 +2995,10 @@ function toast(msg, type='') {
   clearTimeout(t._t); t._t=setTimeout(()=>t.className='',2600);
 }
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if(el){ el.classList.remove('open'); el.style.display=''; }
+}
 function speak(word, rate) {
   if (!window.speechSynthesis||!word) return;
   speechSynthesis.cancel();
@@ -7550,6 +7562,18 @@ function showFC(){
     if(w.partOfSpeech){posEl.textContent=w.partOfSpeech;posEl.style.display='inline-flex';}
     else posEl.style.display='none';
   }
+  // Show note in back face note box (if word has note)
+  const backNote = document.getElementById('fc-back-note');
+  const backNoteContent = document.getElementById('fc-back-note-content');
+  const hasWordNote = w.note && w.note.trim() && w.note !== '<br>';
+  if(backNote){
+    if(hasWordNote && backNoteContent){
+      backNoteContent.innerHTML = w.note;
+      backNote.style.display = 'block';
+    } else {
+      backNote.style.display = 'none';
+    }
+  }
   // Show ★ if word is hard
   const starEl = document.getElementById('fc-hard-star');
   if (starEl) starEl.style.display = hardWordIds.has(w.id) ? 'inline' : 'none';
@@ -7565,28 +7589,14 @@ function showFC(){
 function flipFC(){
   const card=document.getElementById('fc-card');
   const w=fcQueue[fcIdx];
-  if(!fcFlipped && !fcNoted){
-    // Flip 1: front → back (meaning)
+  if(!fcFlipped){
+    // Flip to back: show meaning + note
     card.classList.remove('noted');
     card.classList.add('flipped');
     fcFlipped=true; fcNoted=false;
     speak(w?.word);
-  } else if(fcFlipped && !fcNoted){
-    // Flip 2: back → note (only if word has note) or → front
-    const hasNote = w?.note && w.note.trim() && w.note !== '<br>';
-    if(hasNote){
-      const noteContent = document.getElementById('fc-note-content');
-      if(noteContent) noteContent.innerHTML = w.note;
-      card.classList.remove('flipped');
-      card.classList.add('noted');
-      fcFlipped=false; fcNoted=true;
-    } else {
-      // No note → back to front
-      card.classList.remove('flipped','noted');
-      fcFlipped=false; fcNoted=false;
-    }
-  } else if(fcNoted){
-    // Flip 3: note → front
+  } else {
+    // Flip back to front
     card.classList.remove('flipped','noted');
     fcFlipped=false; fcNoted=false;
   }
@@ -9373,8 +9383,8 @@ function deleteWord(id){
 function openEditWord(id) {
   const w = words.find(x=>x.id===id);
   if(!w){ toast('Không tìm thấy từ!','bad'); return; }
-  try { populateTopicSelects(); } catch(e){ console.warn('populateTopicSelects error:',e); }
-  const set = (elId, val) => { const el=document.getElementById(elId); if(el) el.value=val; };
+  try { populateTopicSelects(); } catch(e){}
+  const set = (elId, val) => { const el=document.getElementById(elId); if(el) el.value=String(val); };
   set('ew-id',  id);
   set('ew-w',   w.word);
   set('ew-p',   w.phonetic||'');
@@ -9385,8 +9395,10 @@ function openEditWord(id) {
   set('ew-l',   w.level||3);
   const ewNote = document.getElementById('ew-note');
   if(ewNote) ewNote.innerHTML = w.note||'';
+  // Force open modal with both classList AND inline style
   const modal = document.getElementById('editModal');
-  if(!modal){ toast('Lỗi: không tìm thấy modal!','bad'); return; }
-  openModal('editModal');
+  if(!modal){ toast('Modal không tìm thấy!','bad'); return; }
+  modal.classList.add('open');
+  modal.style.display = 'flex';  // belt-and-suspenders
 }
 >
