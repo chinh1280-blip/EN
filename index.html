@@ -3668,24 +3668,24 @@ const RANK_CONFIG = {
             skill3:{name:'Dao găm',        col:'#aac0ff', col2:'#80d0cc'} },
   knight: { color:'#40c060', weapon:'#80e090', aura:'rgba(60,200,100,.4)',
             skill1:{name:'Lốc xoáy xanh', col:'#40ff80', col2:'#20d060'},
-            skill2:{name:'Phóng lao',      col:'#60e080', col2:'#20b050'},
-            skill3:{name:'Mũi giáo',       col:'#80ff60', col2:'#40c040'} },
+            skill2:{name:'Vạn tiễn',       col:'#60e080', col2:'#20b050'},
+            skill3:{name:'Vạn tiễn',       col:'#80ff60', col2:'#40c040'} },
   bishop: { color:'#4080ff', weapon:'#80b0ff', aura:'rgba(60,120,255,.4)',
             skill1:{name:'Lốc xoáy phép', col:'#6080ff', col2:'#8040ff'},
             skill2:{name:'Mưa tinh thể',  col:'#80a0ff', col2:'#a060ff'},
             skill3:{name:'Tinh thể',       col:'#a0c0ff', col2:'#c080ff'} },
   rook:   { color:'#c08040', weapon:'#e0a060', aura:'rgba(180,120,40,.45)',
-            skill1:{name:'Lốc xoáy đá',   col:'#c08030', col2:'#804010'},
+            skill1:{name:'Địa chấn',       col:'#c08030', col2:'#804010'},
             skill2:{name:'Mưa đá thiên thạch',col:'#d09040',col2:'#a05820'},
-            skill3:{name:'Quả cầu đá',     col:'#b07030', col2:'#804020'} },
+            skill3:{name:'Địa chấn',       col:'#b07030', col2:'#804020'} },
   queen:  { color:'#9040e0', weapon:'#cc60ff', aura:'rgba(160,50,230,.5)',
-            skill1:{name:'Lốc xoáy tím',  col:'#c040ff', col2:'#8020cc'},
-            skill2:{name:'Mưa kiếm tím',  col:'#e060ff', col2:'#a030d0'},
-            skill3:{name:'Cầu năng lượng',col:'#d050ff', col2:'#9020c0'} },
+            skill1:{name:'Bão nguyên tố',  col:'#c040ff', col2:'#8020cc'},
+            skill2:{name:'Bão nguyên tố',  col:'#e060ff', col2:'#a030d0'},
+            skill3:{name:'Bão nguyên tố',  col:'#d050ff', col2:'#9020c0'} },
   king:   { color:'#d4a020', weapon:'#ffe060', aura:'rgba(220,170,20,.6)',
-            skill1:{name:'Lốc xoáy vàng', col:'#ffe040', col2:'#ffa000'},
-            skill2:{name:'Mưa kiếm vàng', col:'#ffd020', col2:'#ff8000'},
-            skill3:{name:'Kiếm khí',      col:'#ffee80', col2:'#ffcc00'} },
+            skill1:{name:'Trảm không',     col:'#ffe040', col2:'#ffa000'},
+            skill2:{name:'Trảm không',     col:'#ffd020', col2:'#ff8000'},
+            skill3:{name:'Trảm không',     col:'#ffee80', col2:'#ffcc00'} },
 };
 /* ── Chess piece sprites extracted from reference image ── */
 const PIECE_B64 = {
@@ -5867,6 +5867,654 @@ function fcAttackShuriken() {
 }
 
 
+/* ══════════════════════════════════════════════════════════════════════
+   SPECIAL SKILL DISPATCHER
+   Called instead of tier functions when rank matches special weapon
+══════════════════════════════════════════════════════════════════════ */
+function dispatchSpecialSkill(tier) {
+  const rank = currentRank;
+  // Override tier attacks with special skills per rank
+  if (rank === 'rook')   { skillEarthquakeSlam();  return; }
+  if (rank === 'knight') { skillSpearBarrage();     return; }
+  if (rank === 'queen')  { skillElementalStorm();   return; }
+  if (rank === 'king')   { skillAirSlash();         return; }
+  // Fallback to normal attack tier
+  if (tier === 1) fcAttackTornado();
+  else if (tier === 2) fcAttackBarrage();
+  else fcAttackShuriken();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ROOK — 地震 EARTHQUAKE SLAM
+   1) Weapon slams down at warrior pos → ripple rings (SVG)
+   2) 5–7 debris polygons arc toward mob
+   3) Mob shakes hard on impact
+══════════════════════════════════════════════════════════════════════ */
+function skillEarthquakeSlam() {
+  const rc = RANK_CONFIG.rook;
+  showSkillToast('💥 Địa chấn!', 1);
+  const p = _getWarriorMobPos(); if (!p) return;
+  const { field, sx, sy, ex, ey } = p;
+  const fW = field.offsetWidth || 400;
+  const fH = field.offsetHeight || 96;
+  const col1 = rc.skill1.col, col2 = rc.skill1.col2;
+
+  // ── Phase 1: SVG ripple rings at warrior position ──
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const rippleSVG = document.createElementNS(svgNS, 'svg');
+  rippleSVG.setAttribute('width', fW); rippleSVG.setAttribute('height', fH);
+  rippleSVG.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:30;overflow:visible;`;
+  field.appendChild(rippleSVG);
+
+  // Ground crack lines (static)
+  const crackCount = 5 + currentStars;
+  for (let i = 0; i < crackCount; i++) {
+    const ang = (i / crackCount) * Math.PI + Math.PI * 0.8;
+    const len = 18 + Math.random() * 20;
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('x1', sx); line.setAttribute('y1', sy);
+    line.setAttribute('x2', sx + Math.cos(ang)*len);
+    line.setAttribute('y2', sy + Math.sin(ang)*len);
+    line.setAttribute('stroke', col1);
+    line.setAttribute('stroke-width', 1.5);
+    line.setAttribute('stroke-linecap', 'round');
+    line.style.opacity = '0.7';
+    rippleSVG.appendChild(line);
+  }
+
+  // 3 expanding ripple circles
+  const RIPPLES = 3 + currentStars;
+  for (let r = 0; r < RIPPLES; r++) {
+    const circle = document.createElementNS(svgNS, 'circle');
+    circle.setAttribute('cx', sx); circle.setAttribute('cy', sy);
+    circle.setAttribute('r', 4);
+    circle.setAttribute('fill', 'none');
+    circle.setAttribute('stroke', r % 2 === 0 ? col1 : col2);
+    circle.setAttribute('stroke-width', r === 0 ? 3 : 2);
+    circle.style.cssText = `opacity:0.9;`;
+    rippleSVG.appendChild(circle);
+
+    const maxR = 28 + r * 12;
+    const delay = r * 90;
+    const dur = 480 + r * 60;
+    const start = performance.now() + delay;
+
+    (function animRipple(circle, maxR, start, dur) {
+      function step(now) {
+        const elapsed = now - start;
+        if (elapsed < 0) { requestAnimationFrame(step); return; }
+        const t = Math.min(elapsed / dur, 1);
+        const eased = 1 - Math.pow(1-t, 3);
+        circle.setAttribute('r', 4 + maxR * eased);
+        circle.style.opacity = 0.9 * (1 - t);
+        circle.setAttribute('stroke-width', (3 - t*2).toFixed(2));
+        if (t < 1) requestAnimationFrame(step);
+        else circle.remove();
+      }
+      requestAnimationFrame(step);
+    })(circle, maxR, start, dur);
+  }
+
+  // ── Phase 2: 5–7 debris polygons fly toward mob ──
+  setTimeout(() => {
+    rippleSVG.remove();
+    const count = 5 + Math.min(currentStars, 2);
+    const canvas = document.createElement('canvas');
+    canvas.width = fW; canvas.height = fH;
+    canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:29;';
+    field.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+
+    // Earth debris colors
+    const earthCols = ['#9b6b3a','#7a5230','#b08050','#6b4a28','#c09060'];
+
+    const debris = Array.from({length: count}, (_, i) => {
+      const spreadAng = ((i / count) - 0.5) * Math.PI * 0.55;
+      const baseAng = Math.atan2(ey - sy, ex - sx);
+      const ang = baseAng + spreadAng;
+      const dist = Math.sqrt((ex-sx)**2 + (ey-sy)**2);
+      // Arc: start going slightly up then arc down toward mob
+      const arcH = -15 - Math.random() * 15;  // initial upward arc
+      const pts = 3 + Math.floor(Math.random() * 3); // triangle to hexagon
+      const r = 4 + Math.random() * 5;
+      const verts = Array.from({length: pts}, (_, j) => {
+        const a = (j/pts) * Math.PI*2 + Math.random()*0.4;
+        const rr = r * (0.6 + Math.random()*0.6);
+        return [Math.cos(a)*rr, Math.sin(a)*rr];
+      });
+      return {
+        x: sx + (Math.random()-0.5)*12, y: sy - 4,
+        tx: ex + (Math.random()-0.5)*16,
+        ty: ey + (Math.random()-0.5)*8,
+        vx: Math.cos(ang)*3, vy: Math.sin(ang)*3 - 2,
+        col: earthCols[i % earthCols.length],
+        verts, rot: Math.random()*Math.PI*2, rotV: (Math.random()-0.5)*0.25,
+        arc: arcH, progress: 0,
+        speed: 0.016 + Math.random()*0.012,
+        delay: i * 55,
+        started: false,
+      };
+    });
+
+    let startTime = null;
+    let impacted = 0;
+    function frame(now) {
+      if (!startTime) startTime = now;
+      ctx.clearRect(0,0,fW,fH);
+      let allDone = true;
+      debris.forEach(d => {
+        if (now - startTime < d.delay) { allDone = false; return; }
+        d.started = true;
+        d.progress = Math.min(d.progress + d.speed, 1);
+        const p = d.progress;
+        const eased = p < 0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+        // Arc trajectory
+        const arcY = d.arc * Math.sin(p * Math.PI);
+        d.x = sx + (d.tx - sx) * eased + (Math.random()-0.5)*0.5;
+        d.y = sy + (d.ty - sy) * eased + arcY;
+        d.rot += d.rotV;
+
+        const alpha = p < 0.9 ? 1 : 1 - (p-0.9)/0.1;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(d.x, d.y);
+        ctx.rotate(d.rot);
+        ctx.fillStyle = d.col;
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 0.8;
+        ctx.shadowColor = col1; ctx.shadowBlur = 6;
+        ctx.beginPath();
+        d.verts.forEach(([vx,vy], i) => i===0 ? ctx.moveTo(vx,vy) : ctx.lineTo(vx,vy));
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.restore();
+        if (p < 1) allDone = false;
+      });
+
+      if (!allDone) {
+        requestAnimationFrame(frame);
+      } else {
+        canvas.remove();
+        impacted++;
+        // Mob hit: strong shake
+        const { mobEl } = p;
+        mobEl.style.animation = 'mob-hit-shake 0.65s ease';
+        mobEl.style.filter = 'brightness(5) saturate(0) sepia(1) hue-rotate(-10deg) drop-shadow(0 0 14px #ff4400)';
+        setTimeout(() => {
+          mobEl.style.animation = 'mob-idle 2.2s ease-in-out infinite';
+          mobEl.style.filter = '';
+        }, 680);
+        field.style.animation = 'field-hit-shake-heavy 0.6s ease';
+        setTimeout(() => { field.style.animation = ''; }, 620);
+        _impactMob(p, field, 0.6, 2.2);
+      }
+    }
+    requestAnimationFrame(frame);
+  }, 320);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   KNIGHT — 万箭 SPEAR BARRAGE
+   1) Main spear thrusts
+   2) 3–5 phantom spear copies fly at spread angles, ultra fast
+   Each phantom is SVG path — sharp elongated lance shape
+══════════════════════════════════════════════════════════════════════ */
+function skillSpearBarrage() {
+  const rc = RANK_CONFIG.knight;
+  showSkillToast('⚡ Vạn tiễn!', 2);
+  const p = _getWarriorMobPos(); if (!p) return;
+  const { field, sx, sy, ex, ey } = p;
+  const fW = field.offsetWidth || 400;
+  const fH = field.offsetHeight || 96;
+  const col1 = rc.skill2.col, col2 = rc.skill2.col2;
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  const count = 3 + Math.min(currentStars, 2);
+  const baseAngle = Math.atan2(ey - sy, ex - sx);
+  const dist = Math.sqrt((ex-sx)**2 + (ey-sy)**2);
+
+  // Main spear thrust animation on warrior
+  const warrior = document.getElementById('fc-warrior');
+  if (warrior) {
+    warrior.style.animation = 'spear-combo 0.35s ease-in-out';
+    setTimeout(() => { warrior.style.animation = 'warrior-breathe 2.4s ease-in-out infinite'; }, 380);
+  }
+
+  // Create SVG overlay for all phantom spears
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('width', fW); svg.setAttribute('height', fH);
+  svg.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:30;overflow:visible;`;
+  field.appendChild(svg);
+
+  // Define gradient
+  const defs = document.createElementNS(svgNS, 'defs');
+  const grd = document.createElementNS(svgNS, 'linearGradient');
+  grd.setAttribute('id', 'spear-grd');
+  grd.setAttribute('x1','0%'); grd.setAttribute('y1','0%');
+  grd.setAttribute('x2','100%'); grd.setAttribute('y2','0%');
+  [['0%','#ffffff'],['30%',col1],['100%',col2+'00']].forEach(([offset,color]) => {
+    const stop = document.createElementNS(svgNS, 'stop');
+    stop.setAttribute('offset', offset); stop.setAttribute('stop-color', color);
+    grd.appendChild(stop);
+  });
+  defs.appendChild(grd); svg.appendChild(defs);
+
+  // Spread angles: fan out from baseAngle
+  const spreadStep = (Math.PI * 0.12);
+  const startDelay = 35; // ms between each phantom
+
+  const phantoms = Array.from({length: count}, (_, i) => {
+    const spreadOff = (i - (count-1)/2) * spreadStep;
+    const ang = baseAngle + spreadOff;
+    // Length of spear shape scales with rank stars
+    const len = 32 + currentStars * 8;
+    const wid = 5 + currentStars;
+    return {
+      ang, len, wid,
+      opacity: i === Math.floor(count/2) ? 1.0 : 0.55 - Math.abs(i-(count-1)/2)*0.08,
+      delay: i * startDelay + Math.abs(i-(count-1)/2) * 20,
+    };
+  });
+
+  phantoms.forEach(ph => {
+    setTimeout(() => {
+      // Each phantom travels from sx,sy to ex,ey at high speed
+      const spearPath = document.createElementNS(svgNS, 'g');
+
+      // Lance body (sharp elongated polygon)
+      const poly = document.createElementNS(svgNS, 'polygon');
+      // Build lance shape: pointed tip (front) + tapered tail
+      // In local coords: tip at (len,0), shaft center at origin
+      const tipX = ph.len, tipY = 0;
+      const pts = [
+        [tipX, 0],                           // tip (front)
+        [tipX*0.55, -ph.wid*0.45],          // upper blade
+        [-ph.len*0.35, -ph.wid*0.2],        // upper tail
+        [-ph.len*0.35, ph.wid*0.2],         // lower tail
+        [tipX*0.55, ph.wid*0.45],           // lower blade
+      ].map(([x,y]) => `${x},${y}`).join(' ');
+      poly.setAttribute('points', pts);
+      poly.setAttribute('fill', 'url(#spear-grd)');
+      spearPath.appendChild(poly);
+
+      // Center spine highlight
+      const spine = document.createElementNS(svgNS, 'line');
+      spine.setAttribute('x1', -ph.len*0.3); spine.setAttribute('y1', 0);
+      spine.setAttribute('x2', ph.len*0.85); spine.setAttribute('y2', 0);
+      spine.setAttribute('stroke', 'rgba(255,255,255,0.6)');
+      spine.setAttribute('stroke-width', '1');
+      spearPath.appendChild(spine);
+
+      // Glow filter via CSS shadow
+      spearPath.style.filter = `drop-shadow(0 0 ${4+currentStars*2}px ${col1})`;
+      svg.appendChild(spearPath);
+
+      // Animate: fast travel from warrior to mob
+      const travelMs = 180 + Math.random() * 60; // ultra fast
+      const steps = Math.round(travelMs / 16);
+      let step = 0;
+      const dx = ex - sx, dy = ey - sy;
+
+      (function animate() {
+        step++;
+        const t = step / steps;
+        const eased = 1 - Math.pow(1-t, 2); // ease-out: decelerates at target
+        const cx = sx + dx * eased;
+        const cy = sy + dy * eased;
+        const rot = ph.ang * 180 / Math.PI;
+        const fadeIn = Math.min(t * 4, 1);
+        const fadeOut = t > 0.8 ? 1 - (t-0.8)/0.2 : 1;
+        spearPath.setAttribute('transform', `translate(${cx},${cy}) rotate(${rot})`);
+        spearPath.style.opacity = (ph.opacity * fadeIn * fadeOut).toFixed(2);
+
+        if (step < steps) requestAnimationFrame(animate);
+        else {
+          spearPath.remove();
+          // Impact flash
+          const flash = document.createElementNS(svgNS, 'circle');
+          flash.setAttribute('cx', ex); flash.setAttribute('cy', ey);
+          flash.setAttribute('r', 12); flash.setAttribute('fill', col1);
+          flash.style.opacity = '0.8';
+          svg.appendChild(flash);
+          const flashStart = performance.now();
+          (function fadeFlash(now) {
+            const t2 = (now - flashStart) / 200;
+            if (t2 < 1) { flash.style.opacity = (0.8*(1-t2)).toFixed(2); requestAnimationFrame(fadeFlash); }
+            else flash.remove();
+          })(performance.now());
+        }
+      })();
+    }, ph.delay);
+  });
+
+  // Remove SVG overlay after all done
+  const totalDur = phantoms[phantoms.length-1].delay + 280;
+  setTimeout(() => {
+    svg.remove();
+    field.style.animation = 'field-hit-shake 0.38s ease';
+    setTimeout(() => { field.style.animation = ''; }, 400);
+    _impactMob(p, field, 0.4, 1.3);
+  }, totalDur);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   QUEEN — 元素风暴 ELEMENTAL STORM
+   1) Orb charges (scale up pulse)
+   2) Burst: fire🔥 water💧 lightning⚡ particles scatter toward mob
+   3) Canvas particle system: each element has distinct trajectory
+══════════════════════════════════════════════════════════════════════ */
+function skillElementalStorm() {
+  const rc = RANK_CONFIG.queen;
+  showSkillToast('🌀 Bão nguyên tố!', 2);
+  const p = _getWarriorMobPos(); if (!p) return;
+  const { field, sx, sy, ex, ey } = p;
+  const fW = field.offsetWidth || 400;
+  const fH = field.offsetHeight || 96;
+  const col1 = rc.skill1.col, col2 = rc.skill1.col2;
+
+  // Element particle colors & glyphs
+  const elements = [
+    { col:'#ff6030', col2:'#ff3000', glyph:'🔥', name:'fire'  },
+    { col:'#30aaff', col2:'#0066ff', glyph:'💧', name:'water' },
+    { col:'#ffee20', col2:'#ffaa00', glyph:'⚡', name:'bolt'  },
+  ];
+  if (currentStars >= 3) {
+    elements.push({ col:'#80ffaa', col2:'#00cc44', glyph:'🌿', name:'wind' });
+    elements.push({ col:'#ff80ff', col2:'#cc00cc', glyph:'✨', name:'arcane' });
+  }
+
+  // ── Phase 1: charge orb (scale pulse via CSS) ──
+  const warrior = document.getElementById('fc-warrior');
+  if (warrior) {
+    warrior.style.transform = 'scale(1.18)';
+    warrior.style.filter = `drop-shadow(0 0 18px ${col1}) brightness(1.4)`;
+    warrior.style.transition = 'transform 0.3s ease, filter 0.3s ease';
+  }
+
+  // Charge ring in SVG
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const chargeSVG = document.createElementNS(svgNS, 'svg');
+  chargeSVG.setAttribute('width', fW); chargeSVG.setAttribute('height', fH);
+  chargeSVG.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:30;overflow:visible;`;
+  field.appendChild(chargeSVG);
+
+  // Spinning charge ring
+  const ringCount = 2;
+  for (let r = 0; r < ringCount; r++) {
+    const ring = document.createElementNS(svgNS, 'circle');
+    ring.setAttribute('cx', sx); ring.setAttribute('cy', sy);
+    ring.setAttribute('r', 16 + r*8); ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', r===0 ? col1 : col2);
+    ring.setAttribute('stroke-width', '2');
+    ring.setAttribute('stroke-dasharray', '4 6');
+    ring.style.opacity = '0.8';
+    chargeSVG.appendChild(ring);
+    // Rotate animation
+    const startT = performance.now();
+    const dir = r % 2 === 0 ? 1 : -1;
+    (function spinRing(ring, dir, startT, sx, sy) {
+      function step(now) {
+        if (!ring.parentElement) return;
+        const ang = ((now - startT) * 0.003 * dir) * 180 / Math.PI;
+        ring.setAttribute('transform', `rotate(${ang},${sx},${sy})`);
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    })(ring, dir, startT, sx, sy);
+  }
+
+  // ── Phase 2: burst — canvas particle system ──
+  setTimeout(() => {
+    chargeSVG.remove();
+    if (warrior) {
+      warrior.style.transform = '';
+      warrior.style.filter = '';
+      warrior.style.transition = 'transform 0.15s, filter 0.15s';
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = fW; canvas.height = fH;
+    canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:29;';
+    field.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+
+    const PARTICLE_COUNT = 8 + currentStars * 5;
+    const particles = Array.from({length: PARTICLE_COUNT}, (_, i) => {
+      const elem = elements[i % elements.length];
+      // Each particle converges toward mob with slight random spread
+      const spreadX = (Math.random()-0.5) * 22;
+      const spreadY = (Math.random()-0.5) * 18;
+      const chaos = 0.18 + Math.random()*0.12; // chaos factor
+      return {
+        x: sx + (Math.random()-0.5)*10,
+        y: sy + (Math.random()-0.5)*8,
+        tx: ex + spreadX, ty: ey + spreadY,
+        elem, r: 3 + Math.random()*3,
+        progress: -(i % 5) * 0.06, // stagger starts
+        speed: 0.022 + Math.random()*0.016,
+        // Chaotic path: oscillate perpendicular to travel vector
+        chaos, phase: Math.random()*Math.PI*2,
+        trailPoints: [],
+      };
+    });
+
+    const dx = ex - sx, dy = ey - sy;
+    const perpX = -dy / Math.sqrt(dx*dx+dy*dy), perpY = dx / Math.sqrt(dx*dx+dy*dy);
+
+    let impacted = 0;
+    const target = PARTICLE_COUNT;
+
+    function frame(now) {
+      ctx.clearRect(0,0,fW,fH);
+      let allDone = true;
+
+      particles.forEach(pt => {
+        pt.progress += pt.speed;
+        if (pt.progress <= 0) { allDone = false; return; }
+        const t = Math.min(pt.progress, 1);
+        const eased = t < 0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+        // Chaos oscillation: perpendicular wiggle that decreases near target
+        const wiggle = Math.sin(pt.phase + t * Math.PI * 4) * (1-t) * 14 * pt.chaos;
+        const x = pt.x + (pt.tx - pt.x)*eased + perpX*wiggle;
+        const y = pt.y + (pt.ty - pt.y)*eased + perpY*wiggle;
+
+        // Store trail
+        pt.trailPoints.push({x,y});
+        if (pt.trailPoints.length > 6) pt.trailPoints.shift();
+
+        // Draw trail
+        pt.trailPoints.forEach((tp, ti) => {
+          const ta = (ti / pt.trailPoints.length) * 0.5;
+          const tr = pt.r * (0.3 + ti/pt.trailPoints.length * 0.7);
+          ctx.save();
+          ctx.globalAlpha = ta;
+          ctx.fillStyle = pt.elem.col2;
+          ctx.shadowColor = pt.elem.col; ctx.shadowBlur = 4;
+          ctx.beginPath(); ctx.arc(tp.x, tp.y, tr, 0, Math.PI*2); ctx.fill();
+          ctx.restore();
+        });
+
+        // Outer glow
+        const grd = ctx.createRadialGradient(x,y,0,x,y,pt.r*3);
+        grd.addColorStop(0, pt.elem.col+'aa');
+        grd.addColorStop(1, pt.elem.col+'00');
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.arc(x,y,pt.r*3,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+
+        // Core particle
+        ctx.save();
+        ctx.fillStyle = pt.elem.col;
+        ctx.shadowColor = pt.elem.col; ctx.shadowBlur = 10;
+        ctx.globalAlpha = 1;
+        ctx.beginPath(); ctx.arc(x,y,pt.r,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.7;
+        ctx.beginPath(); ctx.arc(x-pt.r*0.25,y-pt.r*0.25,pt.r*0.4,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+
+        if (t < 1) allDone = false;
+        else {
+          impacted++;
+          // Impact burst
+          ctx.save();
+          const grd2 = ctx.createRadialGradient(x,y,0,x,y,pt.r*5);
+          grd2.addColorStop(0, pt.elem.col+'ff');
+          grd2.addColorStop(1, pt.elem.col+'00');
+          ctx.globalAlpha = 0.6;
+          ctx.fillStyle = grd2;
+          ctx.beginPath(); ctx.arc(x,y,pt.r*5,0,Math.PI*2); ctx.fill();
+          ctx.restore();
+        }
+      });
+
+      if (!allDone) requestAnimationFrame(frame);
+      else {
+        canvas.remove();
+        field.style.animation = 'field-hit-shake 0.45s ease';
+        setTimeout(() => { field.style.animation = ''; }, 450);
+        _impactMob(p, field, 0.5, 1.6);
+      }
+    }
+    requestAnimationFrame(frame);
+  }, 340);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   KING — 斬空 AIR SLASH
+   1) Sword slash animation on warrior
+   2) SVG crescent blade (月牙形) flies from warrior to mob
+   3) Gradient + glow, semi-transparent
+   4) Impact: bright flash + heavy shake
+══════════════════════════════════════════════════════════════════════ */
+function skillAirSlash() {
+  const rc = RANK_CONFIG.king;
+  showSkillToast('⚔️ Trảm không!', 3);
+  const p = _getWarriorMobPos(); if (!p) return;
+  const { field, sx, sy, ex, ey } = p;
+  const fW = field.offsetWidth || 400;
+  const fH = field.offsetHeight || 96;
+  const col1 = rc.skill3.col, col2 = rc.skill3.col2;
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  // Warrior slash animation
+  const warrior = document.getElementById('fc-warrior');
+  if (warrior) {
+    warrior.style.animation = 'w-sword-slash 0.35s ease-in-out';
+    warrior.style.filter = `brightness(1.8) drop-shadow(0 0 12px ${col1})`;
+    setTimeout(() => {
+      warrior.style.animation = 'warrior-breathe 2.4s ease-in-out infinite';
+      warrior.style.filter = '';
+    }, 380);
+  }
+
+  // Create SVG for the crescent blades
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('width', fW); svg.setAttribute('height', fH);
+  svg.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:30;overflow:visible;`;
+  field.appendChild(svg);
+
+  const defs = document.createElementNS(svgNS, 'defs');
+  // Gradient: bright center, fades at edges
+  const grd = document.createElementNS(svgNS, 'radialGradient');
+  grd.setAttribute('id', 'slash-grd');
+  grd.setAttribute('cx','40%'); grd.setAttribute('cy','50%'); grd.setAttribute('r','60%');
+  [['0%','#ffffff'],['30%',col1+'ee'],['70%',col2+'aa'],['100%',col2+'00']].forEach(([off,col]) => {
+    const s = document.createElementNS(svgNS, 'stop');
+    s.setAttribute('offset',off); s.setAttribute('stop-color',col); grd.appendChild(s);
+  });
+  defs.appendChild(grd); svg.appendChild(defs);
+
+  // Crescent shape helper: creates arc path for a crescent/blade
+  function makeCrescent(cx, cy, R, r, startAng, endAng, rotation) {
+    // Outer arc R, inner arc r, between startAng and endAng
+    const steps = 20;
+    const sweep = endAng - startAng;
+    const outerPts = Array.from({length: steps+1}, (_, i) => {
+      const a = startAng + (i/steps)*sweep;
+      return [cx + Math.cos(a)*R, cy + Math.sin(a)*R];
+    });
+    const innerPts = Array.from({length: steps+1}, (_, i) => {
+      const a = endAng - (i/steps)*sweep;
+      return [cx + Math.cos(a)*r, cy + Math.sin(a)*r];
+    });
+    const pts = [...outerPts, ...innerPts];
+    const d = pts.map((pt,i) => `${i===0?'M':'L'}${pt[0].toFixed(1)},${pt[1].toFixed(1)}`).join(' ') + 'Z';
+    return d;
+  }
+
+  // Number of slash waves: 1 main + extras at higher stars
+  const waveCount = 1 + currentStars;
+  const ang = Math.atan2(ey - sy, ex - sx);
+
+  Array.from({length: waveCount}, (_, wi) => {
+    const wDelay = wi * 90;
+    const R = (16 + currentStars*5) * (wi === 0 ? 1.4 : 0.8);
+    const r = R * 0.45;
+    const slashWidth = Math.PI * (0.55 + wi*0.05); // sweep angle
+
+    setTimeout(() => {
+      const path = document.createElementNS(svgNS, 'path');
+      // Initial crescent at warrior position
+      const d = makeCrescent(0, 0, R, r, -slashWidth/2, slashWidth/2, ang);
+      path.setAttribute('d', d);
+      path.setAttribute('fill', 'url(#slash-grd)');
+      // Rotate to face mob direction
+      path.style.filter = `drop-shadow(0 0 ${6+wi*3}px ${col1})`;
+      svg.appendChild(path);
+
+      const travelMs = 220 + wi * 40; // fast travel
+      const startT = performance.now();
+
+      (function animSlash(now) {
+        const elapsed = now - startT;
+        const t = Math.min(elapsed / travelMs, 1);
+        const eased = 1 - Math.pow(1-t, 2.5); // ease-out fast
+        const cx = sx + (ex-sx)*eased;
+        const cy = sy + (ey-sy)*eased;
+        const scaleUp = 1 + t * 0.4; // grows slightly as it flies
+        const fadeOut = t > 0.75 ? 1 - (t-0.75)/0.25 : 1;
+        const rotDeg = ang * 180 / Math.PI;
+        path.setAttribute('transform', `translate(${cx},${cy}) rotate(${rotDeg}) scale(${scaleUp.toFixed(2)})`);
+        path.style.opacity = (fadeOut * (wi===0?0.9:0.6)).toFixed(2);
+
+        if (t < 1) requestAnimationFrame(animSlash);
+        else {
+          path.remove();
+          // White impact flash circle
+          const flash = document.createElementNS(svgNS, 'circle');
+          flash.setAttribute('cx', ex); flash.setAttribute('cy', ey);
+          flash.setAttribute('r', R*1.6); flash.setAttribute('fill', col1);
+          flash.style.opacity = '0.9';
+          svg.appendChild(flash);
+          const fs = performance.now();
+          (function fadeFlash(now2) {
+            const ft = (now2 - fs) / 250;
+            if (ft < 1) { flash.style.opacity = (0.9*(1-ft)).toFixed(2); requestAnimationFrame(fadeFlash); }
+            else flash.remove();
+          })(performance.now());
+
+          // Impact effects on last wave
+          if (wi === waveCount - 1) {
+            setTimeout(() => {
+              svg.remove();
+              // Screen-wide brightness flash
+              const flashDiv = document.createElement('div');
+              flashDiv.style.cssText = `position:absolute;inset:0;background:radial-gradient(ellipse at ${ex}px ${ey}px, ${col1}99 0%, transparent 70%);pointer-events:none;z-index:31;`;
+              field.appendChild(flashDiv);
+              setTimeout(() => flashDiv.remove(), 200);
+              field.style.animation = 'field-hit-shake-heavy 0.55s ease';
+              setTimeout(() => { field.style.animation = ''; }, 580);
+              _impactMob(p, field, 0.55, 2.5);
+            }, 60);
+          }
+        }
+      })(performance.now());
+    }, wDelay);
+  });
+}
+
+
 function fcBattleReview() {
   // Ôn lại: both sides shoot but nobody dies
   const field   = document.getElementById('fc-battle-field');
@@ -6973,16 +7621,10 @@ function rateFC(r){
       setTimeout(()=>battleSlashEffect(done), 100);
       // Tier-based attack
       const tier = getSkillTier();
-      if (tier === 1) {
-        battleLog.tornado++;
-        setTimeout(()=>fcAttackTornado(), 80);
-      } else if (tier === 2) {
-        battleLog.barrage++;
-        setTimeout(()=>fcAttackBarrage(), 80);
-      } else {
-        battleLog.shuriken++;
-        setTimeout(()=>fcAttackShuriken(), 80);
-      }
+      if (tier === 1) battleLog.tornado++;
+      else if (tier === 2) battleLog.barrage++;
+      else battleLog.shuriken++;
+      setTimeout(() => dispatchSpecialSkill(tier), 80);
       renderBattleLog();
     }
   } else if(r==='hard'){
@@ -7626,8 +8268,8 @@ function renderWB(){
         <span class="chip ${chipCls} wb-topic">${topicLbl}</span>
         <div class="wb-actions">
           <button class="wr-btn" onclick="speak('${wSafe}')">🔊</button>
-          <button class="wr-btn wb-edit" onclick="openEditWord(${w.id})">✎</button>
-          <button class="wr-btn wb-del"  onclick="deleteWord(${w.id})">×</button>
+          <button class="wr-btn wb-edit" data-edit-id="${w.id}" onclick="openEditWord(this.dataset.editId*1)">✎</button>
+          <button class="wr-btn wb-del"  data-del-id="${w.id}"  onclick="deleteWord(this.dataset.delId*1)">×</button>
         </div>
       </div>
     </div>`;
