@@ -9319,9 +9319,8 @@ function closeMoreMenu() {
   const btn = document.getElementById('bn-more');
   if (btn) btn.classList.remove('active');
 }
-</script>
-</body>
-</htmlfunction saveWord(){
+
+function saveWord(){
   const w=document.getElementById('aw-w').value.trim();
   const m=document.getElementById('aw-m').value.trim();
   if(!w||!m){toast('Nhập từ và nghĩa!','bad');return;}
@@ -9395,10 +9394,11 @@ function openEditWord(id) {
   set('ew-l',   w.level||3);
   const ewNote = document.getElementById('ew-note');
   if(ewNote) ewNote.innerHTML = w.note||'';
-  // Force open modal with both classList AND inline style
   const modal = document.getElementById('editModal');
   if(!modal){ toast('Modal không tìm thấy!','bad'); return; }
   modal.classList.add('open');
-  modal.style.display = 'flex';  // belt-and-suspenders
+  modal.style.display = 'flex';
 }
->
+</script>
+</body>
+</html>
