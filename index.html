@@ -227,13 +227,18 @@ input::placeholder{color:var(--muted)}
 .fc-front{background:var(--white);border:1px solid var(--rule);box-shadow:var(--shadow2)}
 .fc-back{background:var(--paper);border:1px solid var(--rule2);box-shadow:var(--shadow2);transform:rotateY(180deg)}
 .fc-note-face{
-  background:#fdf8f0;border:1px solid #e8dfc8;
-  box-shadow:var(--shadow2);
-  padding:18px 20px;
-  /* Completely separate from 3D flip — controlled by display only */
+  /* Fully independent element — does NOT inherit from .fc-face */
   position:absolute;inset:0;border-radius:var(--r3);
-  display:none;z-index:5;
-  flex-direction:column;align-items:flex-start;justify-content:flex-start;
+  display:none;          /* hidden by default, shown via JS/noted class */
+  z-index:10;            /* above fc-front and fc-back */
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-start;
+  padding:18px 20px;
+  background:#fdf8f0;
+  border:1px solid #e8dfc8;
+  box-shadow:var(--shadow2);
+  overflow-y:auto;
 }
 .fc-note-face-inner{
   width:100%;font-size:13px;line-height:1.8;color:#5a4a30;
@@ -2109,7 +2114,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
                 </div>
               </div>
               <!-- NOTE FACE: 3rd flip -->
-              <div class="fc-face fc-note-face" id="fc-note-face">
+              <div class="fc-note-face" id="fc-note-face">
                 <div class="fc-note-face-label">📝 Ghi chú</div>
                 <div class="fc-note-face-inner" id="fc-note-content">
                   <span style="color:#b0a090;font-style:italic;">Chưa có ghi chú cho từ này.</span>
