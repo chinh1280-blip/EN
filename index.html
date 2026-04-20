@@ -253,6 +253,19 @@ input::placeholder{color:var(--muted)}
 .fc-tap-hint{font-size:12px;color:var(--muted)}
 .fc-viet{font-family:var(--serif);font-size:28px;line-height:1.3;color:var(--ink);margin-bottom:10px}
 .fc-eg{font-size:13px;color:var(--mid);font-style:italic;border-left:2px solid var(--rule2);padding-left:12px;text-align:left;width:100%}
+/* Note box in flashcard back face */
+.note-box{
+  margin-top:12px;width:100%;
+  background:#fdf8f0;border:1px solid #e8dfc8;border-radius:var(--r);
+  padding:9px 14px 9px 34px;
+  font-size:12px;line-height:1.75;color:#5a4a30;
+  font-style:italic;position:relative;text-align:left;
+}
+.note-box-icon{
+  position:absolute;left:10px;top:9px;font-style:normal;font-size:13px;
+}
+.note-box-content b{font-weight:700;}
+.note-box-content i{font-style:italic;}
 .fc-rate-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
 .fc-rate-btn{padding:12px 8px;border-radius:var(--r);font-size:13px;font-weight:500;border:1px solid;transition:all .15s}
 .rate-again{background:var(--red-lt);border-color:#f0c4c0;color:var(--red)}
@@ -2062,28 +2075,36 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <div class="fc-card-3d" id="fc-card">
               <!-- FACE 1: Tiếng Anh + phiên âm + câu ví dụ -->
               <div class="fc-face fc-front">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <!-- topic + hard star row -->
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
                   <div class="chip chip-muted" id="fc-topic-chip">general</div>
                   <span id="fc-hard-star" style="color:var(--amber);font-size:18px;display:none;" title="Từ khó">★</span>
                 </div>
+                <!-- WORD (EN) -->
                 <div class="fc-eng" id="fc-word">Serendipity</div>
+                <!-- IPA -->
                 <div class="fc-phon" id="fc-phon">/ˌser.ənˈdɪp.ɪ.ti/</div>
-                <div class="fc-eg-front" id="fc-eg-front" style="font-size:12px;color:rgba(0,0,0,.4);font-style:italic;margin-top:10px;padding:0 8px;max-width:100%;text-align:center;line-height:1.6;border-left:2px solid var(--rule2);text-align:left;padding-left:12px;"></div>
-                <div class="fc-tap-hint" style="margin-top:10px;">Nhấn để xem nghĩa ↓</div>
+                <!-- EXAMPLE -->
+                <div id="fc-eg-front" style="
+                  font-size:12px;color:rgba(0,0,0,.38);font-style:italic;
+                  margin-top:12px;padding:6px 12px;max-width:100%;
+                  text-align:left;line-height:1.6;
+                  border-left:2px solid var(--rule2);"></div>
+                <div class="fc-tap-hint" style="margin-top:12px;">Nhấn để xem nghĩa ↓</div>
               </div>
               <!-- FACE 2: Loại từ trên + Tiếng Việt + ghi chú dưới trong khung -->
               <div class="fc-face fc-back">
-                <span id="fc-pos-tag" class="chip chip-blue" style="font-size:11px;display:none;margin-bottom:8px;"></span>
+                <!-- TOP: part of speech -->
+                <span id="fc-pos-tag" class="chip chip-blue"
+                      style="font-size:11px;display:none;margin-bottom:12px;"></span>
+                <!-- MIDDLE: Vietnamese meaning -->
                 <div class="fc-viet" id="fc-viet">Sự may mắn tình cờ</div>
-                <div class="fc-eg" id="fc-eg">"Finding that café was pure serendipity."</div>
-                <div id="fc-back-note" style="display:none;margin-top:10px;width:100%;
-                     background:#fdf8f0;border:1px solid #e8dfc8;border-radius:var(--r);
-                     padding:8px 12px 8px 32px;font-size:12px;line-height:1.7;
-                     color:#5a4a30;font-style:italic;position:relative;text-align:left;">
-                  <span style="position:absolute;left:10px;top:8px;font-style:normal;">💡</span>
-                  <div id="fc-back-note-content"></div>
+                <!-- NOTE BOX (bottom, only if has note) -->
+                <div id="fc-back-note" class="note-box" style="display:none;">
+                  <span class="note-box-icon">💡</span>
+                  <div id="fc-back-note-content" class="note-box-content"></div>
                 </div>
-                <div class="fc-tap-hint" style="margin-top:8px;font-size:11px;">
+                <div class="fc-tap-hint" style="margin-top:10px;font-size:11px;">
                   Nhấn lại để lật ↺
                 </div>
               </div>
@@ -7545,12 +7566,13 @@ function startFC(){
 }
 function showFC(){
   const w=fcQueue[fcIdx]; if(!w){doneFC();return;}
-  document.getElementById('fc-word').textContent=w.word;
-  document.getElementById('fc-phon').textContent=w.phonetic;
-  document.getElementById('fc-viet').textContent=w.meaning;
-  document.getElementById('fc-eg').textContent='"'+w.example+'"';
+  // FRONT face data
+  document.getElementById('fc-word').textContent = w.word;
+  document.getElementById('fc-phon').textContent = w.phonetic || '';
   const egFront = document.getElementById('fc-eg-front');
   if (egFront) egFront.textContent = w.example ? '"' + w.example + '"' : '';
+  // BACK face data
+  document.getElementById('fc-viet').textContent = w.meaning;
   document.getElementById('fc-topic-chip').textContent=topicLabel(w.topic)||w.topic;
   document.getElementById('fc-counter').textContent=`Thẻ ${fcIdx+1} / ${fcQueue.length}`;
   document.getElementById('fc-known').textContent='✓ '+fcKnown+' nhớ';
@@ -8905,7 +8927,8 @@ async function fullUploadToSB() {
       meaning:        w.meaning  || '',
       example:        w.example  || '',
       topic:          w.topic    || 'general',
-      level:          w.level    || 3
+      level:          w.level    || 3,
+      note:           w.note     || ''
     }));
     const ins = await sbReq('POST', 'words', rows, 'return=representation');
     if (!ins.ok) {
@@ -9041,7 +9064,8 @@ async function loadAllFromSB() {
     meaning:      w.meaning      || '',
     example:      w.example      || '',
     topic:        w.topic        || 'general',
-    level:        w.level        || 3
+    level:        w.level        || 3,
+    note:         w.note         || ''
   }));
 
   // ── 2. Sentences ──
@@ -9139,7 +9163,8 @@ async function saveWordToSB(w) {
   if (!sbUrl || !sbKey) return;
   const ins = await sbReq('POST', 'words',
     { word:w.word||'', phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
-      meaning:w.meaning||'', example:w.example||'', topic:w.topic||'general', level:w.level||3 },
+      meaning:w.meaning||'', example:w.example||'', topic:w.topic||'general',
+      level:w.level||3, note:w.note||'' },
     'return=representation'
   );
   if (ins.ok && Array.isArray(ins.data) && ins.data[0]?.id) {
@@ -9153,7 +9178,8 @@ async function updateWordOnSB(w) {
   if (!sbUrl || !sbKey || !w.id) return;
   await sbReq('PATCH', 'words?id=eq.' + w.id,
     { word:w.word, phonetic:w.phonetic||'', part_of_speech:w.partOfSpeech||'',
-      meaning:w.meaning, example:w.example||'', topic:w.topic||'general', level:w.level||3 },
+      meaning:w.meaning, example:w.example||'', topic:w.topic||'general',
+      level:w.level||3, note:w.note||'' },
     'return=minimal'
   );
 }
