@@ -265,10 +265,18 @@ input::placeholder{color:var(--muted)}
 .fc-phon{font-family:var(--mono);font-size:15px;color:var(--muted);margin-bottom:14px}
 .fc-tap-hint{font-size:12px;color:var(--muted)}
 .fc-viet{
-  font-family:var(--serif);font-size:28px;line-height:1.3;
-  color:var(--ink);margin-bottom:10px;
-  flex-shrink:0;        /* never shrink — always fully visible */
-  text-align:center;
+  font-family:var(--serif);font-size:20px;line-height:1.3;
+  color:var(--ink);
+  flex-shrink:0;text-align:left;
+}
+.fc-back-header{
+  display:flex;align-items:center;
+  flex-wrap:wrap;gap:4px;
+  flex-shrink:0;
+  width:100%;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--rule);
+  margin-bottom:8px;
 }
 .fc-eg{font-size:13px;color:var(--mid);font-style:italic;border-left:2px solid var(--rule2);padding-left:12px;text-align:left;width:100%}
 /* Note box in flashcard back face */
@@ -2124,17 +2132,19 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
               </div>
               <!-- FACE 2: Loại từ trên + Tiếng Việt + ghi chú dưới trong khung -->
               <div class="fc-face fc-back">
-                <!-- TOP: part of speech -->
-                <span id="fc-pos-tag" class="chip chip-blue"
-                      style="font-size:11px;display:none;margin-bottom:12px;"></span>
-                <!-- MIDDLE: Vietnamese meaning -->
-                <div class="fc-viet" id="fc-viet">Sự may mắn tình cờ</div>
-                <!-- NOTE BOX (bottom, only if has note) -->
+                <!-- COMPACT HEADER: pos | viet on one row -->
+                <div class="fc-back-header" id="fc-back-header">
+                  <span id="fc-pos-tag" class="chip chip-blue"
+                        style="font-size:10px;display:none;flex-shrink:0;"></span>
+                  <span id="fc-pos-sep" style="display:none;color:var(--rule2);font-size:14px;margin:0 6px;flex-shrink:0;">|</span>
+                  <div class="fc-viet" id="fc-viet">Sự may mắn tình cờ</div>
+                </div>
+                <!-- NOTE BOX: fills remaining space, scrollable -->
                 <div id="fc-back-note" class="note-box" style="display:none;">
                   <span class="note-box-icon">💡</span>
                   <div id="fc-back-note-content" class="note-box-content"></div>
                 </div>
-                <div class="fc-tap-hint" style="margin-top:10px;font-size:11px;flex-shrink:0;">
+                <div class="fc-tap-hint" style="margin-top:8px;font-size:11px;flex-shrink:0;">
                   Nhấn lại để lật ↺
                 </div>
               </div>
@@ -2321,7 +2331,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <span class="sent-tts-speed-val" id="sent-speed-val">0.9×</span>
           </div>
           <div class="sn-rte-sep" style="height:20px;"></div>
-          <button class="note-only-btn" id="note-only-btn" onclick="toggleNoteOnly()">📋 Chỉ ghi chú</button>
+          <button class="note-only-btn" id="note-only-btn" onclick="toggleNoteOnly()">📋 Tất cả</button>
         </div>
                 <div class="sentence-type-row">
           <button class="f-chip on" onclick="setSentType('all',this)">Tất cả</button>
@@ -2378,6 +2388,7 @@ body.standalone .inner{ padding-bottom: max(96px, calc(env(safe-area-inset-botto
             <option value="new">Mới nhất</option><option value="az">A → Z</option><option value="hard">Khó nhất</option>
           </select>
           <button id="ipa-toggle-btn" class="btn btn-ghost btn-sm" onclick="toggleIPA()" style="white-space:nowrap;">Ẩn IPA</button>
+          <button id="note-wb-btn" class="btn btn-ghost btn-sm" onclick="toggleNoteWB()" style="white-space:nowrap;">Ẩn ghi chú</button>
           <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--amber);font-weight:600;cursor:pointer;white-space:nowrap;">
             <input type="checkbox" id="wb-hard-only" onchange="renderWB()" style="width:14px;height:14px;">★ Từ khó
           </label>
@@ -7610,9 +7621,16 @@ function showFC(){
   document.getElementById('fc-prog').style.width=Math.round(fcIdx/fcQueue.length*100)+'%';
   // Show part of speech on back face if available
   const posEl=document.getElementById('fc-pos-tag');
+  const posSep=document.getElementById('fc-pos-sep');
   if(posEl){
-    if(w.partOfSpeech){posEl.textContent=w.partOfSpeech;posEl.style.display='inline-flex';}
-    else posEl.style.display='none';
+    if(w.partOfSpeech){
+      posEl.textContent=w.partOfSpeech;
+      posEl.style.display='inline-flex';
+      if(posSep) posSep.style.display='inline';
+    } else {
+      posEl.style.display='none';
+      if(posSep) posSep.style.display='none';
+    }
   }
   // Show note in back face note box (if word has note)
   const backNote = document.getElementById('fc-back-note');
@@ -7986,7 +8004,8 @@ function normalizeNoteHtml(html) {
 // TTS + speed + note-only
 let sentVoice = LS.get('sent_voice','');
 let sentSpeed = parseFloat(LS.get('sent_speed', 0.9)||0.9);
-let sentNoteOnly = false;
+let sentNoteOnly = false;  // kept for compat
+let sentDisplayMode = 'all'; // 'all' | 'envn' | 'note'
 function loadSentVoices(){
   const sel=document.getElementById('sent-voice-select');
   if(!sel||!window.speechSynthesis) return;
@@ -8009,15 +8028,22 @@ function speakSent(text){
   speechSynthesis.speak(u);
 }
 function toggleNoteOnly(){
-  sentNoteOnly=!sentNoteOnly;
-  const btn=document.getElementById('note-only-btn');
-  const list=document.getElementById('sent-list');
-  if(btn){btn.classList.toggle('active',sentNoteOnly);btn.textContent=sentNoteOnly?'\ud83d\udccb Hi\u1ec7n t\u1ea5t c\u1ea3':'\ud83d\udcdd Ch\u1ec9 ghi ch\xfa';}
-  if(list) list.classList.toggle('note-only-mode',sentNoteOnly);
-  if(sentNoteOnly){
-    document.querySelectorAll('[id^="sent-eng-"]').forEach(el=>{el.style.display='block';});
-    document.querySelectorAll('[id^="srb-"]').forEach(b=>{b.style.display='none';});
-  } else { renderSentences(); }
+  // Cycle: all → envn → note → all
+  const modes = ['all','envn','note'];
+  const labels = {
+    all:  '📋 Tất cả',
+    envn: '🔤 EN–VN',
+    note: '💡 Ghi chú'
+  };
+  const idx = modes.indexOf(sentDisplayMode);
+  sentDisplayMode = modes[(idx+1) % modes.length];
+  sentNoteOnly = (sentDisplayMode === 'note'); // compat
+  const btn = document.getElementById('note-only-btn');
+  if(btn){
+    btn.textContent = labels[sentDisplayMode];
+    btn.classList.toggle('active', sentDisplayMode !== 'all');
+  }
+  renderSentences();
 }
 if(window.speechSynthesis){speechSynthesis.onvoiceschanged=loadSentVoices;setTimeout(loadSentVoices,400);}
 
@@ -8084,33 +8110,57 @@ function renderSentences(){
   const list=sentType==='all'?sentences:sentences.filter(s=>s.type===sentType);
   const el=document.getElementById('sent-list'); if(!el) return;
   if(list.length===0){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--muted);font-size:14px;">Thêm câu mẫu phía trên!</div>';return;}
+  const mode = sentDisplayMode || 'all';
   el.innerHTML=list.map((s,i)=>{
     const hasNote=s.note&&s.note.trim()&&s.note!=='<br>';
     const engSafe=s.eng.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const actionBtns = `<div style="display:flex;gap:4px;flex-shrink:0;">
+      <button class="wr-btn" style="color:var(--blue);" onclick="openEditSent(${s.id})" title="Sửa">✎</button>
+      <button class="wr-btn" onclick="deleteSentence(${s.id})" title="Xóa">×</button>
+    </div>`;
+
+    if(mode === 'note'){
+      // NOTE ONLY mode: show only note (skip if no note)
+      if(!hasNote) return '';
+      return `<div class="sent-card">
+        <div class="sent-note-preview" style="margin-bottom:0;">
+          <div class="sent-note-preview-inner">${s.note}</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;">${actionBtns}</div>
+      </div>`;
+    }
+
+    if(mode === 'envn'){
+      // EN–VN mode: show EN on top, VN below, no note, no reveal btn
+      return `<div class="sent-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div>
+            <div class="sent-eng" style="margin-bottom:6px;">${s.eng}</div>
+            <div class="sent-viet">${s.viet}</div>
+          </div>
+          ${actionBtns}
+        </div>
+        <button class="wr-btn wr-btn-speak" style="margin-top:8px;width:auto;padding:5px 12px;font-size:12px;" onclick="speakSent('${engSafe}')">🔊 Nghe</button>
+      </div>`;
+    }
+
+    // ALL mode (default): EN on top, reveal VN, note below EN
     const noteHtml = hasNote
-      ? `<div class="sent-note-preview"><div class="sent-note-preview-inner">${s.note}</div></div>`
+      ? `<div class="sent-note-preview" style="margin-top:8px;margin-bottom:4px;"><div class="sent-note-preview-inner">${s.note}</div></div>`
       : '';
     return `<div class="sent-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-        <div class="sent-viet">${s.viet}</div>
-        <div style="display:flex;gap:4px;flex-shrink:0;margin-top:2px;">
-          <button class="wr-btn" style="color:var(--blue);" onclick="openEditSent(${s.id})" title="Sửa">✎</button>
-          <button class="wr-btn" onclick="deleteSentence(${s.id})" title="Xóa">×</button>
-        </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+        <div class="sent-eng">${s.eng}</div>
+        ${actionBtns}
       </div>
       ${noteHtml}
-      <button class="sent-reveal-btn" id="srb-${i}" onclick="revealSent(${i},this)">Nhấn để xem câu tiếng Anh</button>
+      <button class="sent-reveal-btn" id="srb-${i}" onclick="revealSent(${i},this)">Nhấn để xem nghĩa tiếng Việt</button>
       <div id="sent-eng-${i}" style="display:none;">
-        <div class="sent-eng">${s.eng}</div>
+        <div class="sent-viet" style="margin-top:4px;">${s.viet}</div>
         <button class="wr-btn wr-btn-speak" style="margin-top:8px;width:auto;padding:5px 12px;font-size:12px;" onclick="speakSent('${engSafe}')">🔊 Nghe</button>
       </div>
     </div>`;
   }).join('');
-  if(sentNoteOnly){
-    el.classList.add('note-only-mode');
-    document.querySelectorAll('[id^="sent-eng-"]').forEach(e2=>{e2.style.display='block';});
-    document.querySelectorAll('[id^="srb-"]').forEach(b=>{b.style.display='none';});
-  }
 }
 function revealSent(i,btn){
   document.getElementById('sent-eng-'+i).style.display='block';
@@ -8120,11 +8170,19 @@ function revealSent(i,btn){
 /* ════════════════════════════════════════════
    WORD BANK — mobile-optimized, IPA toggle, edit/delete
 ════════════════════════════════════════════ */
-let showIPA = LS.get('lingo_show_ipa', true);
+let showIPA    = LS.get('lingo_show_ipa', true);
+let showNoteWB = LS.get('lingo_show_note_wb', true);
 
 function toggleIPA() {
   showIPA = !showIPA;
   LS.set('lingo_show_ipa', showIPA);
+  renderWB();
+}
+function toggleNoteWB() {
+  showNoteWB = !showNoteWB;
+  LS.set('lingo_show_note_wb', showNoteWB);
+  const btn = document.getElementById('note-wb-btn');
+  if(btn) btn.textContent = showNoteWB ? 'Ẩn ghi chú' : 'Hiện ghi chú';
   renderWB();
 }
 
@@ -8344,6 +8402,8 @@ function renderWB(){
 
   const ipaBtn = document.getElementById('ipa-toggle-btn');
   if (ipaBtn) ipaBtn.textContent = showIPA ? 'Ẩn IPA' : 'Hiện IPA';
+  const noteWbBtn = document.getElementById('note-wb-btn');
+  if (noteWbBtn) noteWbBtn.textContent = showNoteWB ? 'Ẩn ghi chú' : 'Hiện ghi chú';
 
   const el = document.getElementById('wb-list'); if (!el) return;
   if (list.length===0) {
@@ -8355,7 +8415,7 @@ function renderWB(){
     const chipCls  = topicChipClass(w.topic);
     const topicLbl = topicLabel(w.topic);
     const wSafe    = w.word.replace(/'/g, "\\'");
-    const hasNote  = w.note && w.note.trim() && w.note !== '<br>';
+    const hasNote  = showNoteWB && w.note && w.note.trim() && w.note !== '<br>';
     const noteHtml = hasNote
       ? '<div class="sent-note-preview" style="margin-top:8px;font-size:12px;"><div class="sent-note-preview-inner">' + w.note + '</div></div>'
       : '';
